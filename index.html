@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paperglidr Technologies | Innovating at Scale</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .gradient-text { background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <nav class="fixed w-full z-50 glass">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold tracking-tighter text-white">
+                PAPER<span class="gradient-text">GLIDR</span>
+            </div>
+            <div class="hidden md:flex space-x-8 text-sm font-medium">
+                <a href="#about" class="hover:text-blue-400 transition">About</a>
+                <a href="#services" class="hover:text-blue-400 transition">Solutions</a>
+                <a href="#contact" class="hover:text-blue-400 transition">Contact</a>
+            </div>
+            <a href="mailto:hello@paperglidr.com" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-full text-sm transition font-semibold">
+                Get in Touch
+            </a>
+        </div>
+    </nav>
+
+    <header class="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full opacity-20 pointer-events-none">
+            <div class="absolute top-20 left-1/4 w-72 h-72 bg-blue-500 rounded-full blur-[120px]"></div>
+            <div class="absolute bottom-10 right-1/4 w-96 h-96 bg-cyan-500 rounded-full blur-[150px]"></div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-6 text-center relative z-10">
+            <span class="inline-block py-1 px-3 rounded-full bg-blue-900/30 border border-blue-500/30 text-blue-400 text-xs font-bold tracking-widest uppercase mb-6">
+                Now Registered in Kathmandu, Nepal
+            </span>
+            <h1 class="text-5xl md:text-7xl font-bold text-white tracking-tight mb-8">
+                The Future of <br> <span class="gradient-text">Seamless Technology</span>
+            </h1>
+            <p class="max-w-2xl mx-auto text-gray-400 text-lg md:text-xl mb-10 leading-relaxed">
+                Paperglidr Technologies is building the next generation of digital infrastructure. Lightweight, fast, and engineered for the modern era.
+            </p>
+            <div class="flex flex-col md:flex-row justify-center gap-4">
+                <button class="bg-white text-black px-8 py-4 rounded-xl font-bold hover:bg-gray-200 transition">Explore our Projects</button>
+                <button class="glass text-white px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition">Learn More</button>
+            </div>
+        </div>
+    </header>
+
+    <section id="services" class="py-24 bg-[#0d0d0d]">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="glass p-8 rounded-3xl hover:border-blue-500/50 transition duration-500 group">
+                    <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-microchip text-blue-400 text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4">Tech Integration</h3>
+                    <p class="text-gray-400 leading-relaxed">Advanced API solutions and software architecture tailored for emerging markets.</p>
+                </div>
+
+                <div class="glass p-8 rounded-3xl hover:border-blue-500/50 transition duration-500 group">
+                    <div class="w-12 h-12 bg-cyan-600/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-paper-plane text-cyan-400 text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4">Digital Velocity</h3>
+                    <p class="text-gray-400 leading-relaxed">Optimizing business processes through automated workflows and cloud infrastructure.</p>
+                </div>
+
+                <div class="glass p-8 rounded-3xl hover:border-blue-500/50 transition duration-500 group">
+                    <div class="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-shield-halved text-purple-400 text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4">Secure Systems</h3>
+                    <p class="text-gray-400 leading-relaxed">Enterprise-grade security protocols to protect your data and digital assets.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer id="contact" class="py-12 border-t border-white/10">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div>
+                <div class="text-xl font-bold text-white mb-2 underline decoration-blue-500">PAPERGLIDR</div>
+                <p class="text-gray-500 text-sm">© 2026 Paperglidr Technologies. All rights reserved.</p>
+            </div>
+            <div class="flex space-x-6 text-gray-400">
+                <a href="#" class="hover:text-white transition"><i class="fa-brands fa-twitter"></i></a>
+                <a href="#" class="hover:text-white transition"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="#" class="hover:text-white transition"><i class="fa-brands fa-github"></i></a>
+            </div>
+            <div class="text-sm text-gray-400">
+                Contact: <span class="text-blue-400">hello@paperglidr.com</span>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
