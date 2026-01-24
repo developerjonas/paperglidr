@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Marketing ROI Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+
+    <div class="min-h-screen flex flex-col md:flex-row">
+        
+        <aside class="w-full md:w-64 bg-slate-900 text-white p-6">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">KopilaOS</h1>
+            </div>
+            
+            <nav class="space-y-4">
+                <a href="#" class="flex items-center gap-3 text-indigo-400 bg-slate-800 p-3 rounded-lg"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="#" class="flex items-center gap-3 text-slate-400 hover:text-white transition p-3"><i class="fas fa-sms"></i> SMS Campaigns</a>
+                <a href="#" class="flex items-center gap-3 text-slate-400 hover:text-white transition p-3"><i class="fas fa-users"></i> Customers</a>
+                <a href="#" class="flex items-center gap-3 text-slate-400 hover:text-white transition p-3"><i class="fas fa-cog"></i> Settings</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-6 md:p-10">
+            
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Monthly Marketing Performance</h2>
+                    <p class="text-slate-500 text-sm">Real-time ROI tracking for 5,000+ customers</p>
+                </div>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm transition">
+                    <i class="fas fa-plus mr-2"></i> Create New Campaign
+                </button>
+            </header>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-slate-500 text-sm font-medium mb-1">Total SMS Sent</p>
+                    <h3 class="text-3xl font-bold">19,000</h3>
+                    <span class="text-emerald-500 text-xs font-bold mt-2 inline-block"><i class="fas fa-arrow-up"></i> 12% vs last month</span>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-slate-500 text-sm font-medium mb-1">Cost of SMS</p>
+                    <h3 class="text-3xl font-bold">₹3,800</h3>
+                    <p class="text-slate-400 text-[10px] mt-1">Calculated at ₹0.20/msg</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-indigo-100 shadow-sm bg-indigo-50/30">
+                    <p class="text-indigo-600 text-sm font-semibold mb-1 italic">Est. Revenue Generated</p>
+                    <h3 class="text-3xl font-bold text-indigo-700">₹76,000</h3>
+                    <p class="text-indigo-500 text-[10px] mt-1 font-medium">Based on 190 redemptions (Avg ₹400)</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-slate-500 text-sm font-medium mb-1">Net ROI</p>
+                    <h3 class="text-3xl font-bold">1,900%</h3>
+                    <span class="text-indigo-600 text-xs font-bold mt-2 inline-block">Highly Profitable</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-slate-100">
+                        <h4 class="font-bold text-slate-800 text-lg">Campaign Performance</h4>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold">
+                            <tr>
+                                <th class="px-6 py-4">Campaign Name</th>
+                                <th class="px-6 py-4 text-center">Volume</th>
+                                <th class="px-6 py-4 text-center">Open Rate</th>
+                                <th class="px-6 py-4 text-right">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr>
+                                <td class="px-6 py-4 font-medium">New Dish Alert (Fortnightly)</td>
+                                <td class="px-6 py-4 text-center text-slate-600">10,000</td>
+                                <td class="px-6 py-4 text-center"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold">98%</span></td>
+                                <td class="px-6 py-4 text-right font-bold">₹42,000</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-medium">Birthday/Wedding Specials</td>
+                                <td class="px-6 py-4 text-center text-slate-600">2,500</td>
+                                <td class="px-6 py-4 text-center"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold">99%</span></td>
+                                <td class="px-6 py-4 text-right font-bold">₹21,000</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-medium">Miscellaneous / Offers</td>
+                                <td class="px-6 py-4 text-center text-slate-600">6,500</td>
+                                <td class="px-6 py-4 text-center"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">92%</span></td>
+                                <td class="px-6 py-4 text-right font-bold">₹13,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-indigo-600 rounded-xl p-6 text-white flex flex-col justify-between shadow-lg shadow-indigo-200">
+                    <div>
+                        <div class="bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                            <i class="fas fa-mobile-screen-button text-2xl"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-2 leading-tight">Cut SMS Costs with Your Own App</h4>
+                        <p class="text-indigo-100 text-sm mb-6 leading-relaxed">
+                            Upgrade to your custom branded app and reach all 5,000 customers via <strong>Unlimited Free Push Notifications.</strong>
+                        </p>
+                        <ul class="text-sm space-y-2 text-indigo-100 mb-8">
+                            <li><i class="fas fa-check-circle mr-2"></i> Save ₹3,000+ monthly on SMS</li>
+                            <li><i class="fas fa-check-circle mr-2"></i> Digital Loyalty Program</li>
+                            <li><i class="fas fa-check-circle mr-2"></i> Direct Online Ordering</li>
+                        </ul>
+                    </div>
+                    <button class="bg-white text-indigo-600 py-3 rounded-lg font-bold hover:bg-slate-100 transition shadow-sm">
+                        Activate Custom App Add-on
+                    </button>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>
