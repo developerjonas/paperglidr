@@ -13,7 +13,7 @@ export async function insertCourse(data: typeof CourseTable.$inferInsert) {
 
 export async function updateCourse(
   id: string,
-  data: typeof CourseTable.$inferInsert
+  data: Partial<typeof CourseTable.$inferInsert>
 ) {
   const [updatedCourse] = await db
     .update(CourseTable)

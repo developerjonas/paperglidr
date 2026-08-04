@@ -17,14 +17,19 @@ import {
 
 export async function createCourse(unsafeData: z.infer<typeof courseSchema>) {
   const { success, data } = courseSchema.safeParse(unsafeData)
+  const user = await getCurrentUser()
 
-  if (!success || !canCreateCourses(await getCurrentUser())) {
+  if (!success || !user || !canCreateCourses({ userId: user.userId })) {
     return { error: true, message: "There was an error creating your course" }
   }
 
-  const course = await insertCourse(data)
+  // Pass authorId alongside course data
+  const course = await insertCourse({
+    ...data,
+    authorId: user.userId ?? "",
+  })
 
-  redirect(`/admin/courses/${course.id}/edit`)
+  redirect(`/creator/courses/${course.id}/edit`)
 }
 
 export async function updateCourse(
@@ -32,8 +37,14 @@ export async function updateCourse(
   unsafeData: z.infer<typeof courseSchema>
 ) {
   const { success, data } = courseSchema.safeParse(unsafeData)
+  const user = await getCurrentUser()
 
-  if (!success || !canUpdateCourses(await getCurrentUser())) {
+  const isAllowed = await canUpdateCourses(
+    { userId: user?.userId, role: user?.role },
+    id
+  )
+
+  if (!success || !user || !isAllowed) {
     return { error: true, message: "There was an error updating your course" }
   }
 
@@ -43,7 +54,14 @@ export async function updateCourse(
 }
 
 export async function deleteCourse(id: string) {
-  if (!canDeleteCourses(await getCurrentUser())) {
+  const user = await getCurrentUser()
+
+  const isAllowed = await canDeleteCourses(
+    { userId: user?.userId, role: user?.role },
+    id
+  )
+
+  if (!user || !isAllowed) {
     return { error: true, message: "Error deleting your course" }
   }
 

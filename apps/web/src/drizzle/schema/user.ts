@@ -22,6 +22,7 @@ export const UserTable = pgTable("user", {
   role: userRoleEnum("role").notNull().default("user"), // Custom field for permissions
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const SessionTable = pgTable("session", {
