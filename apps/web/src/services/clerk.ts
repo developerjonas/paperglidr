@@ -1,51 +1,57 @@
-import { db } from "@/drizzle/db"
-import { UserRole, UserTable } from "@/drizzle/schema"
-import { getUserIdTag } from "@/features/users/db/cache"
-import { auth, clerkClient } from "@clerk/nextjs/server"
-import { eq } from "drizzle-orm"
-import { cacheTag } from "next/dist/server/use-cache/cache-tag"
-import { redirect } from "next/navigation"
+import { db } from "@/drizzle/db";
+import { UserRole, UserTable } from "@/drizzle/schema";
+import { getUserIdTag } from "@/features/users/db/cache";
+import { eq } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import { redirect } from "next/navigation";
 
-const client = await clerkClient()
+export type AppUser = {
+  userId: string | undefined;
+  role: UserRole | undefined;
+  user?: typeof UserTable.$inferSelect | null;
+  redirectToSignIn: () => ReturnType<typeof redirect>;
+};
 
-export async function getCurrentUser({ allData = false } = {}) {
-  const { userId, sessionClaims, redirectToSignIn } = await auth()
+export async function getCurrentUser({
+  allData = false,
+} = {}): Promise<AppUser> {
+  // Safe redirect helper
+  const redirectToSignIn = () => redirect("/sign-in");
 
-  if (userId != null && sessionClaims.dbId == null) {
-    redirect("/api/clerk/syncUsers")
+  // TODO: Replace this block with your new session resolver (e.g., Better Auth / Auth.js)
+  // For now, returning null handles the guest state cleanly without errors.
+  const currentDbUserId: string | undefined = undefined; // e.g., session?.user?.id
+
+  if (!currentDbUserId) {
+    return {
+      userId: undefined,
+      role: undefined,
+      user: null,
+      redirectToSignIn,
+    };
   }
+
+  // Fetch user details from Drizzle DB
+  const user = await getUser(currentDbUserId);
 
   return {
-    clerkUserId: userId,
-    userId: sessionClaims?.dbId,
-    role: sessionClaims?.role,
-    user:
-      allData && sessionClaims?.dbId != null
-        ? await getUser(sessionClaims.dbId)
-        : undefined,
+    userId: user?.id,
+    role: user?.role,
+    user: allData ? user : undefined,
     redirectToSignIn,
-  }
+  };
 }
 
-export function syncClerkUserMetadata(user: {
-  id: string
-  clerkUserId: string
-  role: UserRole
-}) {
-  return client.users.updateUserMetadata(user.clerkUserId, {
-    publicMetadata: {
-      dbId: user.id,
-      role: user.role,
+export const getUser = (id: string) =>
+  unstable_cache(
+    async () => {
+      console.log("Called getUser for ID:", id);
+      return db.query.UserTable.findFirst({
+        where: eq(UserTable.id, id),
+      });
     },
-  })
-}
-
-async function getUser(id: string) {
-  "use cache"
-  cacheTag(getUserIdTag(id))
-  console.log("Called")
-
-  return db.query.UserTable.findFirst({
-    where: eq(UserTable.id, id),
-  })
-}
+    [`user-${id}`],
+    {
+      tags: [getUserIdTag(id)],
+    },
+  )();
