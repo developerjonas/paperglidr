@@ -15,6 +15,7 @@ import {
   deleteSection as deleteSectionDb,
   updateSectionOrders as updateSectionOrdersDb,
 } from "../db/sections"
+import { getCourseSectionIdTag } from "../db/cache"
 
 export async function createSection(
   courseId: string,
@@ -22,7 +23,7 @@ export async function createSection(
 ) {
   const { success, data } = sectionSchema.safeParse(unsafeData)
 
-  if (!success || !canCreateCourseSections(await getCurrentUser())) {
+  if (!success || !canCreateCourseSections(await getCurrentUser(), courseId)) {
     return { error: true, message: "There was an error creating your section" }
   }
 
@@ -39,7 +40,7 @@ export async function updateSection(
 ) {
   const { success, data } = sectionSchema.safeParse(unsafeData)
 
-  if (!success || !canUpdateCourseSections(await getCurrentUser())) {
+  if (!success || !canUpdateCourseSections(await getCurrentUser(), getCourseSectionIdTag(id))) {
     return { error: true, message: "There was an error updating your section" }
   }
 
@@ -49,7 +50,7 @@ export async function updateSection(
 }
 
 export async function deleteSection(id: string) {
-  if (!canDeleteCourseSections(await getCurrentUser())) {
+  if (!canDeleteCourseSections(await getCurrentUser(), getCourseSectionIdTag(id))) {
     return { error: true, message: "Error deleting your section" }
   }
 
@@ -59,9 +60,11 @@ export async function deleteSection(id: string) {
 }
 
 export async function updateSectionOrders(sectionIds: string[]) {
+  const firstId = sectionIds[0]
   if (
     sectionIds.length === 0 ||
-    !canUpdateCourseSections(await getCurrentUser())
+    !firstId ||
+    !(await canUpdateCourseSections(await getCurrentUser(), firstId))
   ) {
     return { error: true, message: "Error reordering your sections" }
   }

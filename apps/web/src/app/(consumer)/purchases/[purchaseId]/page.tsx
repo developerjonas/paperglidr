@@ -24,6 +24,8 @@ import { notFound } from "next/navigation"
 import { Fragment, Suspense } from "react"
 import Stripe from "stripe"
 
+export const dynamic = "force-dynamic"
+
 export default async function PurchasePage({
   params,
 }: {

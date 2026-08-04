@@ -19,7 +19,10 @@ import {
 export async function createLesson(unsafeData: z.infer<typeof lessonSchema>) {
   const { success, data } = lessonSchema.safeParse(unsafeData)
 
-  if (!success || !canCreateLessons(await getCurrentUser())) {
+  if (
+    !success ||
+    !(await canCreateLessons(await getCurrentUser(), data.sectionId))
+  ) {
     return { error: true, message: "There was an error creating your lesson" }
   }
 
@@ -36,7 +39,7 @@ export async function updateLesson(
 ) {
   const { success, data } = lessonSchema.safeParse(unsafeData)
 
-  if (!success || !canUpdateLessons(await getCurrentUser())) {
+  if (!success || !(await canUpdateLessons(await getCurrentUser(), id))) {
     return { error: true, message: "There was an error updating your lesson" }
   }
 
@@ -46,7 +49,7 @@ export async function updateLesson(
 }
 
 export async function deleteLesson(id: string) {
-  if (!canDeleteLessons(await getCurrentUser())) {
+  if (!(await canDeleteLessons(await getCurrentUser(), id))) {
     return { error: true, message: "Error deleting your lesson" }
   }
 
@@ -56,7 +59,12 @@ export async function deleteLesson(id: string) {
 }
 
 export async function updateLessonOrders(lessonIds: string[]) {
-  if (lessonIds.length === 0 || !canUpdateLessons(await getCurrentUser())) {
+  const firstId = lessonIds[0]
+  if (
+    lessonIds.length === 0 ||
+    !firstId ||
+    !(await canUpdateLessons(await getCurrentUser(), firstId))
+  ) {
     return { error: true, message: "Error reordering your lessons" }
   }
 
