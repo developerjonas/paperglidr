@@ -7,6 +7,8 @@ import { getUserGlobalTag } from "@/features/users/db/cache"
 import { desc } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 
+export const dynamic = "force-dynamic";
+
 export default async function PurchasesPage() {
   const purchases = await getPurchases()
 
