@@ -29,7 +29,7 @@ export async function createCourse(unsafeData: z.infer<typeof courseSchema>) {
     authorId: user.userId ?? "",
   })
 
-  redirect(`/creator/courses/${course.id}/edit`)
+  redirect(`/teach/courses/${course.id}/edit`)
 }
 
 export async function updateCourse(

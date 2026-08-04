@@ -7,6 +7,18 @@ const nextConfig: NextConfig = {
     // authInterrupts: true,
     useCache: true,
   },
+  images: {
+      remotePatterns: [
+        {
+          protocol: "https",
+          hostname: "www.lifewire.com",
+        },
+        {
+          protocol: "https",
+          hostname: "**",
+        },
+      ],
+    },
 }
 
 export default nextConfig

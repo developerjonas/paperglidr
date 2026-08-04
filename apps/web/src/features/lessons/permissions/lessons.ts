@@ -13,16 +13,72 @@ import { and, eq, or } from "drizzle-orm"
 import { getLessonIdTag } from "../db/cache/lessons"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 
-export function canCreateLessons({ role }: { role: UserRole | undefined }) {
-  return role === "admin"
+/**
+ * Users can create lessons if they are the author of the course or an admin.
+ */
+export async function canCreateLessons(
+  { userId, role }: { userId: string | undefined; role: UserRole | undefined },
+  sectionId: string
+) {
+  if (!userId || !sectionId) return false
+  if (role === "admin") return true
+
+  const section = await db.query.CourseSectionTable.findFirst({
+    where: eq(CourseSectionTable.id, sectionId),
+    with: {
+      course: true,
+    },
+  })
+
+  return section?.course?.authorId === userId
 }
 
-export function canUpdateLessons({ role }: { role: UserRole | undefined }) {
-  return role === "admin"
+/**
+ * Users can update lessons if they are the author of the course or an admin.
+ */
+export async function canUpdateLessons(
+  { userId, role }: { userId: string | undefined; role: UserRole | undefined },
+  lessonId: string
+) {
+  if (!userId || !lessonId) return false
+  if (role === "admin") return true
+
+  const lesson = await db.query.LessonTable.findFirst({
+    where: eq(LessonTable.id, lessonId),
+    with: {
+      section: {
+        with: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  return lesson?.section?.course?.authorId === userId
 }
 
-export function canDeleteLessons({ role }: { role: UserRole | undefined }) {
-  return role === "admin"
+/**
+ * Users can delete lessons if they are the author of the course or an admin.
+ */
+export async function canDeleteLessons(
+  { userId, role }: { userId: string | undefined; role: UserRole | undefined },
+  lessonId: string
+) {
+  if (!userId || !lessonId) return false
+  if (role === "admin") return true
+
+  const lesson = await db.query.LessonTable.findFirst({
+    where: eq(LessonTable.id, lessonId),
+    with: {
+      section: {
+        with: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  return lesson?.section?.course?.authorId === userId
 }
 
 export async function canViewLesson(

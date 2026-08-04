@@ -15,24 +15,27 @@ import { asc, countDistinct, eq } from "drizzle-orm"
 import { getUserCourseAccessGlobalTag } from "@/features/courses/db/cache/userCourseAccess"
 import { getCourseSectionGlobalTag } from "@/features/courseSections/db/cache"
 import { getLessonGlobalTag } from "@/features/lessons/db/cache/lessons"
+import { getCurrentUser } from "@/services/clerk" // adjust to wherever getCurrentUser actually lives
 
-export default async function CoursesPage() {
-  const courses = await getCourses()
+export default async function TeachCoursesPage() {
+  const { userId, redirectToSignIn } = await getCurrentUser()
+  if (userId == null) return redirectToSignIn()
+
+  const courses = await getMyCourses(userId)
 
   return (
     <div className="container my-6">
-      <PageHeader title="Courses">
+      <PageHeader title="My Courses">
         <Button asChild>
-          <Link href="/admin/courses/new">New Course</Link>
+          <Link href="/teach/courses/new">New Course</Link>
         </Button>
       </PageHeader>
-
       <CourseTable courses={courses} />
     </div>
   )
 }
 
-async function getCourses() {
+async function getMyCourses(authorId: string) {
   "use cache"
   cacheTag(
     getCourseGlobalTag(),
@@ -40,7 +43,6 @@ async function getCourses() {
     getCourseSectionGlobalTag(),
     getLessonGlobalTag()
   )
-
   return db
     .select({
       id: DbCourseTable.id,
@@ -59,6 +61,7 @@ async function getCourses() {
       UserCourseAccessTable,
       eq(UserCourseAccessTable.courseId, DbCourseTable.id)
     )
+    .where(eq(DbCourseTable.authorId, authorId))
     .orderBy(asc(DbCourseTable.name))
     .groupBy(DbCourseTable.id)
 }

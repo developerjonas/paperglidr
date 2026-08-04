@@ -1,53 +1,86 @@
-"use server"
+"use server";
 
-import { z } from "zod"
+import { z } from "zod";
 import {
   insertProduct,
   updateProduct as updateProductDb,
   deleteProduct as deleteProductDb,
-} from "@/features/products/db/products"
-import { redirect } from "next/navigation"
+} from "@/features/products/db/products";
+import { redirect } from "next/navigation";
 import {
   canCreateProducts,
   canDeleteProducts,
   canUpdateProducts,
-} from "../permissions/products"
-import { getCurrentUser } from "@/services/clerk"
-import { productSchema } from "../schema/products"
+} from "../permissions/products";
+import { productSchema } from "../schema/products";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { db } from "@/drizzle/db";
+import { UserTable } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
-export async function createProduct(unsafeData: z.infer<typeof productSchema>) {
-  const { success, data } = productSchema.safeParse(unsafeData)
+async function getCurrentUserContext() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  if (!success || !canCreateProducts(await getCurrentUser())) {
-    return { error: true, message: "There was an error creating your product" }
+  if (!session?.user?.id) {
+    return { userId: undefined, role: undefined };
   }
 
-  await insertProduct(data)
+  // Fetch the role directly from the UserTable since it's not in the session type
+  const [dbUser] = await db
+    .select({ role: UserTable.role })
+    .from(UserTable)
+    .where(eq(UserTable.id, session.user.id))
+    .limit(1);
 
-  redirect("/admin/products")
+  return {
+    userId: session.user.id,
+    role: dbUser?.role,
+  };
+}
+
+export async function createProduct(unsafeData: z.infer<typeof productSchema>) {
+  const { success, data } = productSchema.safeParse(unsafeData);
+  const user = await getCurrentUserContext();
+
+  if (!success || !canCreateProducts(user)) {
+    return { error: true, message: "There was an error creating your product" };
+  }
+
+  await insertProduct({
+    ...data,
+    authorId: user.userId!,
+  });
+
+  redirect("/teach/products");
 }
 
 export async function updateProduct(
   id: string,
-  unsafeData: z.infer<typeof productSchema>
+  unsafeData: z.infer<typeof productSchema>,
 ) {
-  const { success, data } = productSchema.safeParse(unsafeData)
+  const { success, data } = productSchema.safeParse(unsafeData);
+  const user = await getCurrentUserContext();
 
-  if (!success || !canUpdateProducts(await getCurrentUser())) {
-    return { error: true, message: "There was an error updating your product" }
+  if (!success || !(await canUpdateProducts(user, id))) {
+    return { error: true, message: "There was an error updating your product" };
   }
 
-  await updateProductDb(id, data)
+  await updateProductDb(id, data);
 
-  redirect("/admin/products")
+  redirect("/teach/products");
 }
 
 export async function deleteProduct(id: string) {
-  if (!canDeleteProducts(await getCurrentUser())) {
-    return { error: true, message: "Error deleting your product" }
+  const user = await getCurrentUserContext();
+
+  if (!(await canDeleteProducts(user, id))) {
+    return { error: true, message: "Error deleting your product" };
   }
 
-  await deleteProductDb(id)
+  await deleteProductDb(id);
 
-  return { error: false, message: "Successfully deleted your product" }
+  return { error: false, message: "Successfully deleted your product" };
 }

@@ -18,6 +18,7 @@ import { asc, eq } from "drizzle-orm"
 import { EyeClosed, PlusIcon } from "lucide-react"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { notFound } from "next/navigation"
+import { getCurrentUser } from "@/services/clerk" // adjust to wherever this actually lives
 
 export default async function EditCoursePage({
   params,
@@ -25,9 +26,13 @@ export default async function EditCoursePage({
   params: Promise<{ courseId: string }>
 }) {
   const { courseId } = await params
+  const { userId, redirectToSignIn } = await getCurrentUser()
+  if (userId == null) return redirectToSignIn()
+
   const course = await getCourse(courseId)
 
   if (course == null) return notFound()
+  if (course.authorId !== userId) return notFound() // don't leak that the course exists to non-owners
 
   return (
     <div className="container my-6">
@@ -109,12 +114,12 @@ async function getCourse(id: string) {
   )
 
   return db.query.CourseTable.findFirst({
-    columns: { id: true, name: true, description: true },
+    columns: { id: true, name: true, description: true, authorId: true },
     where: eq(CourseTable.id, id),
     with: {
       courseSections: {
         orderBy: asc(CourseSectionTable.order),
-        columns: { id: true, status: true, name: true },
+        columns: { id: true, status: true, name: true, order: true },
         with: {
           lessons: {
             orderBy: asc(LessonTable.order),
@@ -125,6 +130,7 @@ async function getCourse(id: string) {
               description: true,
               youtubeVideoId: true,
               sectionId: true,
+              order: true,
             },
           },
         },

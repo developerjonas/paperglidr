@@ -19,7 +19,7 @@ export default async function ProductsPage() {
     <div className="container my-6">
       <PageHeader title="Products">
         <Button asChild>
-          <Link href="/admin/products/new">New Product</Link>
+          <Link href="/teach/products/new">New Product</Link>
         </Button>
       </PageHeader>
 
