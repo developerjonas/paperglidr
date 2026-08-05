@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table"
 import { formatDate, formatPlural, formatPrice } from "@/lib/formatters"
 import Image from "next/image"
-import { refundPurchase } from "../actions/purchases"
+import { revokeAccess } from "../actions/purchases"
 
 export function PurchaseTable({
   purchases,
@@ -83,7 +83,7 @@ export function PurchaseTable({
             <TableCell>
               {purchase.refundedAt == null && purchase.pricePaidInCents > 0 && (
                 <ActionButton
-                  action={refundPurchase.bind(null, purchase.id)}
+                  action={revokeAccess.bind(null, purchase.id)}
                   variant="destructiveOutline"
                   requireAreYouSure
                 >
