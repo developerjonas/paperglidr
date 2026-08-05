@@ -33,7 +33,7 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Link
-                href="/sign-up"
+                href="https://app.paperglidr.com/sign-up"
                 className="inline-flex items-center justify-center gap-1 rounded-full bg-[#14213D] px-6 py-3 text-sm font-medium text-[#F5F3EE] transition-colors hover:bg-[#1d2e54] dark:bg-[#F5F3EE] dark:text-[#14213D] dark:hover:bg-white"
               >
                 Start Selling Your Course <ArrowRight className="h-4 w-4" />
@@ -215,7 +215,7 @@ export default function Home() {
             day is over.
           </p>
           <Link
-            href="/sign-up"
+            href="https://app.paperglidr.com/sign-up"
             className="inline-flex items-center justify-center rounded-full bg-[#C9A227] px-8 py-3 text-sm font-medium text-[#14213D] transition-colors hover:bg-[#dab236]"
           >
             Start Creating — It's Free
