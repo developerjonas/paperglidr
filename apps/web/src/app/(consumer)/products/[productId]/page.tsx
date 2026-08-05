@@ -28,7 +28,7 @@ import { sumArray } from "@/lib/sumArray"
 import { getUserCoupon } from "@/lib/userCountryHeader"
 import { getCurrentUser } from "@/services/clerk"
 import { and, asc, eq } from "drizzle-orm"
-import { VideoIcon } from "lucide-react"
+import { BookOpenIcon, CheckCircle2Icon, PlayCircleIcon, VideoIcon } from "lucide-react"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import Image from "next/image"
 import Link from "next/link"
@@ -51,107 +51,176 @@ export default async function ProductPage({
   )
 
   return (
-    <div className="container my-6">
-      <div className="flex gap-16 items-center justify-between">
-        <div className="flex gap-6 flex-col items-start">
-          <div className="flex flex-col gap-2">
-            <Suspense
-              fallback={
-                <div className="text-xl">
-                  {formatPrice(product.priceInDollars)}
-                </div>
-              }
+    <div className="container my-6 lg:my-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 items-start">
+        {/* ─── Main column ─────────────────────────────── */}
+        <div className="flex flex-col gap-10 min-w-0 order-2 lg:order-1">
+          <div className="flex flex-col gap-4">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance">
+              {product.name}
+            </h1>
+            <p className="text-lg text-muted-foreground text-pretty leading-relaxed">
+              {product.description}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground pt-1">
+              <span className="flex items-center gap-1.5">
+                <BookOpenIcon className="size-4" />
+                {formatPlural(courseCount, {
+                  singular: "course",
+                  plural: "courses",
+                })}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <PlayCircleIcon className="size-4" />
+                {formatPlural(lessonCount, {
+                  singular: "lesson",
+                  plural: "lessons",
+                })}
+              </span>
+            </div>
+
+            {/* Instructor block — placeholder until real instructor profiles exist */}
+            <Link
+              href="/instructors/jonas"
+              className="group mt-2 flex w-fit items-center gap-3 rounded-2xl border border-white/30 bg-white/40 px-4 py-3 backdrop-blur-md transition-colors hover:bg-white/60 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.07]"
             >
-              <Price price={product.priceInDollars} />
-            </Suspense>
-            <h1 className="text-4xl font-semibold">{product.name}</h1>
-            <div className="text-muted-foreground">
-              {formatPlural(courseCount, {
-                singular: "course",
-                plural: "courses",
-              })}{" "}
-              •{" "}
-              {formatPlural(lessonCount, {
-                singular: "lesson",
-                plural: "lessons",
-              })}
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-sm font-bold text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
+                TJ
+              </div>
+              <div className="leading-tight">
+                <p className="text-xs text-muted-foreground">Created by</p>
+                <p className="font-semibold group-hover:underline underline-offset-4">
+                  Tutor Jonas
+                </p>
+              </div>
+            </Link>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Course content
+            </h2>
+            <div className="flex flex-col gap-4">
+              {product.courses.map(course => (
+                <Card
+                  key={course.id}
+                  className="overflow-hidden border-white/30 bg-white/50 backdrop-blur-md dark:border-white/10 dark:bg-white/[0.02]"
+                >
+                  <CardHeader>
+                    <CardTitle className="text-xl">{course.name}</CardTitle>
+                    <CardDescription>
+                      {formatPlural(course.courseSections.length, {
+                        plural: "sections",
+                        singular: "section",
+                      })}{" "}
+                      •{" "}
+                      {formatPlural(
+                        sumArray(course.courseSections, s => s.lessons.length),
+                        {
+                          plural: "lessons",
+                          singular: "lesson",
+                        }
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Accordion type="multiple" className="-mx-2">
+                      {course.courseSections.map(section => (
+                        <AccordionItem
+                          key={section.id}
+                          value={section.id}
+                          className="border-white/20 dark:border-white/10"
+                        >
+                          <AccordionTrigger className="flex gap-2 px-2 hover:no-underline">
+                            <div className="flex flex-col flex-grow text-left">
+                              <span className="text-base font-medium">
+                                {section.name}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {formatPlural(section.lessons.length, {
+                                  plural: "lessons",
+                                  singular: "lesson",
+                                })}
+                              </span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="flex flex-col gap-1 px-2">
+                            {section.lessons.map(lesson => (
+                              <div
+                                key={lesson.id}
+                                className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground"
+                              >
+                                <VideoIcon className="size-4 shrink-0" />
+                                {lesson.status === "preview" ? (
+                                  <Link
+                                    href={`/courses/${course.id}/lessons/${lesson.id}`}
+                                    className="text-foreground underline-offset-4 hover:underline"
+                                  >
+                                    {lesson.name}
+                                  </Link>
+                                ) : (
+                                  <span className="text-foreground">
+                                    {lesson.name}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
-          <div className="text-xl">{product.description}</div>
-          <Suspense fallback={<SkeletonButton className="h-12 w-36" />}>
-            <PurchaseButton productId={product.id} />
-          </Suspense>
         </div>
-        <div className="relative aspect-video max-w-lg flex-grow">
-          <Image
-            src={product.imageUrl}
-            fill
-            alt={product.name}
-            className="object-contain rounded-xl"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 items-start">
-        {product.courses.map(course => (
-          <Card key={course.id}>
-            <CardHeader>
-              <CardTitle>{course.name}</CardTitle>
-              <CardDescription>
-                {formatPlural(course.courseSections.length, {
-                  plural: "sections",
-                  singular: "section",
-                })}{" "}
-                •{" "}
-                {formatPlural(
-                  sumArray(course.courseSections, s => s.lessons.length),
-                  {
-                    plural: "lessons",
-                    singular: "lesson",
-                  }
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="multiple">
-                {course.courseSections.map(section => (
-                  <AccordionItem key={section.id} value={section.id}>
-                    <AccordionTrigger className="flex gap-2">
-                      <div className="flex flex-col flex-grow">
-                        <span className="text-lg">{section.name}</span>
-                        <span className="text-muted-foreground">
-                          {formatPlural(section.lessons.length, {
-                            plural: "lessons",
-                            singular: "lesson",
-                          })}
-                        </span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="flex flex-col gap-2">
-                      {section.lessons.map(lesson => (
-                        <div
-                          key={lesson.id}
-                          className="flex items-center gap-2 text-base"
-                        >
-                          <VideoIcon className="size-4" />
-                          {lesson.status === "preview" ? (
-                            <Link
-                              href={`/courses/${course.id}/lessons/${lesson.id}`}
-                              className="underline text-accent"
-                            >
-                              {lesson.name}
-                            </Link>
-                          ) : (
-                            lesson.name
-                          )}
-                        </div>
-                      ))}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </CardContent>
+
+        {/* ─── Sticky purchase card ─────────────────────── */}
+        <div className="order-1 lg:order-2 lg:sticky lg:top-24">
+          <Card className="overflow-hidden border-white/30 bg-white/60 shadow-lg backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40 py-0 gap-0">
+            <div className="relative aspect-video w-full">
+              <Image
+                src={product.imageUrl}
+                fill
+                alt={product.name}
+                className="object-cover"
+                priority
+              />
+            </div>
+            <div className="flex flex-col gap-4 p-6">
+              <Suspense
+                fallback={
+                  <div className="text-2xl font-bold">
+                    {formatPrice(product.priceInDollars)}
+                  </div>
+                }
+              >
+                <Price price={product.priceInDollars} />
+              </Suspense>
+
+              <Suspense fallback={<SkeletonButton className="h-12 w-full" />}>
+                <PurchaseButton productId={product.id} />
+              </Suspense>
+
+              <ul className="flex flex-col gap-2 border-t border-white/20 pt-4 text-sm text-muted-foreground dark:border-white/10">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
+                  Full lifetime access
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
+                  Certificate of completion
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
+                  Learn at your own pace
+                </li>
+              </ul>
+            </div>
           </Card>
-        ))}
+        </div>
       </div>
     </div>
   )
@@ -163,28 +232,37 @@ async function PurchaseButton({ productId }: { productId: string }) {
     userId != null && (await userOwnsProduct({ userId, productId }))
 
   if (alreadyOwnsProduct) {
-    return <p>You already own this product</p>
-  } else {
     return (
-      <Button className="text-xl h-auto py-4 px-8 rounded-lg" asChild>
-        <Link href={`/products/${productId}/purchase`}>Get Now</Link>
-      </Button>
+      <div className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/40 px-4 py-3 text-sm font-medium backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+        <CheckCircle2Icon className="size-4 text-primary" />
+        You already own this course
+      </div>
     )
   }
+
+  return (
+    <Button size="xl" className="w-full" asChild>
+      <Link href={`/products/${productId}/purchase`}>Get Now</Link>
+    </Button>
+  )
 }
 
 async function Price({ price }: { price: number }) {
   const coupon = await getUserCoupon()
   if (price === 0 || coupon == null) {
-    return <div className="text-xl">{formatPrice(price)}</div>
+    return (
+      <div className="text-2xl font-bold tracking-tight">
+        {formatPrice(price)}
+      </div>
+    )
   }
 
   return (
-    <div className="flex gap-2 items-baseline">
-      <div className="line-through text-sm opacity-50">
+    <div className="flex items-baseline gap-2">
+      <div className="text-base text-muted-foreground line-through">
         {formatPrice(price)}
       </div>
-      <div className="text-xl">
+      <div className="text-2xl font-bold tracking-tight">
         {formatPrice(price * (1 - coupon.discountPercentage))}
       </div>
     </div>
