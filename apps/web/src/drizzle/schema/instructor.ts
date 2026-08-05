@@ -12,8 +12,8 @@ export const InstructorTable = pgTable("instructors", {
   handle: text().notNull().unique(),
   name: text().notNull(),
   bio: text().notNull(),
-  profileImageUrl: text().notNull(),
-  isVerified: boolean().notNull().default(false),
+  profileImageUrl: text("profile_image_url").notNull(),
+  isVerified: boolean("is_verified").notNull().default(false),
   createdAt,
   updatedAt,
 });
