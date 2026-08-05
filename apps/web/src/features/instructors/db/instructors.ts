@@ -23,15 +23,30 @@ export async function upsertInstructor(
 ) {
   const [instructor] = await db
     .insert(InstructorTable)
-    .values({ userId, ...data, isVerified: false })
+    .values({ userId, ...data }) // isVerified defaults false, untouched
     .onConflictDoUpdate({
       target: InstructorTable.userId,
-      set: { ...data, isVerified: false, updatedAt: new Date() },
+      set: { ...data, updatedAt: new Date() }, // does NOT touch isVerified
     })
     .returning();
 
   if (!instructor) {
     throw new Error("Failed to save instructor profile");
+  }
+
+  revalidateInstructorCache({ id: instructor.id, userId: instructor.userId });
+  return instructor;
+}
+
+export async function setInstructorVerified(id: string, isVerified: boolean) {
+  const [instructor] = await db
+    .update(InstructorTable)
+    .set({ isVerified, updatedAt: new Date() })
+    .where(eq(InstructorTable.id, id))
+    .returning();
+
+  if (!instructor) {
+    throw new Error("Instructor not found");
   }
 
   revalidateInstructorCache({ id: instructor.id, userId: instructor.userId });

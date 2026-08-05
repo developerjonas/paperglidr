@@ -1,4 +1,4 @@
-import type { AppUser } from "@/services/clerk"; // adjust path/export name to match where AppUser actually lives
+import type { AppUser } from "@/services/clerk";
 
 export function canCreateInstructorProfile(user: AppUser | null) {
   return !!user;
@@ -6,4 +6,8 @@ export function canCreateInstructorProfile(user: AppUser | null) {
 
 export function canEditInstructorProfile(user: AppUser | null, instructor: { userId: string }) {
   return !!user && user.userId === instructor.userId;
+}
+
+export function canVerifyInstructor(user: AppUser | null) {
+  return !!user && user.role === "admin"; // adjust to however you already gate /admin routes
 }

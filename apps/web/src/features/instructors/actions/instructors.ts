@@ -2,8 +2,8 @@
 
 import { getCurrentUser } from "@/services/clerk";
 import { instructorSchema, type InstructorFormValues } from "../schemas/instructors";
-import { canCreateInstructorProfile } from "../permissions/instructors";
-import { upsertInstructor, getInstructorByHandle } from "../db/instructors";
+import { canCreateInstructorProfile, canVerifyInstructor } from "../permissions/instructors";
+import { upsertInstructor, getInstructorByHandle, setInstructorVerified } from "../db/instructors";
 
 export async function saveInstructorProfile(unsafeData: InstructorFormValues) {
   const user = await getCurrentUser();
@@ -23,5 +23,20 @@ export async function saveInstructorProfile(unsafeData: InstructorFormValues) {
   }
 
   await upsertInstructor(user.userId, data);
-  return { error: false, message: "Profile saved", handle: data.handle };
+  return {
+    error: false,
+    message: "Profile submitted — you'll be able to publish once verified.",
+    handle: data.handle,
+  };
+}
+
+export async function verifyInstructor(instructorId: string) {
+  const user = await getCurrentUser();
+
+  if (!canVerifyInstructor(user)) {
+    return { error: true, message: "Not authorized." };
+  }
+
+  await setInstructorVerified(instructorId, true);
+  return { error: false, message: "Instructor verified" };
 }
