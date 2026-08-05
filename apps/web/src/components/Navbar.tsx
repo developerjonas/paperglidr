@@ -103,7 +103,7 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
           className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground sm:flex dark:hover:bg-white/10"
         >
           <Presentation className="h-4 w-4" />
-          Become a Tutor
+          Teach
         </Link>
       )}
       <Link
