@@ -55,17 +55,9 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
           href="/teach"
           className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground sm:block dark:hover:bg-white/10"
         >
-          Become a Tutor
+          Teach
         </Link>
         <ThemeToggle />
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="rounded-full hover:bg-white/50 dark:hover:bg-white/10"
-        >
-          <Link href="/sign-in">Sign In</Link>
-        </Button>
         <Button
           asChild
           size="sm"
