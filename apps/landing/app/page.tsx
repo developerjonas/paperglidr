@@ -1,11 +1,10 @@
 import Link from "next/link"
 import {
-  Code2,
-  Palette,
-  Calculator,
-  Languages,
-  Briefcase,
-  Music,
+  Upload,
+  Wallet,
+  Rocket,
+  ShieldCheck,
+  Smartphone,
   ArrowRight,
 } from "lucide-react"
 
@@ -14,35 +13,36 @@ export default function Home() {
     <div className="flex flex-col bg-[#F5F3EE] dark:bg-[#0B0F1A]">
       {/* ---------- HERO ---------- */}
       <section className="relative overflow-hidden">
-        <div className="container grid gap-16 py-20 sm:py-28 md:grid-cols-2 md:items-center">
+        <div className="mx-auto grid w-full max-w-7xl gap-16 px-6 py-20 sm:py-28 md:grid-cols-2 md:items-center lg:px-8">
           <div className="flex flex-col gap-6">
             <span className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-[#C9A227]">
-              PaperGlidr · Courses &amp; Tutors
+              For Course Creators in Nepal
             </span>
             <h1
               className="text-4xl font-medium leading-[1.1] tracking-tight text-[#14213D] dark:text-[#F5F3EE] sm:text-6xl"
               style={{ fontFamily: "'Fraunces', serif" }}
             >
-              Learning that glides,
+              Upload once,
               <br />
-              not grinds.
+              earn on repeat.
             </h1>
             <p className="max-w-md text-lg leading-8 text-[#14213D]/70 dark:text-[#F5F3EE]/70">
-              PaperGlidr pairs you with tutors and courses that get you from
-              confused to confident — one smooth flight path at a time.
+              PaperGlidr lets you publish a course in minutes, price it in
+              rupees, and get paid directly through eSewa, Khalti, or Fonepay.
+              No approval queue. No waiting on anyone.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Link
-                href="/courses"
+                href="/sign-up"
                 className="inline-flex items-center justify-center gap-1 rounded-full bg-[#14213D] px-6 py-3 text-sm font-medium text-[#F5F3EE] transition-colors hover:bg-[#1d2e54] dark:bg-[#F5F3EE] dark:text-[#14213D] dark:hover:bg-white"
               >
-                Browse Courses <ArrowRight className="h-4 w-4" />
+                Start Selling Your Course <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/teach"
+                href="#how-it-works"
                 className="inline-flex items-center justify-center rounded-full border border-[#14213D]/20 px-6 py-3 text-sm font-medium text-[#14213D] transition-colors hover:bg-[#14213D]/5 dark:border-[#F5F3EE]/20 dark:text-[#F5F3EE] dark:hover:bg-[#F5F3EE]/10"
               >
-                Become a Tutor
+                See How It Works
               </Link>
             </div>
           </div>
@@ -92,140 +92,139 @@ export default function Home() {
         />
       </section>
 
-      {/* ---------- TWO RUNWAYS ---------- */}
-      <section className="container grid gap-6 py-20 sm:py-28 md:grid-cols-2">
-        <div className="rounded-2xl bg-[#E8E4D9] p-8 dark:bg-white/[.04] sm:p-10">
-          <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#6FA8DC]">
-            Runway 01
-          </span>
-          <h2
-            className="mt-3 text-2xl font-medium text-[#14213D] dark:text-[#F5F3EE] sm:text-3xl"
-            style={{ fontFamily: "'Fraunces', serif" }}
-          >
-            Find your course, book a tutor, take off.
-          </h2>
-          <ul className="mt-6 space-y-3 text-[#14213D]/70 dark:text-[#F5F3EE]/70">
-            <li>Curated courses across dozens of subjects</li>
-            <li>1:1 sessions with tutors who actually respond</li>
-            <li>Track your progress, one lesson at a time</li>
-          </ul>
-          <Link
-            href="/courses"
-            className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-[#14213D] underline underline-offset-4 hover:no-underline dark:text-[#F5F3EE]"
-          >
-            Explore courses <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="rounded-2xl bg-[#14213D] p-8 dark:bg-[#F5F3EE]/[.04] sm:p-10">
-          <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#C9A227]">
-            Runway 02
-          </span>
-          <h2
-            className="mt-3 text-2xl font-medium text-[#F5F3EE] sm:text-3xl"
-            style={{ fontFamily: "'Fraunces', serif" }}
-          >
-            Turn your knowledge into a runway for others.
-          </h2>
-          <ul className="mt-6 space-y-3 text-[#F5F3EE]/70">
-            <li>Set your own schedule and rates</li>
-            <li>Get paid per session, no chasing invoices</li>
-            <li>Build a following around what you teach</li>
-          </ul>
-          <Link
-            href="/teach"
-            className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-[#F5F3EE] underline underline-offset-4 hover:no-underline"
-          >
-            Start teaching <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
-
-      {/* ---------- HOW IT WORKS ---------- */}
-      <section className="container py-20 sm:py-28">
+      {/* ---------- WHY CREATORS CHOOSE THIS ---------- */}
+      <section className="mx-auto w-full max-w-7xl px-6 py-20 sm:py-28 lg:px-8">
         <h2
-          className="text-center text-3xl font-medium text-[#14213D] dark:text-[#F5F3EE] sm:text-4xl"
+          className="max-w-xl text-3xl font-medium text-[#14213D] dark:text-[#F5F3EE] sm:text-4xl"
           style={{ fontFamily: "'Fraunces', serif" }}
         >
-          How it works
+          Built for the way you actually get paid.
         </h2>
-        <div className="mt-14 grid gap-10 sm:grid-cols-3">
+        <div className="mt-14 grid gap-8 sm:grid-cols-3">
           {[
             {
-              n: "01",
-              title: "Chart your course",
-              body: "Browse subjects and pick what you actually want to learn.",
+              icon: Rocket,
+              title: "No gatekeeping",
+              body: "Sign up and publish immediately. There's no application, no waitlist, no reviewer deciding if your course is good enough.",
             },
             {
-              n: "02",
-              title: "Book your flight",
-              body: "Reserve a 1:1 session or enroll in a self-paced course.",
+              icon: Wallet,
+              title: "Paid in rupees, directly",
+              body: "Price your course in NPR. Payouts land through eSewa, Khalti, or Fonepay — the wallets your students already use.",
             },
             {
-              n: "03",
-              title: "Glide forward",
-              body: "Learn at your pace, with real feedback along the way.",
+              icon: Smartphone,
+              title: "Built for how Nepal buys",
+              body: "Students check out with QR and mobile wallets, not a foreign card form that fails at checkout.",
             },
-          ].map(step => (
-            <div key={step.n} className="text-center sm:text-left">
-              <div className="font-mono text-sm text-[#C9A227]">{step.n}</div>
-              <h3 className="mt-2 text-xl font-medium text-[#14213D] dark:text-[#F5F3EE]">
-                {step.title}
+          ].map(({ icon: Icon, title, body }) => (
+            <div key={title} className="rounded-2xl bg-[#E8E4D9] p-8 dark:bg-white/[.04]">
+              <Icon className="h-6 w-6 text-[#6FA8DC]" />
+              <h3 className="mt-4 text-lg font-medium text-[#14213D] dark:text-[#F5F3EE]">
+                {title}
               </h3>
               <p className="mt-2 text-[#14213D]/70 dark:text-[#F5F3EE]/70">
-                {step.body}
+                {body}
               </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ---------- CATEGORIES ---------- */}
-      <section className="container pb-20 sm:pb-28">
-        <div className="flex flex-wrap items-center justify-center gap-3">
+      {/* ---------- HOW IT WORKS ---------- */}
+      <section id="how-it-works" className="mx-auto w-full max-w-7xl px-6 py-20 sm:py-28 lg:px-8">
+        <h2
+          className="text-3xl font-medium text-[#14213D] dark:text-[#F5F3EE] sm:text-4xl"
+          style={{ fontFamily: "'Fraunces', serif" }}
+        >
+          Three steps to your first sale
+        </h2>
+        <div className="mt-14 grid gap-10 sm:grid-cols-3">
           {[
-            { icon: Code2, label: "Code" },
-            { icon: Palette, label: "Design" },
-            { icon: Calculator, label: "Math" },
-            { icon: Languages, label: "Languages" },
-            { icon: Briefcase, label: "Business" },
-            { icon: Music, label: "Music" },
-          ].map(({ icon: Icon, label }) => (
-            <span
-              key={label}
-              className="flex items-center gap-2 rounded-full border border-[#14213D]/15 bg-white/60 px-4 py-2 text-sm font-medium text-[#14213D] dark:border-[#F5F3EE]/15 dark:bg-white/[.04] dark:text-[#F5F3EE]"
-            >
-              <Icon className="h-4 w-4 text-[#6FA8DC]" />
-              {label}
-            </span>
+            {
+              n: "01",
+              icon: Upload,
+              title: "Upload your course",
+              body: "Add your videos, structure your lessons, write a description. No format to fight, no reviewer in the loop.",
+            },
+            {
+              n: "02",
+              icon: Wallet,
+              title: "Set your price in NPR",
+              body: "Decide what your knowledge is worth. Change it any time, run a discount when you want to.",
+            },
+            {
+              n: "03",
+              icon: ShieldCheck,
+              title: "Get paid automatically",
+              body: "Every purchase pays out to your eSewa, Khalti, or Fonepay account — no invoices to chase.",
+            },
+          ].map(({ n, icon: Icon, title, body }) => (
+            <div key={n}>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-sm text-[#C9A227]">{n}</span>
+                <Icon className="h-5 w-5 text-[#6FA8DC]" />
+              </div>
+              <h3 className="mt-3 text-xl font-medium text-[#14213D] dark:text-[#F5F3EE]">
+                {title}
+              </h3>
+              <p className="mt-2 text-[#14213D]/70 dark:text-[#F5F3EE]/70">
+                {body}
+              </p>
+            </div>
           ))}
+        </div>
+      </section>
+
+      {/* ---------- PAYMENT METHODS ---------- */}
+      <section className="mx-auto w-full max-w-7xl px-6 pb-20 sm:pb-28 lg:px-8">
+        <div className="rounded-2xl bg-[#14213D] p-8 dark:bg-[#F5F3EE]/[.04] sm:p-12">
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#C9A227]">
+            Get Paid How Your Students Pay
+          </span>
+          <h2
+            className="mt-3 max-w-lg text-2xl font-medium text-[#F5F3EE] sm:text-3xl"
+            style={{ fontFamily: "'Fraunces', serif" }}
+          >
+            Every payout lands in the wallet you already use.
+          </h2>
+          <div className="mt-8 flex flex-wrap gap-3">
+            {["eSewa", "Khalti", "Fonepay"].map(name => (
+              <span
+                key={name}
+                className="rounded-full border border-[#F5F3EE]/20 px-4 py-2 text-sm font-medium text-[#F5F3EE]"
+              >
+                {name}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ---------- CTA BANNER ---------- */}
       <section className="bg-[#14213D] py-20 dark:bg-[#0B0F1A] sm:py-24">
-        <div className="container flex flex-col items-center gap-6 text-center">
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-6 px-6 text-center lg:px-8">
           <h2
             className="text-3xl font-medium text-[#F5F3EE] sm:text-4xl"
             style={{ fontFamily: "'Fraunces', serif" }}
           >
-            Ready for takeoff?
+            Your course is worth publishing today.
           </h2>
           <p className="max-w-md text-[#F5F3EE]/70">
-            Join learners and tutors already gliding through their goals on
-            PaperGlidr.
+            Set up your creator page and publish your first lesson before the
+            day is over.
           </p>
           <Link
             href="/sign-up"
             className="inline-flex items-center justify-center rounded-full bg-[#C9A227] px-8 py-3 text-sm font-medium text-[#14213D] transition-colors hover:bg-[#dab236]"
           >
-            Get Started Free
+            Start Creating — It's Free
           </Link>
         </div>
       </section>
 
       {/* ---------- FOOTER ---------- */}
-      <footer className="container flex flex-col items-center justify-between gap-4 py-10 text-sm text-[#14213D]/60 dark:text-[#F5F3EE]/50 sm:flex-row">
+      <footer className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-6 py-10 text-sm text-[#14213D]/60 dark:text-[#F5F3EE]/50 sm:flex-row lg:px-8">
         <span style={{ fontFamily: "'Fraunces', serif" }}>PaperGlidr</span>
         <span>&copy; {new Date().getFullYear()} PaperGlidr. All rights reserved.</span>
       </footer>
