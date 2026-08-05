@@ -5,15 +5,15 @@ import { UserTable } from "./user";
 
 export const InstructorTable = pgTable("instructors", {
   id: uuid().primaryKey().defaultRandom(),
-  userId: text("user_id")
+  userId: text()
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" })
     .unique(),
   handle: text().notNull().unique(),
   name: text().notNull(),
   bio: text().notNull(),
-  profileImageUrl: text("profile_image_url").notNull(),
-  isVerified: boolean("is_verified").notNull().default(false),
+  profileImageUrl: text().notNull(),
+  isVerified: boolean().notNull().default(false),
   createdAt,
   updatedAt,
 });
