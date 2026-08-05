@@ -10,10 +10,12 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { db } from "@/drizzle/db"
-import { ProductTable, PurchaseTable } from "@/drizzle/schema"
+import { ProductTable } from "@/drizzle/schema"
 import { getProductIdTag } from "@/features/products/db/cache"
 import { userOwnsProduct } from "@/features/products/db/products"
 import { wherePublicProducts } from "@/features/products/permissions/products"
+import { insertPurchase } from "@/features/purchases/db/purchases"
+import { addUserCourseAccess } from "@/features/courses/db/userCourseAcccess"
 import { getCurrentUser } from "@/services/clerk"
 import { SignIn, SignUp } from "@clerk/nextjs"
 import { and, eq } from "drizzle-orm"
@@ -97,7 +99,9 @@ async function SuspendedComponent({
 }
 
 // Server action — replaces the old Stripe checkout submit.
-// Grants access immediately instead of creating a checkout session.
+// Mirrors what the Stripe webhook used to do on a successful payment:
+// create a purchase record AND grant access to the course(s) it unlocks.
+// The only thing missing versus the Stripe flow is the payment itself.
 async function enrollInProduct(productId: string) {
   "use server"
 
@@ -110,18 +114,34 @@ async function enrollInProduct(productId: string) {
     redirect("/courses")
   }
 
-  const product = await getPublicProduct(productId)
+  const product = await db.query.ProductTable.findFirst({
+    where: and(eq(ProductTable.id, productId), wherePublicProducts),
+    with: { courseProducts: { columns: { courseId: true } } },
+  })
   if (product == null) notFound()
 
-  await db.insert(PurchaseTable).values({
-    userId: user.id,
-    productId,
-    pricePaidInCents: 0,
-    productDetails: {
-      name: product.name,
-      description: product.description,
-      imageUrl: product.imageUrl,
-    },
+  await db.transaction(async trx => {
+    await insertPurchase(
+      {
+        userId: user.id,
+        productId,
+        pricePaidInCents: 0,
+        productDetails: {
+          name: product.name,
+          description: product.description,
+          imageUrl: product.imageUrl,
+        },
+      },
+      trx
+    )
+
+    await addUserCourseAccess(
+      {
+        userId: user.id,
+        courseIds: product.courseProducts.map(cp => cp.courseId),
+      },
+      trx
+    )
   })
 
   redirect("/courses")
