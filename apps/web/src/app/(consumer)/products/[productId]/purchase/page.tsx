@@ -1,5 +1,4 @@
 import { LoadingSpinner } from "@/components/LoadingSpinner"
-import { PageHeader } from "@/components/PageHeader"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -17,7 +16,6 @@ import { wherePublicProducts } from "@/features/products/permissions/products"
 import { insertPurchase } from "@/features/purchases/db/purchases"
 import { addUserCourseAccess } from "@/features/courses/db/userCourseAcccess"
 import { getCurrentUser } from "@/services/clerk"
-import { SignIn, SignUp } from "@clerk/nextjs"
 import { and, eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { notFound, redirect } from "next/navigation"
@@ -49,51 +47,40 @@ async function SuspendedComponent({
   const product = await getPublicProduct(productId)
   if (product == null) return notFound()
 
-  if (user != null) {
-    if (await userOwnsProduct({ userId: user.id, productId })) {
-      redirect("/courses")
-    }
+  if (user == null) {
+    const { authMode } = await searchParams
+    const isSignUp = authMode === "signUp"
+    const callbackUrl = `/products/${productId}/purchase`
 
-    return (
-      <div className="container my-6">
-        <Card className="max-w-xl mx-auto overflow-hidden">
-          <CardHeader>
-            <CardTitle>{product.name}</CardTitle>
-            <CardDescription>{product.description}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg font-semibold">Free</p>
-          </CardContent>
-          <CardFooter>
-            <form action={enrollInProduct.bind(null, productId)} className="w-full">
-              <Button type="submit" size="lg" className="w-full">
-                Enroll for Free
-              </Button>
-            </form>
-          </CardFooter>
-        </Card>
-      </div>
+    redirect(
+      isSignUp
+        ? `/sign-up?redirectTo=${encodeURIComponent(callbackUrl)}`
+        : `/sign-in?redirectTo=${encodeURIComponent(callbackUrl)}`
     )
   }
 
-  const { authMode } = await searchParams
-  const isSignUp = authMode === "signUp"
+  if (await userOwnsProduct({ userId: user.id, productId })) {
+    redirect("/courses")
+  }
+
   return (
-    <div className="container my-6 flex flex-col items-center">
-      <PageHeader title="You need an account to enroll" />
-      {isSignUp ? (
-        <SignUp
-          routing="hash"
-          signInUrl={`/products/${productId}/purchase?authMode=signIn`}
-          forceRedirectUrl={`/products/${productId}/purchase`}
-        />
-      ) : (
-        <SignIn
-          routing="hash"
-          signUpUrl={`/products/${productId}/purchase?authMode=signUp`}
-          forceRedirectUrl={`/products/${productId}/purchase`}
-        />
-      )}
+    <div className="container my-6">
+      <Card className="max-w-xl mx-auto overflow-hidden">
+        <CardHeader>
+          <CardTitle>{product.name}</CardTitle>
+          <CardDescription>{product.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-lg font-semibold">Free</p>
+        </CardContent>
+        <CardFooter>
+          <form action={enrollInProduct.bind(null, productId)} className="w-full">
+            <Button type="submit" size="lg" className="w-full">
+              Enroll for Free
+            </Button>
+          </form>
+        </CardFooter>
+      </Card>
     </div>
   )
 }
