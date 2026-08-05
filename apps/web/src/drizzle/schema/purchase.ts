@@ -23,7 +23,7 @@ export const PurchaseTable = pgTable("purchases", {
   productId: uuid()
     .notNull()
     .references(() => ProductTable.id, { onDelete: "restrict" }),
-  stripeSessionId: text().notNull().unique(),
+  stripeSessionId: text(),
   refundedAt: timestamp({ withTimezone: true }),
   createdAt,
   updatedAt,
