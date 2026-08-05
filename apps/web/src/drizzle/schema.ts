@@ -7,3 +7,4 @@ export * from "./schema/purchase"
 export * from "./schema/user"
 export * from "./schema/userCourseAccess"
 export * from "./schema/userLessonComplete"
+export * from "./schema/instructor";
