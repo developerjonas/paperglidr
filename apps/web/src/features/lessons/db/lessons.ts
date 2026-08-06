@@ -140,3 +140,19 @@ export async function updateLessonOrders(lessonIds: string[]) {
     })
   })
 }
+
+
+
+export async function getLessonCourseId(lessonId: string) {
+  const lesson = await db.query.LessonTable.findFirst({
+    columns: { sectionId: true },
+    where: eq(LessonTable.id, lessonId),
+  })
+  if (lesson == null) return null
+
+  const section = await db.query.CourseSectionTable.findFirst({
+    columns: { courseId: true },
+    where: eq(CourseSectionTable.id, lesson.sectionId),
+  })
+  return section?.courseId ?? null
+}
