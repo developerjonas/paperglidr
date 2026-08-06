@@ -1,5 +1,4 @@
 import { LoadingSpinner } from "@/components/LoadingSpinner"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -8,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { db } from "@/drizzle/db"
 import { ProductTable } from "@/drizzle/schema"
 import { getProductIdTag } from "@/features/products/db/cache"
@@ -15,11 +15,14 @@ import { userOwnsProduct } from "@/features/products/db/products"
 import { wherePublicProducts } from "@/features/products/permissions/products"
 import { insertPurchase } from "@/features/purchases/db/purchases"
 import { addUserCourseAccess } from "@/features/courses/db/userCourseAcccess"
+import { formatPrice } from "@/lib/formatters"
 import { getCurrentUser } from "@/services/clerk"
 import { and, eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { notFound, redirect } from "next/navigation"
 import { Suspense } from "react"
+import crypto from "crypto"
+import { PurchaseGatewayPicker } from "@/features/purchases/components/PurchaseGatewayPicker"
 
 export default function PurchasePage({
   params,
@@ -63,6 +66,8 @@ async function SuspendedComponent({
     redirect("/courses")
   }
 
+  const isFree = product.priceInDollars === 0
+
   return (
     <div className="container my-6">
       <Card className="max-w-xl mx-auto overflow-hidden">
@@ -71,25 +76,31 @@ async function SuspendedComponent({
           <CardDescription>{product.description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-lg font-semibold">Free</p>
+          <p className="text-lg font-semibold">
+            {isFree ? "Free" : formatPrice(product.priceInDollars)}
+          </p>
         </CardContent>
         <CardFooter>
-          <form action={enrollInProduct.bind(null, productId)} className="w-full">
-            <Button type="submit" size="lg" className="w-full">
-              Enroll for Free
-            </Button>
-          </form>
+          {isFree ? (
+            <form action={enrollInFreeProduct.bind(null, productId)} className="w-full">
+              <Button type="submit" size="lg" className="w-full">
+                Enroll for Free
+              </Button>
+            </form>
+          ) : (
+            <PurchaseGatewayPicker productId={productId} />
+          )}
         </CardFooter>
       </Card>
     </div>
   )
 }
 
-// Server action — replaces the old Stripe checkout submit.
-// Mirrors what the Stripe webhook used to do on a successful payment:
-// create a purchase record AND grant access to the course(s) it unlocks.
-// The only thing missing versus the Stripe flow is the payment itself.
-async function enrollInProduct(productId: string) {
+// Free products skip the gateway entirely — no verification is possible or
+// needed for money that never moved. Marked "completed" immediately, with
+// gateway: "free" so the schema's notNull constraints stay honest instead
+// of faking a payment provider that was never involved.
+async function enrollInFreeProduct(productId: string) {
   "use server"
 
   const { user } = await getCurrentUser({ allData: true })
@@ -107,12 +118,18 @@ async function enrollInProduct(productId: string) {
   })
   if (product == null) notFound()
 
+  const idempotencyKey = crypto.randomUUID()
+
   await db.transaction(async trx => {
     await insertPurchase(
       {
         userId: user.id,
         productId,
-        pricePaidInCents: 0,
+        gateway: "free",
+        status: "completed",
+        pricePaidInPaisa: 0,
+        idempotencyKey,
+        gatewayCheckoutId: idempotencyKey,
         productDetails: {
           name: product.name,
           description: product.description,
@@ -123,10 +140,7 @@ async function enrollInProduct(productId: string) {
     )
 
     await addUserCourseAccess(
-      {
-        userId: user.id,
-        courseIds: product.courseProducts.map(cp => cp.courseId),
-      },
+      { userId: user.id, courseIds: product.courseProducts.map(cp => cp.courseId) },
       trx
     )
   })
@@ -143,6 +157,7 @@ async function getPublicProduct(id: string) {
       id: true,
       imageUrl: true,
       description: true,
+      priceInDollars: true, // added — page couldn't tell free vs paid without this
     },
     where: and(eq(ProductTable.id, id), wherePublicProducts),
   })

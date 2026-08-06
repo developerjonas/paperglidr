@@ -14,7 +14,13 @@ import { UserTable } from "./user";
 import { ProductTable } from "./product";
 
 // Extensible — add "bank" or a new gateway later without touching existing rows
-export const purchaseGateways = ["esewa", "khalti", "bank"] as const;
+export const purchaseGateways = [
+  "esewa",
+  "khalti",
+  "fonepay",
+  "bank",
+  "free",
+] as const;
 export type PurchaseGateway = (typeof purchaseGateways)[number];
 export const purchaseGatewayEnum = pgEnum("purchase_gateway", purchaseGateways);
 
