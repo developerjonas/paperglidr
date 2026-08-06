@@ -1,14 +1,13 @@
-import { db } from "@/drizzle/db"
-import { PurchaseTable } from "@/drizzle/schema"
-import { revalidatePurchaseCache } from "./cache"
-import { eq } from "drizzle-orm"
+import { db } from "@/drizzle/db";
+import { PurchaseTable } from "@/drizzle/schema";
+import { revalidatePurchaseCache } from "./cache";
+import { and, eq } from "drizzle-orm";
 
 export async function insertPurchase(
   data: typeof PurchaseTable.$inferInsert,
-  trx: Omit<typeof db, "$client"> = db
+  trx: Omit<typeof db, "$client"> = db,
 ) {
-  const details = data.productDetails
-
+  const details = data.productDetails;
   const [newPurchase] = await trx
     .insert(PurchaseTable)
     .values({
@@ -19,21 +18,26 @@ export async function insertPurchase(
         imageUrl: details.imageUrl,
       },
     })
-    .onConflictDoNothing()
-    .returning()
+    // Target idempotencyKey explicitly. On insert, gatewayTransactionId is
+    // always null (the gateway hasn't responded yet), so an untargeted
+    // onConflictDoNothing() would also silently swallow a genuine bug —
+    // e.g. two null gatewayTransactionIds colliding under the composite
+    // index in a way you didn't intend. Naming the target means a conflict
+    // ONLY means "this exact checkout attempt was already inserted," which
+    // is the one case you actually want to no-op on.
+    .onConflictDoNothing({ target: PurchaseTable.idempotencyKey })
+    .returning();
 
-  if (newPurchase != null) revalidatePurchaseCache(newPurchase)
-
-  return newPurchase
+  if (newPurchase != null) revalidatePurchaseCache(newPurchase);
+  return newPurchase;
 }
 
 export async function updatePurchase(
   id: string,
   data: Partial<typeof PurchaseTable.$inferInsert>,
-  trx: Omit<typeof db, "$client"> = db
+  trx: Omit<typeof db, "$client"> = db,
 ) {
-  const details = data.productDetails
-
+  const details = data.productDetails;
   const [updatedPurchase] = await trx
     .update(PurchaseTable)
     .set({
@@ -47,10 +51,72 @@ export async function updatePurchase(
         : undefined,
     })
     .where(eq(PurchaseTable.id, id))
-    .returning()
-  if (updatedPurchase == null) throw new Error("Failed to update purchase")
+    .returning();
+  if (updatedPurchase == null) throw new Error("Failed to update purchase");
+  revalidatePurchaseCache(updatedPurchase);
+  return updatedPurchase;
+}
 
-  revalidatePurchaseCache(updatedPurchase)
+export async function getPurchaseByIdempotencyKey(
+  idempotencyKey: string,
+  trx: Omit<typeof db, "$client"> = db,
+) {
+  return trx.query.PurchaseTable.findFirst({
+    where: eq(PurchaseTable.idempotencyKey, idempotencyKey),
+  });
+}
 
-  return updatedPurchase
+export async function getPurchaseByGatewayTransaction(
+  {
+    gateway,
+    gatewayTransactionId,
+  }: {
+    gateway: (typeof PurchaseTable.$inferSelect)["gateway"];
+    gatewayTransactionId: string;
+  },
+  trx: Omit<typeof db, "$client"> = db,
+) {
+  return trx.query.PurchaseTable.findFirst({
+    where: and(
+      eq(PurchaseTable.gateway, gateway),
+      eq(PurchaseTable.gatewayTransactionId, gatewayTransactionId),
+    ),
+  });
+}
+
+/**
+ * Atomically transitions a purchase from pending to completed. The
+ * `eq(status, "pending")` in the WHERE clause is the important part — it's
+ * what makes a duplicate webhook delivery a no-op instead of a double
+ * completion. Two concurrent calls for the same purchase will race on this
+ * UPDATE; only the one that still finds status = "pending" affects a row,
+ * so course access and ledger entries never get written twice.
+ */
+export async function markPurchaseCompleted(
+  {
+    id,
+    gatewayTransactionId,
+    rawGatewayResponse,
+  }: {
+    id: string;
+    gatewayTransactionId: string;
+    rawGatewayResponse: unknown;
+  },
+  trx: Omit<typeof db, "$client"> = db,
+) {
+  const [updatedPurchase] = await trx
+    .update(PurchaseTable)
+    .set({
+      status: "completed",
+      gatewayTransactionId,
+      rawGatewayResponse,
+    })
+    .where(and(eq(PurchaseTable.id, id), eq(PurchaseTable.status, "pending")))
+    .returning();
+
+  // null here means either the purchase doesn't exist, or it was already
+  // completed by a concurrent/duplicate webhook call — both are fine to
+  // treat as "nothing to do," not an error
+  if (updatedPurchase != null) revalidatePurchaseCache(updatedPurchase);
+  return updatedPurchase;
 }
