@@ -47,7 +47,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="relative h-[320px] w-full sm:h-[400px]" aria-hidden="true">
+          <div className="relative h-80 w-full sm:h-100" aria-hidden="true">
             <svg viewBox="0 0 400 400" className="absolute inset-0 h-full w-full">
               <path
                 d="M 40 340 C 120 260, 160 180, 340 60"
@@ -118,7 +118,7 @@ export default function Home() {
               body: "Students check out with QR and mobile wallets, not a foreign card form that fails at checkout.",
             },
           ].map(({ icon: Icon, title, body }) => (
-            <div key={title} className="rounded-2xl bg-[#E8E4D9] p-8 dark:bg-white/[.04]">
+            <div key={title} className="rounded-2xl bg-[#E8E4D9] p-8 dark:bg-white/4">
               <Icon className="h-6 w-6 text-[#6FA8DC]" />
               <h3 className="mt-4 text-lg font-medium text-[#14213D] dark:text-[#F5F3EE]">
                 {title}
@@ -178,7 +178,7 @@ export default function Home() {
 
       {/* ---------- PAYMENT METHODS ---------- */}
       <section className="mx-auto w-full max-w-7xl px-6 pb-20 sm:pb-28 lg:px-8">
-        <div className="rounded-2xl bg-[#14213D] p-8 dark:bg-[#F5F3EE]/[.04] sm:p-12">
+        <div className="rounded-2xl bg-[#14213D] p-8 dark:bg-[#F5F3EE]/4 sm:p-12">
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#C9A227]">
             Get Paid How Your Students Pay
           </span>

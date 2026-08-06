@@ -1,8 +1,15 @@
-import { pgTable, text, integer, timestamp, uuid, uniqueIndex } from "drizzle-orm/pg-core"
-import { relations } from "drizzle-orm"
-import { createdAt, id, updatedAt } from "../schemaHelpers"
-import { UserTable } from "./user"
-import { CourseTable } from "./course"
+import {
+  pgTable,
+  text,
+  integer,
+  timestamp,
+  uuid,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { createdAt, id, updatedAt } from "../schemaHelpers";
+import { UserTable } from "./user";
+import { CourseTable } from "./course";
 
 export const CertificateTable = pgTable(
   "certificates",
@@ -22,7 +29,6 @@ export const CertificateTable = pgTable(
     courseTitleSnapshot: text().notNull(),
     instructorNameSnapshot: text().notNull(),
     courseDurationMinutesSnapshot: integer().notNull(),
-
     issuedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 
     // Revocation — keeps the audit trail instead of deleting the row
@@ -32,16 +38,19 @@ export const CertificateTable = pgTable(
     createdAt,
     updatedAt,
   },
-  t => [uniqueIndex("user_course_unique_idx").on(t.userId, t.courseId)]
-)
+  (t) => [uniqueIndex("user_course_unique_idx").on(t.userId, t.courseId)],
+);
 
-export const CertificateRelationships = relations(CertificateTable, ({ one }) => ({
-  user: one(UserTable, {
-    fields: [CertificateTable.userId],
-    references: [UserTable.id],
+export const CertificateRelationships = relations(
+  CertificateTable,
+  ({ one }) => ({
+    user: one(UserTable, {
+      fields: [CertificateTable.userId],
+      references: [UserTable.id],
+    }),
+    course: one(CourseTable, {
+      fields: [CertificateTable.courseId],
+      references: [CourseTable.id],
+    }),
   }),
-  course: one(CourseTable, {
-    fields: [CertificateTable.courseId],
-    references: [CourseTable.id],
-  }),
-}))
+);
