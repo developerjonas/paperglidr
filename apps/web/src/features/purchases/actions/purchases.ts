@@ -10,7 +10,7 @@ import { khaltiGateway } from "@/services/payments/khalti/khaltiServer"
 import { createLedgerEntry, reverseLedgerEntriesForPurchase } from "@/features/ledger/db/ledger"
 import { revalidateProductCache } from "@/features/products/db/cache"
 import { addUserCourseAccess, revokeUserCourseAccess } from "@/features/courses/db/userCourseAcccess"
-import { canRefundPurchases } from "../permissions/products"
+import { canRefundPurchases } from "../permissions/purchases"
 
 const gateways = { esewa: esewaGateway, khalti: khaltiGateway } as const
 type WiredGateway = keyof typeof gateways

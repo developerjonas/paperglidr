@@ -22,9 +22,10 @@ export function UserPurchaseTable({
 }: {
   purchases: {
     id: string
-    pricePaidInCents: number
+    pricePaidInPaisa: number
     createdAt: Date
     refundedAt: Date | null
+    status: "pending" | "completed" | "failed" | "refunded" | "disputed"
     productDetails: {
       name: string
       imageUrl: string
@@ -63,11 +64,7 @@ export function UserPurchaseTable({
               </div>
             </TableCell>
             <TableCell>
-              {purchase.refundedAt ? (
-                <Badge variant="outline">Refunded</Badge>
-              ) : (
-                formatPrice(purchase.pricePaidInCents / 100)
-              )}
+              <PurchaseAmountCell purchase={purchase} />
             </TableCell>
             <TableCell>
               <Button variant="outline" asChild>
@@ -79,6 +76,33 @@ export function UserPurchaseTable({
       </TableBody>
     </Table>
   )
+}
+
+function PurchaseAmountCell({
+  purchase,
+}: {
+  purchase: {
+    pricePaidInPaisa: number
+    refundedAt: Date | null
+    status: "pending" | "completed" | "failed" | "refunded" | "disputed"
+  }
+}) {
+  // refundedAt is the older, narrower signal — status is now the source of
+  // truth, but a purchase could theoretically have refundedAt set from
+  // before this migration without status having caught up, so check both
+  if (purchase.refundedAt != null || purchase.status === "refunded") {
+    return <Badge variant="outline">Refunded</Badge>
+  }
+  if (purchase.status === "pending") {
+    return <Badge variant="secondary">Pending</Badge>
+  }
+  if (purchase.status === "failed") {
+    return <Badge variant="destructive">Failed</Badge>
+  }
+  if (purchase.status === "disputed") {
+    return <Badge variant="destructive">Disputed</Badge>
+  }
+  return <>{formatPrice(purchase.pricePaidInPaisa / 100)}</>
 }
 
 export function UserPurchaseTableSkeleton() {

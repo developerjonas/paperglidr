@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export function InstructorProfileCard({
   instructor,
 }: {
@@ -5,7 +7,7 @@ export function InstructorProfileCard({
 }) {
   return (
     <div className="flex items-start gap-6">
-      <img
+      <Image
         src={instructor.profileImageUrl}
         alt={instructor.name}
         className="h-24 w-24 rounded-full object-cover border"

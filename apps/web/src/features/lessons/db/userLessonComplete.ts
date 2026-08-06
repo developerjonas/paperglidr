@@ -1,5 +1,5 @@
 import { db } from "@/drizzle/db"
-import { CourseSectionTable, LessonTable, UserLessonCompleteTable } from "@/drizzle/schema"
+import { UserLessonCompleteTable } from "@/drizzle/schema"
 import { and, eq } from "drizzle-orm"
 import { revalidateUserLessonCompleteCache } from "./cache/userLessonComplete"
 

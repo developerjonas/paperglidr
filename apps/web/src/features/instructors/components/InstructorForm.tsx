@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 export function InstructorForm({
   defaultValues,
@@ -55,7 +56,7 @@ export function InstructorForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {profileImageUrl && (
-          <img
+          <Image
             src={profileImageUrl}
             alt="Profile preview"
             className="h-20 w-20 rounded-full object-cover border"

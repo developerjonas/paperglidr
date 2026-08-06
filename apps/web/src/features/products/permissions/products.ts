@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm"
 /**
  * Any authenticated user can create products (or restricted to authors/admins)
  */
-export function canCreateProducts({ userId, role }: { userId: string | undefined; role: UserRole | undefined }) {
+export function canCreateProducts({ userId }: { userId: string | undefined }) {
   return userId != null
 }
 
@@ -19,12 +19,9 @@ export async function canUpdateProducts(
 ) {
   if (!userId || !productId) return false
   if (role === "admin") return true
-
   const product = await db.query.ProductTable.findFirst({
     where: eq(ProductTable.id, productId),
   })
-
-  // If your products have an authorId field:
   return product?.authorId === userId
 }
 
@@ -37,11 +34,9 @@ export async function canDeleteProducts(
 ) {
   if (!userId || !productId) return false
   if (role === "admin") return true
-
   const product = await db.query.ProductTable.findFirst({
     where: eq(ProductTable.id, productId),
   })
-
   return product?.authorId === userId
 }
 

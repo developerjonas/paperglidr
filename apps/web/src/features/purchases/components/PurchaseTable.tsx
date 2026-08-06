@@ -22,7 +22,7 @@ export function PurchaseTable({
 }: {
   purchases: {
     id: string
-    pricePaidInCents: number
+    pricePaidInPaisa: number
     createdAt: Date
     refundedAt: Date | null
     productDetails: {
@@ -77,11 +77,11 @@ export function PurchaseTable({
               {purchase.refundedAt ? (
                 <Badge variant="outline">Refunded</Badge>
               ) : (
-                formatPrice(purchase.pricePaidInCents / 100)
+                formatPrice(purchase.pricePaidInPaisa / 100)
               )}
             </TableCell>
             <TableCell>
-              {purchase.refundedAt == null && purchase.pricePaidInCents > 0 && (
+              {purchase.refundedAt == null && purchase.pricePaidInPaisa > 0 && (
                 <ActionButton
                   action={revokeAccess.bind(null, purchase.id)}
                   variant="destructiveOutline"

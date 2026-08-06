@@ -87,7 +87,7 @@ async function getPurchaseDetails() {
   const data = await db
     .select({
       totalSales: sql<number>`COALESCE(${sum(
-        PurchaseTable.pricePaidInCents
+        PurchaseTable.pricePaidInPaisa
       )}, 0)`.mapWith(Number),
       totalPurchases: count(PurchaseTable.id),
       totalUsers: countDistinct(PurchaseTable.userId),
