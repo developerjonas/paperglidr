@@ -2,6 +2,8 @@ import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { revalidateInstructorCache } from "./cache/instructors";
+import { CourseTable, CourseProductTable, ProductTable } from "@/drizzle/schema"
+import { and, exists } from "drizzle-orm"
 
 export async function getInstructorByUserId(userId: string) {
   "use cache";
@@ -51,4 +53,20 @@ export async function setInstructorVerified(id: string, isVerified: boolean) {
 
   revalidateInstructorCache({ id: instructor.id, userId: instructor.userId });
   return instructor;
+}
+
+export async function getInstructorPublishedCourses(instructorUserId: string) {
+  return db.query.CourseTable.findMany({
+    where: and(
+      eq(CourseTable.authorId, instructorUserId),
+      exists(
+        db
+          .select({ id: CourseProductTable.courseId })
+          .from(CourseProductTable)
+          .innerJoin(ProductTable, eq(ProductTable.id, CourseProductTable.productId))
+          .where(and(eq(CourseProductTable.courseId, CourseTable.id), eq(ProductTable.status, "public")))
+      )
+    ),
+    columns: { id: true, name: true, description: true },
+  })
 }
