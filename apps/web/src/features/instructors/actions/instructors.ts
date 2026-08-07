@@ -2,8 +2,11 @@
 
 import { getCurrentUser } from "@/services/clerk";
 import { instructorSchema, type InstructorFormValues } from "../schemas/instructors";
-import { canCreateInstructorProfile, canVerifyInstructor } from "../permissions/instructors";
-import { upsertInstructor, getInstructorByHandle, setInstructorVerified } from "../db/instructors";
+import { canCreateInstructorProfile } from "../permissions/instructors";
+import { upsertInstructor, getInstructorByHandle } from "../db/instructors";
+import { CourseProductTable, CourseTable, ProductTable } from "@/drizzle/schema";
+import { db } from "@/drizzle/db";
+import { and, eq } from "drizzle-orm";
 
 export async function saveInstructorProfile(unsafeData: InstructorFormValues) {
   const user = await getCurrentUser();
@@ -30,13 +33,17 @@ export async function saveInstructorProfile(unsafeData: InstructorFormValues) {
   };
 }
 
-export async function verifyInstructor(instructorId: string) {
-  const user = await getCurrentUser();
+export async function getInstructorPublishedCourses(instructorUserId: string) {
+  const rows = await db
+    .selectDistinct({
+      id: CourseTable.id,
+      name: CourseTable.name,
+      description: CourseTable.description,
+    })
+    .from(CourseTable)
+    .innerJoin(CourseProductTable, eq(CourseProductTable.courseId, CourseTable.id))
+    .innerJoin(ProductTable, eq(ProductTable.id, CourseProductTable.productId))
+    .where(and(eq(CourseTable.authorId, instructorUserId), eq(ProductTable.status, "public")))
 
-  if (!canVerifyInstructor(user)) {
-    return { error: true, message: "Not authorized." };
-  }
-
-  await setInstructorVerified(instructorId, true);
-  return { error: false, message: "Instructor verified" };
+  return rows
 }
