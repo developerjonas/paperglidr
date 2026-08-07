@@ -7,12 +7,13 @@ import { eq } from "drizzle-orm"
 import { insertPurchase, updatePurchase, markPurchaseCompleted } from "../db/purchases"
 import { esewaGateway } from "@/services/payments/esewa/esewaServer"
 import { khaltiGateway } from "@/services/payments/khalti/khaltiServer"
+import { fonepayGateway } from "@/services/payments/fonepay/fonepayServer"
 import { createLedgerEntry, reverseLedgerEntriesForPurchase } from "@/features/ledger/db/ledger"
 import { revalidateProductCache } from "@/features/products/db/cache"
 import { addUserCourseAccess, revokeUserCourseAccess } from "@/features/courses/db/userCourseAcccess"
 import { canRefundPurchases } from "../permissions/purchases"
 
-const gateways = { esewa: esewaGateway, khalti: khaltiGateway } as const
+const gateways = { esewa: esewaGateway, khalti: khaltiGateway, fonepay: fonepayGateway } as const
 type WiredGateway = keyof typeof gateways
 
 export async function initiatePurchase({
@@ -24,12 +25,12 @@ export async function initiatePurchase({
 }) {
   const { userId } = await getCurrentUser()
   if (userId == null) {
-    return { error: true, message: "You must be signed in to purchase", redirectUrl: null, formFields: null }
+    return { error: true, message: "You must be signed in to purchase", redirectUrl: null, formFields: null, qr: null }
   }
 
   const product = await db.query.ProductTable.findFirst({ where: eq(ProductTable.id, productId) })
   if (product == null) {
-    return { error: true, message: "Product not found", redirectUrl: null, formFields: null }
+    return { error: true, message: "Product not found", redirectUrl: null, formFields: null, qr: null }
   }
 
   const idempotencyKey = crypto.randomUUID()
@@ -44,7 +45,7 @@ export async function initiatePurchase({
     gatewayCheckoutId: idempotencyKey,
   })
   if (purchase == null) {
-    return { error: true, message: "Failed to start purchase", redirectUrl: null, formFields: null }
+    return { error: true, message: "Failed to start purchase", redirectUrl: null, formFields: null, qr: null }
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!
@@ -64,9 +65,21 @@ export async function initiatePurchase({
   }
 
   if (result.type === "redirect") {
-    return { error: false, message: "", redirectUrl: result.url, formFields: result.formFields ?? null }
+    return { error: false, message: "", redirectUrl: result.url, formFields: result.formFields ?? null, qr: null }
   }
-  return { error: true, message: "Unsupported result type for this gateway", redirectUrl: null, formFields: null }
+
+  if (result.type === "qr") {
+    await updatePurchase(purchase.id, { expiresAt: result.expiresAt })
+    return {
+      error: false,
+      message: "",
+      redirectUrl: null,
+      formFields: null,
+      qr: { qrString: result.qrString, expiresAt: result.expiresAt, purchaseId: purchase.id },
+    }
+  }
+
+  return { error: true, message: "Unsupported result type for this gateway", redirectUrl: null, formFields: null, qr: null }
 }
 
 export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
@@ -81,9 +94,6 @@ export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
   })
   if (!verification.verified) return { error: true, message: "Payment could not be verified" }
 
-  // Wrap in a transaction — access grant and ledger writes must succeed or
-  // fail together. A user who paid but got no course access (or vice versa)
-  // is exactly the kind of bug that's expensive to untangle after the fact.
   const result = await db.transaction(async trx => {
     const completed = await markPurchaseCompleted(
       {
@@ -93,7 +103,7 @@ export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
       },
       trx
     )
-    if (completed == null) return null // already processed by a concurrent/duplicate call
+    if (completed == null) return null
 
     const courseProducts = await trx.query.CourseProductTable.findMany({
       where: eq(CourseProductTable.productId, completed.productId),
@@ -103,8 +113,6 @@ export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
 
     await addUserCourseAccess({ userId: completed.userId, courseIds }, trx)
 
-    // Even split across bundled courses — confirm this is actually your
-    // rule (see flag below) before this touches a real payment
     const splitAmountPaisa = Math.floor(completed.pricePaidInPaisa / courseProducts.length)
     for (const cp of courseProducts) {
       await createLedgerEntry(
@@ -126,7 +134,6 @@ export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
   revalidateProductCache(result.productId)
   return { error: false, message: "Purchase confirmed" }
 }
-
 
 export async function revokeAccess(purchaseId: string) {
   const user = await getCurrentUser()
