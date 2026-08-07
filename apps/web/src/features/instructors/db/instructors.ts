@@ -3,7 +3,7 @@ import { InstructorTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { revalidateInstructorCache } from "./cache/instructors";
 import { CourseTable, CourseProductTable, ProductTable } from "@/drizzle/schema"
-import { and, exists } from "drizzle-orm"
+import { and } from "drizzle-orm"
 
 export async function getInstructorByUserId(userId: string) {
   "use cache";
@@ -25,17 +25,15 @@ export async function upsertInstructor(
 ) {
   const [instructor] = await db
     .insert(InstructorTable)
-    .values({ userId, ...data }) // isVerified defaults false, untouched
+    .values({ userId, ...data })
     .onConflictDoUpdate({
       target: InstructorTable.userId,
-      set: { ...data, updatedAt: new Date() }, // does NOT touch isVerified
+      set: { ...data, updatedAt: new Date() },
     })
     .returning();
-
   if (!instructor) {
     throw new Error("Failed to save instructor profile");
   }
-
   revalidateInstructorCache({ id: instructor.id, userId: instructor.userId });
   return instructor;
 }
@@ -46,27 +44,24 @@ export async function setInstructorVerified(id: string, isVerified: boolean) {
     .set({ isVerified, updatedAt: new Date() })
     .where(eq(InstructorTable.id, id))
     .returning();
-
   if (!instructor) {
     throw new Error("Instructor not found");
   }
-
   revalidateInstructorCache({ id: instructor.id, userId: instructor.userId });
   return instructor;
 }
 
 export async function getInstructorPublishedCourses(instructorUserId: string) {
-  return db.query.CourseTable.findMany({
-    where: and(
-      eq(CourseTable.authorId, instructorUserId),
-      exists(
-        db
-          .select({ id: CourseProductTable.courseId })
-          .from(CourseProductTable)
-          .innerJoin(ProductTable, eq(ProductTable.id, CourseProductTable.productId))
-          .where(and(eq(CourseProductTable.courseId, CourseTable.id), eq(ProductTable.status, "public")))
-      )
-    ),
-    columns: { id: true, name: true, description: true },
-  })
+  const rows = await db
+    .selectDistinct({
+      id: CourseTable.id,
+      name: CourseTable.name,
+      description: CourseTable.description,
+    })
+    .from(CourseTable)
+    .innerJoin(CourseProductTable, eq(CourseProductTable.courseId, CourseTable.id))
+    .innerJoin(ProductTable, eq(ProductTable.id, CourseProductTable.productId))
+    .where(and(eq(CourseTable.authorId, instructorUserId), eq(ProductTable.status, "public")))
+
+  return rows
 }
