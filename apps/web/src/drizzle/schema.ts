@@ -9,5 +9,5 @@ export * from "./schema/userCourseAccess";
 export * from "./schema/userLessonComplete";
 export * from "./schema/instructor";
 export * from "./schema/certificate";
-export * from "./schema/payout"
-export * from "./schema/ledgerEntry"
+export * from "./schema/payout";
+export * from "./schema/ledgerEntry";

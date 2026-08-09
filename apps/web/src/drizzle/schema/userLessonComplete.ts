@@ -1,8 +1,8 @@
-import { pgTable, primaryKey, uuid } from "drizzle-orm/pg-core"
-import { createdAt, updatedAt } from "../schemaHelpers"
-import { relations } from "drizzle-orm"
-import { UserTable } from "./user"
-import { LessonTable } from "./lesson"
+import { pgTable, primaryKey, uuid } from "drizzle-orm/pg-core";
+import { createdAt, updatedAt } from "../schemaHelpers";
+import { relations } from "drizzle-orm";
+import { UserTable } from "./user";
+import { LessonTable } from "./lesson";
 
 export const UserLessonCompleteTable = pgTable(
   "user_lesson_complete",
@@ -16,8 +16,8 @@ export const UserLessonCompleteTable = pgTable(
     createdAt,
     updatedAt,
   },
-  t => [primaryKey({ columns: [t.userId, t.lessonId] })]
-)
+  (t) => [primaryKey({ columns: [t.userId, t.lessonId] })],
+);
 
 export const UserLessonCompleteRelationships = relations(
   UserLessonCompleteTable,
@@ -30,5 +30,5 @@ export const UserLessonCompleteRelationships = relations(
       fields: [UserLessonCompleteTable.lessonId],
       references: [LessonTable.id],
     }),
-  })
-)
+  }),
+);

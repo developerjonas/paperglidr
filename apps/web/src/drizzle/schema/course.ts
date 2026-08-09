@@ -1,10 +1,10 @@
-import { relations } from "drizzle-orm"
-import { pgTable, text, uuid } from "drizzle-orm/pg-core"
-import { createdAt, id, updatedAt } from "../schemaHelpers"
-import { CourseProductTable } from "./courseProduct"
-import { UserCourseAccessTable } from "./userCourseAccess"
-import { CourseSectionTable } from "./courseSection"
-import { UserTable } from "./user"
+import { relations } from "drizzle-orm";
+import { pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { createdAt, id, updatedAt } from "../schemaHelpers";
+import { CourseProductTable } from "./courseProduct";
+import { UserCourseAccessTable } from "./userCourseAccess";
+import { CourseSectionTable } from "./courseSection";
+import { UserTable } from "./user";
 
 export const CourseTable = pgTable("courses", {
   id,
@@ -15,7 +15,7 @@ export const CourseTable = pgTable("courses", {
     .references(() => UserTable.id, { onDelete: "cascade" }),
   createdAt,
   updatedAt,
-})
+});
 
 export const CourseRelationships = relations(CourseTable, ({ one, many }) => ({
   author: one(UserTable, {
@@ -25,4 +25,4 @@ export const CourseRelationships = relations(CourseTable, ({ one, many }) => ({
   courseProducts: many(CourseProductTable),
   userCourseAccesses: many(UserCourseAccessTable),
   courseSections: many(CourseSectionTable),
-}))
+}));

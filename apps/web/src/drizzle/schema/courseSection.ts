@@ -1,15 +1,15 @@
-import { integer, pgEnum, pgTable, text, uuid } from "drizzle-orm/pg-core"
-import { createdAt, id, updatedAt } from "../schemaHelpers"
-import { CourseTable } from "./course"
-import { relations } from "drizzle-orm"
-import { LessonTable } from "./lesson"
+import { integer, pgEnum, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { createdAt, id, updatedAt } from "../schemaHelpers";
+import { CourseTable } from "./course";
+import { relations } from "drizzle-orm";
+import { LessonTable } from "./lesson";
 
-export const courseSectionStatuses = ["public", "private"] as const
-export type CourseSectionStatus = (typeof courseSectionStatuses)[number]
+export const courseSectionStatuses = ["public", "private"] as const;
+export type CourseSectionStatus = (typeof courseSectionStatuses)[number];
 export const courseSectionStatusEnum = pgEnum(
   "course_section_status",
-  courseSectionStatuses
-)
+  courseSectionStatuses,
+);
 
 export const CourseSectionTable = pgTable("course_sections", {
   id,
@@ -21,7 +21,7 @@ export const CourseSectionTable = pgTable("course_sections", {
     .references(() => CourseTable.id, { onDelete: "cascade" }),
   createdAt,
   updatedAt,
-})
+});
 
 export const CourseSectionRelationships = relations(
   CourseSectionTable,
@@ -31,5 +31,5 @@ export const CourseSectionRelationships = relations(
       references: [CourseTable.id],
     }),
     lessons: many(LessonTable),
-  })
-)
+  }),
+);

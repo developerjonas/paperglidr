@@ -18,9 +18,12 @@ export const InstructorTable = pgTable("instructors", {
   updatedAt,
 });
 
-export const InstructorRelationships = relations(InstructorTable, ({ one }) => ({
-  user: one(UserTable, {
-    fields: [InstructorTable.userId],
-    references: [UserTable.id],
+export const InstructorRelationships = relations(
+  InstructorTable,
+  ({ one }) => ({
+    user: one(UserTable, {
+      fields: [InstructorTable.userId],
+      references: [UserTable.id],
+    }),
   }),
-}));
+);

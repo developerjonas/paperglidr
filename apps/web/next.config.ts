@@ -1,4 +1,4 @@
-import type { NextConfig } from "next"
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -8,17 +8,17 @@ const nextConfig: NextConfig = {
     useCache: true,
   },
   images: {
-      remotePatterns: [
-        {
-          protocol: "https",
-          hostname: "www.lifewire.com",
-        },
-        {
-          protocol: "https",
-          hostname: "**",
-        },
-      ],
-    },
-}
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "www.lifewire.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
+};
 
-export default nextConfig
+export default nextConfig;
