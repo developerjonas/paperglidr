@@ -6,7 +6,11 @@ import {
   type RequestLessonAssetUploadInput,
 } from "../schemas/lessonAssets";
 import { canEditLessonAssets } from "../permissions/lessonAssets";
-import { insertLessonAsset, deleteLessonAsset } from "../db/lessonAssets";
+import {
+  insertLessonAsset,
+  deleteLessonAsset,
+  getLessonAssetsForLesson,
+} from "../db/lessonAssets";
 import { buildStorageKey, getUploadUrl } from "@/services/storage/r2";
 
 /**
@@ -62,4 +66,13 @@ export async function requestLessonAssetUploadUrl(
 export async function removeLessonAsset(assetId: string, lessonId: string) {
   await canEditLessonAssets(lessonId); // throws if unauthorized
   return deleteLessonAsset(assetId);
+}
+
+/**
+ * Powers the lesson editor's asset list — same permission gate as
+ * upload/remove since instructors editing a lesson should see its assets.
+ */
+export async function listLessonAssetsForEditor(lessonId: string) {
+  await canEditLessonAssets(lessonId); // throws if unauthorized
+  return getLessonAssetsForLesson(lessonId);
 }

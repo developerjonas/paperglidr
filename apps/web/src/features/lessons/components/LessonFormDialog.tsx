@@ -1,5 +1,4 @@
 "use client"
-
 import {
   Dialog,
   DialogHeader,
@@ -9,7 +8,6 @@ import {
 import { LessonStatus } from "@/drizzle/schema"
 import { ReactNode, useState } from "react"
 import { LessonForm } from "./LessonForm"
-
 export function LessonFormDialog({
   sections,
   defaultSectionId,
@@ -23,13 +21,11 @@ export function LessonFormDialog({
     id: string
     name: string
     status: LessonStatus
-    youtubeVideoId: string
     description: string | null
     sectionId: string
   }
 }) {
   const [isOpen, setIsOpen] = useState(false)
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {children}
@@ -42,7 +38,7 @@ export function LessonFormDialog({
         <div className="mt-4">
           <LessonForm
             sections={sections}
-            onSuccess={() => setIsOpen(false)}
+            onSuccessAction={() => setIsOpen(false)}
             lesson={lesson}
             defaultSectionId={defaultSectionId}
           />

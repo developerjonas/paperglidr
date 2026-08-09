@@ -1,5 +1,4 @@
 "use server"
-
 import { z } from "zod"
 import { lessonSchema } from "../schemas/lessons"
 import { getCurrentUser } from "@/services/clerk"
@@ -15,49 +14,40 @@ import {
   deleteLesson as deleteLessonDb,
   updateLessonOrders as updateLessonOrdersDb,
 } from "../db/lessons"
-
 export async function createLesson(unsafeData: z.infer<typeof lessonSchema>) {
   const { success, data } = lessonSchema.safeParse(unsafeData)
-
   if (
     !success ||
     !(await canCreateLessons(await getCurrentUser(), data.sectionId))
   ) {
     return { error: true, message: "There was an error creating your lesson" }
   }
-
   const order = await getNextCourseLessonOrder(data.sectionId)
-
-  await insertLesson({ ...data, order })
-
-  return { error: false, message: "Successfully created your lesson" }
+  const newLesson = await insertLesson({ ...data, order })
+  return {
+    error: false,
+    message: "Successfully created your lesson",
+    id: newLesson.id,
+  }
 }
-
 export async function updateLesson(
   id: string,
   unsafeData: z.infer<typeof lessonSchema>
 ) {
   const { success, data } = lessonSchema.safeParse(unsafeData)
-
   if (!success || !(await canUpdateLessons(await getCurrentUser(), id))) {
     return { error: true, message: "There was an error updating your lesson" }
   }
-
   await updateLessonDb(id, data)
-
   return { error: false, message: "Successfully updated your lesson" }
 }
-
 export async function deleteLesson(id: string) {
   if (!(await canDeleteLessons(await getCurrentUser(), id))) {
     return { error: true, message: "Error deleting your lesson" }
   }
-
   await deleteLessonDb(id)
-
   return { error: false, message: "Successfully deleted your lesson" }
 }
-
 export async function updateLessonOrders(lessonIds: string[]) {
   const firstId = lessonIds[0]
   if (
@@ -67,8 +57,6 @@ export async function updateLessonOrders(lessonIds: string[]) {
   ) {
     return { error: true, message: "Error reordering your lessons" }
   }
-
   await updateLessonOrdersDb(lessonIds)
-
   return { error: false, message: "Successfully reordered your lessons" }
 }
