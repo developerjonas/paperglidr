@@ -11,7 +11,8 @@ type CACHE_TAG =
   | "certificates"
   | "ledgerEntries"
   | "payouts"
-  | "lessonAssets";
+  | "lessonAssets"
+  | "lessonAssetsByLesson";
 
 export function getGlobalTag(tag: CACHE_TAG) {
   return `global:${tag}` as const;
