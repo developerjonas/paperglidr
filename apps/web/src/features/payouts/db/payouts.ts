@@ -93,3 +93,16 @@ export async function getPendingPayouts() {
     with: { instructor: true },
   })
 }
+
+
+/**
+ * Powers the instructor's own payout history on /teach/payouts — all of
+ * their requests regardless of status, newest first so they see their
+ * latest request at the top.
+ */
+export async function getInstructorPayoutHistory(instructorId: string) {
+  return db.query.PayoutTable.findMany({
+    where: eq(PayoutTable.instructorId, instructorId),
+    orderBy: (payouts, { desc }) => [desc(payouts.createdAt)],
+  })
+}
