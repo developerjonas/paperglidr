@@ -14,3 +14,7 @@ export * from "./schema/ledgerEntry";
 export * from "./schema/lessonAsset";
 export * from "./schema/invoice";
 export * from "./schema/relations"
+export * from "./schema/report"
+export * from "./schema/refundRequest"
+export * from "./schema/discountCode"
+export * from "./schema/discountRedemption"
