@@ -76,3 +76,25 @@ export async function getDownloadUrl(opts: {
     expiresIn: opts.expirySeconds,
   });
 }
+
+/**
+ * Server-side direct upload — for files generated in-process (e.g. invoice
+ * PDFs) where there's no browser client to hand a presigned URL to. Unlike
+ * getUploadUrl, this actually sends the bytes now, using the credentials
+ * this module already holds.
+ */
+export async function putObject(opts: {
+  storageKey: string
+  body: Buffer
+  contentType: string
+}) {
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: opts.storageKey,
+      Body: opts.body,
+      ContentType: opts.contentType,
+    })
+  )
+  return opts.storageKey
+}

@@ -66,7 +66,7 @@ async function SuspendedComponent({
     redirect("/courses")
   }
 
-  const isFree = product.priceInDollars === 0
+  const isFree = product.priceInRupees === 0
 
   return (
     <div className="container my-6">
@@ -77,7 +77,7 @@ async function SuspendedComponent({
         </CardHeader>
         <CardContent>
           <p className="text-lg font-semibold">
-            {isFree ? "Free" : formatPrice(product.priceInDollars)}
+            {isFree ? "Free" : formatPrice(product.priceInRupees)}
           </p>
         </CardContent>
         <CardFooter>
@@ -157,7 +157,7 @@ async function getPublicProduct(id: string) {
       id: true,
       imageUrl: true,
       description: true,
-      priceInDollars: true, // added — page couldn't tell free vs paid without this
+      priceInRupees: true, // added — page couldn't tell free vs paid without this
     },
     where: and(eq(ProductTable.id, id), wherePublicProducts),
   })

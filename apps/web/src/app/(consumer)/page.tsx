@@ -27,7 +27,7 @@ const getPublicProducts = unstable_cache(
         id: true,
         name: true,
         description: true,
-        priceInDollars: true,
+        priceInRupees: true,
         imageUrl: true,
       },
       where: wherePublicProducts,

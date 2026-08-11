@@ -13,7 +13,7 @@ export const ProductTable = pgTable("products", {
   name: text().notNull(),
   description: text().notNull(),
   imageUrl: text().notNull(),
-  priceInDollars: integer().notNull(),
+  priceInRupees: integer().notNull(),
   status: productStatusEnum().notNull().default("private"),
 
   // Links product to the user who created it

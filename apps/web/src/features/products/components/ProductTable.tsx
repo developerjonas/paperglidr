@@ -24,7 +24,7 @@ export function ProductTable({
     name: string
     description: string
     imageUrl: string
-    priceInDollars: number
+    priceInRupees: number
     status: ProductStatus
     coursesCount: number
     customersCount: number
@@ -64,7 +64,7 @@ export function ProductTable({
                       singular: "course",
                       plural: "courses",
                     })}{" "}
-                    • {formatPrice(product.priceInDollars)}
+                    • {formatPrice(product.priceInRupees)}
                   </div>
                 </div>
               </div>

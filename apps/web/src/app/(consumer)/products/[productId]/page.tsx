@@ -193,11 +193,11 @@ export default async function ProductPage({
               <Suspense
                 fallback={
                   <div className="text-2xl font-bold">
-                    {formatPrice(product.priceInDollars)}
+                    {formatPrice(product.priceInRupees)}
                   </div>
                 }
               >
-                <Price price={product.priceInDollars} />
+                <Price price={product.priceInRupees} />
               </Suspense>
 
               <Suspense fallback={<SkeletonButton className="h-12 w-full" />}>
@@ -278,7 +278,7 @@ async function getPublicProduct(id: string) {
       id: true,
       name: true,
       description: true,
-      priceInDollars: true,
+      priceInRupees: true,
       imageUrl: true,
     },
     where: and(eq(ProductTable.id, id), wherePublicProducts),

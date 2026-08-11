@@ -51,7 +51,7 @@ async function getProduct(id: string) {
       id: true,
       name: true,
       description: true,
-      priceInDollars: true,
+      priceInRupees: true,
       status: true,
       imageUrl: true,
     },

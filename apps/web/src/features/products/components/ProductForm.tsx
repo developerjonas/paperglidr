@@ -36,7 +36,7 @@ export function ProductForm({
     id: string
     name: string
     description: string
-    priceInDollars: number
+    priceInRupees: number
     imageUrl: string
     status: ProductStatus
     courseIds: string[]
@@ -53,7 +53,7 @@ export function ProductForm({
       description: "",
       courseIds: [],
       imageUrl: "",
-      priceInDollars: 0,
+      priceInRupees: 0,
       status: "private",
     },
   })
@@ -90,7 +90,7 @@ export function ProductForm({
           />
           <FormField
             control={form.control}
-            name="priceInDollars"
+            name="priceInRupees"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>

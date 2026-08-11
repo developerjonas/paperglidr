@@ -17,13 +17,13 @@ export function ProductCard({
   id,
   imageUrl,
   name,
-  priceInDollars,
+  priceInRupees,
   description,
 }: {
   id: string
   imageUrl: string
   name: string
-  priceInDollars: number
+  priceInRupees: number
   description: string
 }) {
   return (
@@ -33,8 +33,8 @@ export function ProductCard({
       </div>
       <CardHeader className="space-y-0">
         <CardDescription>
-          <Suspense fallback={formatPrice(priceInDollars)}>
-            <Price price={priceInDollars} />
+          <Suspense fallback={formatPrice(priceInRupees)}>
+            <Price price={priceInRupees} />
           </Suspense>
         </CardDescription>
         <CardTitle className="text-xl">{name}</CardTitle>
