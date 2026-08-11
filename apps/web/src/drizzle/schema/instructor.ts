@@ -5,7 +5,7 @@ import { UserTable } from "./user";
 
 export const InstructorTable = pgTable("instructors", {
   id: uuid().primaryKey().defaultRandom(),
-  userId: text()
+  userId: uuid()
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" })
     .unique(),

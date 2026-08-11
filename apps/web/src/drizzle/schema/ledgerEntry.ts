@@ -18,40 +18,31 @@ export const ledgerEntryTypeEnum = pgEnum(
   ledgerEntryTypes,
 );
 
+// drizzle/schema/ledgerEntry.ts
+export const revenueSourceTypes = ["instructor_link", "platform"] as const;
+export type RevenueSourceType = (typeof revenueSourceTypes)[number];
+export const revenueSourceEnum = pgEnum("revenue_source", revenueSourceTypes);
+
 export const LedgerEntryTable = pgTable(
   "ledger_entries",
   {
     id,
-    purchaseId: uuid()
-      .notNull()
-      .references(() => PurchaseTable.id, { onDelete: "restrict" }),
-    courseId: uuid()
-      .notNull()
-      .references(() => CourseTable.id, { onDelete: "restrict" }),
-    instructorId: uuid()
-      .notNull()
-      .references(() => UserTable.id, { onDelete: "restrict" }),
-
+    purchaseId: uuid().notNull().references(() => PurchaseTable.id, { onDelete: "restrict" }),
+    courseId: uuid().notNull().references(() => CourseTable.id, { onDelete: "restrict" }),
+    instructorId: uuid().notNull().references(() => UserTable.id, { onDelete: "restrict" }),
     entryType: ledgerEntryTypeEnum().notNull().default("sale"),
-
-    // For a "sale" entry these are positive. For a "refund" entry these are
-    // the SAME magnitude but negative — summing all entries for an
-    // instructor gives their true net balance without ever editing history.
+    // Which rate bucket applied to this sale — kept even if the default
+    // rates change later, so historical entries never silently recompute.
+    revenueSource: revenueSourceEnum().notNull(),
+    platformFeeRateBps: integer().notNull(), // 3000 = 30%, 5000 = 50%
     grossAmountPaisa: integer().notNull(),
     platformFeePaisa: integer().notNull(),
     creatorEarningsPaisa: integer().notNull(),
-
     createdAt,
   },
   (t) => [
-    // Was unique on purchaseId alone — that blocked a refund's reversing
-    // entry from ever being inserted. Now one "sale" and at most one
-    // "refund" per (purchase, course) pair — still guards against
-    // duplicate ledger writes, just no longer blocks refunds.
     uniqueIndex("purchase_course_entry_type_unique_idx").on(
-      t.purchaseId,
-      t.courseId,
-      t.entryType,
+      t.purchaseId, t.courseId, t.entryType,
     ),
   ],
 );

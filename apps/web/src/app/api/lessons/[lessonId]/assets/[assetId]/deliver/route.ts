@@ -14,28 +14,24 @@ const PDF_DOWNLOAD_EXPIRY_SECONDS = 60 * 15;
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { lessonId: string; assetId: string } }
+  { params }: { params: Promise<{ lessonId: string; assetId: string }> }
 ) {
+  const { lessonId, assetId } = await params;
+
   const user = await getCurrentUser();
-  // getCurrentUser's return type has userId as string | undefined — narrow
-  // it explicitly, since drizzle's eq() rejects `undefined` even though
-  // `!user` alone doesn't prove userId is set.
   if (!user || !user.userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const userId = user.userId;
 
   const lesson = await db.query.LessonTable.findFirst({
-    where: eq(LessonTable.id, params.lessonId),
+    where: eq(LessonTable.id, lessonId),
     with: { section: { with: { course: true } } },
   });
   if (!lesson) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
   }
 
-  // features/courses/db/userCourseAcccess.ts only has mutations
-  // (addUserCourseAccess / revokeUserCourseAccess), no existing read check —
-  // so we query the table directly here, matching that file's drizzle style.
   const access = await db.query.UserCourseAccessTable.findFirst({
     where: and(
       eq(UserCourseAccessTable.userId, userId),
@@ -46,8 +42,8 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const asset = await getLessonAsset(params.assetId);
-  if (!asset || asset.lessonId !== params.lessonId) {
+  const asset = await getLessonAsset(assetId);
+  if (!asset || asset.lessonId !== lessonId) {
     return NextResponse.json({ error: "Asset not found" }, { status: 404 });
   }
 

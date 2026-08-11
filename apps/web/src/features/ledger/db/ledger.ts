@@ -1,9 +1,13 @@
-import { db } from "@/drizzle/db"
-import { LedgerEntryTable } from "@/drizzle/schema"
-import { eq, sum } from "drizzle-orm"
-import { revalidateLedgerEntryCache } from "./cache"
+import { db } from "@/drizzle/db";
+import { LedgerEntryTable } from "@/drizzle/schema";
+import { eq, sum } from "drizzle-orm";
+import { revalidateLedgerEntryCache } from "./cache";
 
-const PLATFORM_COMMISSION_RATE = 0.15
+// features/ledger/db/ledger.ts
+import {
+  PLATFORM_FEE_RATE_BPS,
+  resolveRevenueSource,
+} from "@/lib/comissionRate";
 
 export async function createLedgerEntry(
   {
@@ -11,11 +15,25 @@ export async function createLedgerEntry(
     courseId,
     instructorId,
     grossAmountPaisa,
-  }: { purchaseId: string; courseId: string; instructorId: string; grossAmountPaisa: number },
-  trx: Omit<typeof db, "$client"> = db
+    referredByInstructorId,
+  }: {
+    purchaseId: string;
+    courseId: string;
+    instructorId: string;
+    grossAmountPaisa: number;
+    referredByInstructorId: string | null;
+  },
+  trx: Omit<typeof db, "$client"> = db,
 ) {
-  const platformFeePaisa = Math.round(grossAmountPaisa * PLATFORM_COMMISSION_RATE)
-  const creatorEarningsPaisa = grossAmountPaisa - platformFeePaisa
+  const revenueSource = resolveRevenueSource(
+    referredByInstructorId,
+    instructorId,
+  );
+  const platformFeeRateBps = PLATFORM_FEE_RATE_BPS[revenueSource];
+  const platformFeePaisa = Math.round(
+    (grossAmountPaisa * platformFeeRateBps) / 10000,
+  );
+  const creatorEarningsPaisa = grossAmountPaisa - platformFeePaisa;
 
   const [entry] = await trx
     .insert(LedgerEntryTable)
@@ -24,15 +42,23 @@ export async function createLedgerEntry(
       courseId,
       instructorId,
       entryType: "sale",
+      revenueSource,
+      platformFeeRateBps,
       grossAmountPaisa,
       platformFeePaisa,
       creatorEarningsPaisa,
     })
-    .onConflictDoNothing({ target: [LedgerEntryTable.purchaseId, LedgerEntryTable.courseId, LedgerEntryTable.entryType] })
-    .returning()
+    .onConflictDoNothing({
+      target: [
+        LedgerEntryTable.purchaseId,
+        LedgerEntryTable.courseId,
+        LedgerEntryTable.entryType,
+      ],
+    })
+    .returning();
 
-  if (entry != null) revalidateLedgerEntryCache({ id: entry.id, instructorId })
-  return entry
+  if (entry != null) revalidateLedgerEntryCache({ id: entry.id, instructorId });
+  return entry;
 }
 
 /**
@@ -43,13 +69,14 @@ export async function createLedgerEntry(
  */
 export async function reverseLedgerEntriesForPurchase(
   purchaseId: string,
-  trx: Omit<typeof db, "$client"> = db
+  trx: Omit<typeof db, "$client"> = db,
 ) {
   const saleEntries = await trx.query.LedgerEntryTable.findMany({
-    where: (entries, { and, eq }) => and(eq(entries.purchaseId, purchaseId), eq(entries.entryType, "sale")),
-  })
+    where: (entries, { and, eq }) =>
+      and(eq(entries.purchaseId, purchaseId), eq(entries.entryType, "sale")),
+  });
 
-  const reversals = []
+  const reversals = [];
   for (const sale of saleEntries) {
     const [reversal] = await trx
       .insert(LedgerEntryTable)
@@ -58,25 +85,36 @@ export async function reverseLedgerEntriesForPurchase(
         courseId: sale.courseId,
         instructorId: sale.instructorId,
         entryType: "refund",
+        revenueSource: sale.revenueSource,
+        platformFeeRateBps: sale.platformFeeRateBps,
         grossAmountPaisa: -sale.grossAmountPaisa,
         platformFeePaisa: -sale.platformFeePaisa,
         creatorEarningsPaisa: -sale.creatorEarningsPaisa,
       })
-      .onConflictDoNothing({ target: [LedgerEntryTable.purchaseId, LedgerEntryTable.courseId, LedgerEntryTable.entryType] })
-      .returning()
+      .onConflictDoNothing({
+        target: [
+          LedgerEntryTable.purchaseId,
+          LedgerEntryTable.courseId,
+          LedgerEntryTable.entryType,
+        ],
+      })
+      .returning();
     if (reversal != null) {
-      revalidateLedgerEntryCache({ id: reversal.id, instructorId: reversal.instructorId })
-      reversals.push(reversal)
+      revalidateLedgerEntryCache({
+        id: reversal.id,
+        instructorId: reversal.instructorId,
+      });
+      reversals.push(reversal);
     }
   }
-  return reversals
+  return reversals;
 }
 
 export async function getInstructorLedgerEntries(instructorId: string) {
   return db.query.LedgerEntryTable.findMany({
     where: eq(LedgerEntryTable.instructorId, instructorId),
     orderBy: (entries, { desc }) => desc(entries.createdAt),
-  })
+  });
 }
 
 // Unchanged in logic — summing ALL entries (sale + refund) now correctly
@@ -85,6 +123,6 @@ export async function getInstructorTotalEarnings(instructorId: string) {
   const [result] = await db
     .select({ total: sum(LedgerEntryTable.creatorEarningsPaisa) })
     .from(LedgerEntryTable)
-    .where(eq(LedgerEntryTable.instructorId, instructorId))
-  return Number(result?.total ?? 0)
+    .where(eq(LedgerEntryTable.instructorId, instructorId));
+  return Number(result?.total ?? 0);
 }

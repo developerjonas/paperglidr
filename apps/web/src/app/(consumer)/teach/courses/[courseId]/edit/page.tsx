@@ -128,7 +128,6 @@ async function getCourse(id: string) {
               name: true,
               status: true,
               description: true,
-              youtubeVideoId: true,
               sectionId: true,
               order: true,
             },

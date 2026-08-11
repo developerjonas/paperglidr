@@ -22,7 +22,6 @@ export function SortableLessonList({
     id: string
     name: string
     status: LessonStatus
-    youtubeVideoId: string
     description: string | null
     sectionId: string
   }[]

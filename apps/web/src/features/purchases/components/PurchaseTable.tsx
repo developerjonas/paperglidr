@@ -1,10 +1,10 @@
-import { ActionButton } from "@/components/ActionButton"
+import { ActionButton } from "@/components/ActionButton";
 import {
   SkeletonArray,
   SkeletonButton,
   SkeletonText,
-} from "@/components/Skeleton"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/Skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,27 +12,27 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { formatDate, formatPlural, formatPrice } from "@/lib/formatters"
-import Image from "next/image"
-import { revokeAccess } from "../actions/purchases"
+} from "@/components/ui/table";
+import { formatDate, formatPlural, formatPrice } from "@/lib/formatters";
+import Image from "next/image";
+import { revokeAccess } from "../actions/purchases";
 
 export function PurchaseTable({
   purchases,
 }: {
   purchases: {
-    id: string
-    pricePaidInPaisa: number
-    createdAt: Date
-    refundedAt: Date | null
+    id: string;
+    pricePaidInPaisa: number;
+    createdAt: Date;
+    refundedAt: Date | null;
     productDetails: {
-      name: string
-      imageUrl: string
-    }
+      name: string;
+      imageUrl: string;
+    };
     user: {
-      name: string
-    }
-  }[]
+      name: string;
+    };
+  }[];
 }) {
   return (
     <Table>
@@ -51,7 +51,7 @@ export function PurchaseTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {purchases.map(purchase => (
+        {purchases.map((purchase) => (
           <TableRow key={purchase.id}>
             <TableCell>
               <div className="flex items-center gap-4">
@@ -83,7 +83,7 @@ export function PurchaseTable({
             <TableCell>
               {purchase.refundedAt == null && purchase.pricePaidInPaisa > 0 && (
                 <ActionButton
-                  action={revokeAccess.bind(null, purchase.id)}
+                  action={revokeAccess.bind(null, { purchaseId: purchase.id })}
                   variant="destructiveOutline"
                   requireAreYouSure
                 >
@@ -95,7 +95,7 @@ export function PurchaseTable({
         ))}
       </TableBody>
     </Table>
-  )
+  );
 }
 
 export function UserPurchaseTableSkeleton() {
@@ -130,5 +130,5 @@ export function UserPurchaseTableSkeleton() {
         </SkeletonArray>
       </TableBody>
     </Table>
-  )
+  );
 }

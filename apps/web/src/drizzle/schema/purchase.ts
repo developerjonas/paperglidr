@@ -77,6 +77,10 @@ export const PurchaseTable = pgTable(
     // Null for redirect-based gateways where the provider owns the timeout.
     expiresAt: timestamp({ withTimezone: true }),
 
+    referredByInstructorId: uuid().references(() => UserTable.id, {
+      onDelete: "set null",
+    }),
+
     // Prevents a double-click or a retried request from creating two purchase
     // rows for the same checkout attempt before the gateway even responds.
     idempotencyKey: text().notNull().unique(),

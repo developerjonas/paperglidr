@@ -12,4 +12,5 @@ export * from "./schema/certificate";
 export * from "./schema/payout";
 export * from "./schema/ledgerEntry";
 export * from "./schema/lessonAsset";
-export * from "./schema/invoice"
+export * from "./schema/invoice";
+export * from "./schema/relations"
