@@ -37,8 +37,7 @@ export const purchaseStatusEnum = pgEnum("purchase_status", purchaseStatuses);
 export const PurchaseTable = pgTable(
   "purchases",
   {
-    id,
-
+    id: id(),
     // Renamed from pricePaidInCents — NPR's subunit is paisa, same concept as cents.
     // Flagging this as a breaking rename; see note below.
     pricePaidInPaisa: integer().notNull(),

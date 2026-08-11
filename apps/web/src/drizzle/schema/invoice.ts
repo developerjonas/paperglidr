@@ -17,7 +17,7 @@ export type InvoiceStatus = (typeof invoiceStatuses)[number];
 export const invoiceStatusEnum = pgEnum("invoice_status", invoiceStatuses);
 
 export const InvoiceTable = pgTable("invoices", {
-  id,
+  id: id(),
   // e.g. "INV-2082-83-000045" — human-facing, sequential, never reused
   invoiceNumber: text().notNull().unique(),
   fiscalYear: text().notNull(),

@@ -15,7 +15,7 @@ export type PayoutStatus = (typeof payoutStatuses)[number];
 export const payoutStatusEnum = pgEnum("payout_status", payoutStatuses);
 
 export const PayoutTable = pgTable("payouts", {
-  id,
+  id: id(),
   instructorId: uuid()
     .notNull()
     .references(() => UserTable.id, { onDelete: "restrict" }),

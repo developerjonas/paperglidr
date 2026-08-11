@@ -33,7 +33,7 @@ export type AssetRole = (typeof assetRoles)[number];
 export const assetRoleEnum = pgEnum("asset_role", assetRoles);
 
 export const LessonAssetTable = pgTable("lesson_assets", {
-  id,
+  id: id(),
   lessonId: uuid()
     .notNull()
     .references(() => LessonTable.id, { onDelete: "cascade" }),

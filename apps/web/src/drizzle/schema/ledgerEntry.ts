@@ -18,7 +18,6 @@ export const ledgerEntryTypeEnum = pgEnum(
   ledgerEntryTypes,
 );
 
-// drizzle/schema/ledgerEntry.ts
 export const revenueSourceTypes = ["instructor_link", "platform"] as const;
 export type RevenueSourceType = (typeof revenueSourceTypes)[number];
 export const revenueSourceEnum = pgEnum("revenue_source", revenueSourceTypes);
@@ -26,7 +25,7 @@ export const revenueSourceEnum = pgEnum("revenue_source", revenueSourceTypes);
 export const LedgerEntryTable = pgTable(
   "ledger_entries",
   {
-    id,
+    id: id(),
     purchaseId: uuid().notNull().references(() => PurchaseTable.id, { onDelete: "restrict" }),
     courseId: uuid().notNull().references(() => CourseTable.id, { onDelete: "restrict" }),
     instructorId: uuid().notNull().references(() => UserTable.id, { onDelete: "restrict" }),

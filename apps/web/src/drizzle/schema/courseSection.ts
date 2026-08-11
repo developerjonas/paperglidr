@@ -10,7 +10,7 @@ export const courseSectionStatusEnum = pgEnum(
 );
 
 export const CourseSectionTable = pgTable("course_sections", {
-  id,
+  id: id(),
   name: text().notNull(),
   status: courseSectionStatusEnum().notNull().default("private"),
   order: integer().notNull(),

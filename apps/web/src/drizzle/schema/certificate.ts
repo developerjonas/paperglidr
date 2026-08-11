@@ -14,7 +14,7 @@ import { CourseTable } from "./course";
 export const CertificateTable = pgTable(
   "certificates",
   {
-    id,
+    id: id(),
     certificateCode: text().notNull().unique(), // e.g. CERT-8F2A9B11C4
 
     userId: uuid()

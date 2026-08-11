@@ -3,7 +3,7 @@ import { createdAt, id, updatedAt } from "../schemaHelpers";
 import { UserTable } from "./user";
 
 export const CourseTable = pgTable("courses", {
-  id,
+  id: id(),
   name: text().notNull(),
   description: text().notNull(),
   authorId: uuid("author_id")

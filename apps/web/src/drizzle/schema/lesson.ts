@@ -7,7 +7,7 @@ export type LessonStatus = (typeof lessonStatuses)[number];
 export const lessonStatusEnum = pgEnum("lesson_status", lessonStatuses);
 
 export const LessonTable = pgTable("lessons", {
-  id,
+  id: id(),
   name: text().notNull(),
   description: text(),
   order: integer().notNull(),
