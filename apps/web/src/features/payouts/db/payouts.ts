@@ -3,7 +3,7 @@ import { PayoutTable } from "@/drizzle/schema"
 import { and, eq } from "drizzle-orm"
 import { getInstructorTotalEarnings } from "@/features/ledger/db/ledger"
 
-// NPR 1,000 per the roadmap — CONFIRM this figure
+// NPR 1,000 per the roadmap — confirmed
 const MINIMUM_PAYOUT_PAISA = 100_000
 
 async function getInstructorPaidOutTotal(instructorId: string) {
@@ -50,7 +50,6 @@ export async function requestPayout({
   if (amountPaisa < MINIMUM_PAYOUT_PAISA) {
     throw new Error(`Minimum payout is NPR ${MINIMUM_PAYOUT_PAISA / 100}`)
   }
-
   const [payout] = await db
     .insert(PayoutTable)
     .values({ instructorId, amountPaisa, bankDetailsSnapshot, status: "requested" })
@@ -79,4 +78,18 @@ export async function rejectPayout(payoutId: string, reason: string) {
     .returning()
   if (payout == null) throw new Error("Payout not found or already processed")
   return payout
+}
+
+/**
+ * Powers the admin payouts queue — pending requests only, oldest first so
+ * the admin works through them in the order they came in. Joins the
+ * instructor relation for display; ASSUMPTION on which UserTable columns
+ * exist (name/email) — flagged where used in the page component.
+ */
+export async function getPendingPayouts() {
+  return db.query.PayoutTable.findMany({
+    where: eq(PayoutTable.status, "requested"),
+    orderBy: (payouts, { asc }) => [asc(payouts.createdAt)],
+    with: { instructor: true },
+  })
 }

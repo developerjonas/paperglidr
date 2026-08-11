@@ -32,14 +32,12 @@ export async function generateFonepayQr({
   const prn = purchaseId
   const remarks1 = productName.slice(0, 160) // Fonepay's R1 field has a max length
   const remarks2 = "Paperglidr purchase"
-
   const { amount, signature } = buildFonepayQrSignature({
     amountInPaisa,
     prn,
     remarks1,
     remarks2,
   })
-
   const response = await fetch(`${fonepayConfig.dynamicQrUrl}/thirdPartyDynamicQrDownload`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -54,16 +52,13 @@ export async function generateFonepayQr({
       remarks2,
     }),
   })
-
   if (!response.ok) {
     throw new Error(`Fonepay QR generation failed: ${response.status} ${await response.text()}`)
   }
-
   const data = (await response.json()) as FonepayQrDownloadResponse
   if (!data.success || data.qrMessage == null) {
     throw new Error(`Fonepay QR generation rejected: ${data.message ?? "unknown error"}`)
   }
-
   return {
     type: "qr",
     qrString: data.qrMessage,
@@ -74,11 +69,15 @@ export async function generateFonepayQr({
 
 export async function verifyFonepayTransaction({
   prn,
+  expectedAmountInPaisa,
 }: {
   prn: string
+  // Required, not optional — without this, a "success" status on this PRN
+  // was being accepted regardless of what amount actually cleared. This is
+  // the fix for that gap.
+  expectedAmountInPaisa: number
 }): Promise<VerifyPaymentResult> {
   const signature = buildFonepayStatusSignature(prn)
-
   const response = await fetch(`${fonepayConfig.dynamicQrUrl}/thirdPartyDynamicQrGetStatus`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -90,19 +89,35 @@ export async function verifyFonepayTransaction({
       password: fonepayConfig.password,
     }),
   })
-
   if (!response.ok) {
     return { verified: false, status: "failed", gatewayTransactionId: null, amountInPaisa: null, raw: await response.text() }
   }
-
   const data = (await response.json()) as FonepayStatusResponse
-  const isComplete = data.paymentStatus === "success"
+  const statusOk = data.paymentStatus === "success"
+
+  const actualAmountInPaisa =
+    data.amount != null ? Math.round(parseFloat(data.amount) * 100) : null
+
+  // The real fix: statusOk alone used to be treated as verified. Now a
+  // successful status with a mismatched (or missing) amount is explicitly
+  // NOT verified — this is what stops a smaller real payment on this PRN
+  // from being accepted as payment for a larger purchase.
+  const amountOk =
+    actualAmountInPaisa != null && actualAmountInPaisa === expectedAmountInPaisa
+
+  const verified = statusOk && amountOk
 
   return {
-    verified: isComplete,
-    status: isComplete ? "completed" : data.paymentStatus === "pending" ? "pending" : "failed",
+    verified,
+    status: verified
+      ? "completed"
+      : statusOk && !amountOk
+        ? "failed" // status says success but amount doesn't match — treat as failed, not pending
+        : data.paymentStatus === "pending"
+          ? "pending"
+          : "failed",
     gatewayTransactionId: data.prn,
-    amountInPaisa: data.amount != null ? Math.round(parseFloat(data.amount) * 100) : null,
+    amountInPaisa: actualAmountInPaisa,
     raw: data,
   }
 }
@@ -111,8 +126,8 @@ export const fonepayGateway: PaymentGateway = {
   async initiate({ purchaseId, amountInPaisa, productName }) {
     return generateFonepayQr({ purchaseId, amountInPaisa, productName })
   },
-  async verify({ gatewayCheckoutId, gatewayTransactionId }) {
+  async verify({ gatewayCheckoutId, gatewayTransactionId, amountInPaisa }) {
     const prn = gatewayTransactionId ?? gatewayCheckoutId
-    return verifyFonepayTransaction({ prn })
+    return verifyFonepayTransaction({ prn, expectedAmountInPaisa: amountInPaisa })
   },
 }
