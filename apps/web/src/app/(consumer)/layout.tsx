@@ -1,5 +1,6 @@
 import { ReactNode } from "react"
 import { Navbar } from "@/components/Navbar"
+import { Footer } from "@/components/Footer"
 
 export default function ConsumerLayout({
   children,
@@ -8,6 +9,7 @@ export default function ConsumerLayout({
     <>
       <Navbar />
       <main>{children}</main>
+      <Footer />
     </>
   )
 }
