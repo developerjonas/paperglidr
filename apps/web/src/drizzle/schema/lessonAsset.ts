@@ -51,6 +51,8 @@ export const LessonAssetTable = pgTable("lesson_assets", {
 
   downloadable: boolean().notNull().default(false),
 
+  durationSeconds: integer(),
+
   order: integer().notNull().default(0), // ordering among attachments
   createdAt,
   updatedAt,

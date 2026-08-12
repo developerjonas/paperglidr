@@ -1,50 +1,54 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { actionToast } from "@/hooks/use-toast"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { actionToast } from "@/hooks/use-toast";
 import {
   requestLessonAssetUploadUrl,
   removeLessonAsset,
   listLessonAssetsForEditor,
-} from "../actions/lessonAssets"
+} from "../actions/lessonAssets";
 
 // Matches the shape returned by getLessonAssetsForLesson (db/lessonAssets.ts) —
 // keep in sync if that query's columns change.
 type LessonAsset = {
-  id: string
-  type: string
-  provider: string
-  role: "primary" | "attachment"
-  fileName: string | null
-  downloadable: boolean
-}
+  id: string;
+  type: string;
+  provider: string;
+  role: "primary" | "attachment";
+  fileName: string | null;
+  downloadable: boolean;
+};
 
 export function LessonAssetManager({ lessonId }: { lessonId: string }) {
-  const [assets, setAssets] = useState<LessonAsset[]>([])
-  const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
+  const [assets, setAssets] = useState<LessonAsset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   async function refresh() {
-    setLoading(true)
-    const data = await listLessonAssetsForEditor(lessonId)
-    setAssets(data as LessonAsset[])
-    setLoading(false)
+    setLoading(true);
+    const data = await listLessonAssetsForEditor(lessonId);
+    setAssets(data as LessonAsset[]);
+    setLoading(false);
   }
 
   useEffect(() => {
-    refresh()
+    refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonId])
+  }, [lessonId]);
 
   async function handleUpload(
     file: File,
     role: "primary" | "attachment",
-    downloadable: boolean
+    downloadable: boolean,
   ) {
-    setUploading(true)
+    setUploading(true);
     try {
+      const durationSeconds = file.type.startsWith("video/")
+        ? await getVideoDurationSeconds(file)
+        : null;
+
       const { uploadUrl } = await requestLessonAssetUploadUrl({
         lessonId,
         fileName: file.name,
@@ -52,35 +56,40 @@ export function LessonAssetManager({ lessonId }: { lessonId: string }) {
         fileSizeBytes: file.size,
         role,
         downloadable,
-      })
+        durationSeconds, // new field
+      });
+      // ...rest unchanged
 
       const putRes = await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type },
         body: file,
-      })
-      if (!putRes.ok) throw new Error("Upload to storage failed")
+      });
+      if (!putRes.ok) throw new Error("Upload to storage failed");
 
-      actionToast({ actionData: { error: false, message: "Uploaded" } })
-      await refresh()
+      actionToast({ actionData: { error: false, message: "Uploaded" } });
+      await refresh();
     } catch (err) {
       actionToast({
         actionData: {
           error: true,
           message: err instanceof Error ? err.message : "Upload failed",
         },
-      })
+      });
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
   }
 
   async function handleRemove(assetId: string) {
-    const data = await removeLessonAsset(assetId, lessonId)
+    const data = await removeLessonAsset(assetId, lessonId);
     actionToast({
-      actionData: { error: data == null, message: data == null ? "Failed to remove" : "Removed" },
-    })
-    await refresh()
+      actionData: {
+        error: data == null,
+        message: data == null ? "Failed to remove" : "Removed",
+      },
+    });
+    await refresh();
   }
 
   return (
@@ -96,10 +105,12 @@ export function LessonAssetManager({ lessonId }: { lessonId: string }) {
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading assets…</p>
       ) : assets.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No content uploaded yet.</p>
+        <p className="text-sm text-muted-foreground">
+          No content uploaded yet.
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {assets.map(asset => (
+          {assets.map((asset) => (
             <li
               key={asset.id}
               className="flex items-center justify-between text-sm border rounded px-3 py-2"
@@ -130,10 +141,10 @@ export function LessonAssetManager({ lessonId }: { lessonId: string }) {
           type="file"
           accept="application/pdf,video/*"
           disabled={uploading}
-          onChange={e => {
-            const file = e.target.files?.[0]
-            if (file) handleUpload(file, "primary", false)
-            e.target.value = ""
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleUpload(file, "primary", false);
+            e.target.value = "";
           }}
         />
       </div>
@@ -145,13 +156,33 @@ export function LessonAssetManager({ lessonId }: { lessonId: string }) {
         <Input
           type="file"
           disabled={uploading}
-          onChange={e => {
-            const file = e.target.files?.[0]
-            if (file) handleUpload(file, "attachment", true)
-            e.target.value = ""
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleUpload(file, "attachment", true);
+            e.target.value = "";
           }}
         />
       </div>
     </div>
-  )
+  );
 }
+
+async function getVideoDurationSeconds(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(video.src);
+      resolve(
+        Number.isFinite(video.duration) ? Math.round(video.duration) : null,
+      );
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      resolve(null);
+    };
+    video.src = URL.createObjectURL(file);
+  });
+}
+
+// inside handleUpload, before calling requestLessonAssetUploadUrl:

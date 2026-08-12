@@ -47,6 +47,7 @@ export async function requestLessonAssetUploadUrl(
     mimeType: parsed.mimeType,
     fileSizeBytes: parsed.fileSizeBytes,
     downloadable: parsed.downloadable,
+    durationSeconds: parsed.durationSeconds ?? null, // new
   });
 
   const uploadUrl = await getUploadUrl({

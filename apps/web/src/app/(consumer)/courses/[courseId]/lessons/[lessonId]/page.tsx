@@ -1,65 +1,65 @@
-import { ActionButton } from "@/components/ActionButton"
-import { SkeletonButton } from "@/components/Skeleton"
-import { Button } from "@/components/ui/button"
-import { db } from "@/drizzle/db"
+import { ActionButton } from "@/components/ActionButton";
+import { SkeletonButton } from "@/components/Skeleton";
+import { Button } from "@/components/ui/button";
+import { db } from "@/drizzle/db";
 import {
   CourseSectionTable,
   LessonStatus,
   LessonTable,
   UserLessonCompleteTable,
-} from "@/drizzle/schema"
-import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections"
-import { updateLessonCompleteStatus } from "@/features/lessons/actions/userLessonComplete"
-import { YouTubeVideoPlayer } from "@/features/lessons/components/YouTubeVideoPlayer"
-import { PdfLessonViewer } from "@/features/lessons/components/PdfLessonViewer"
-import { AssetDownloadButton } from "@/features/lessons/components/AssetDownloadButton"
-import { getLessonIdTag } from "@/features/lessons/db/cache/lessons"
-import { getUserLessonCompleteIdTag } from "@/features/lessons/db/cache/userLessonComplete"
+} from "@/drizzle/schema";
+import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections";
+import { updateLessonCompleteStatus } from "@/features/lessons/actions/userLessonComplete";
+import { YouTubeVideoPlayer } from "@/features/lessons/components/YouTubeVideoPlayer";
+import { PdfLessonViewer } from "@/features/lessons/components/PdfLessonViewer";
+import { AssetDownloadButton } from "@/features/lessons/components/AssetDownloadButton";
+import { getLessonIdTag } from "@/features/lessons/db/cache/lessons";
+import { getUserLessonCompleteIdTag } from "@/features/lessons/db/cache/userLessonComplete";
 import {
   getPrimaryLessonAsset,
   getAttachmentLessonAssets,
-} from "@/features/lessons/db/lessonAssets"
+} from "@/features/lessons/db/lessonAssets";
 import {
   canViewLesson,
   wherePublicLessons,
-} from "@/features/lessons/permissions/lessons"
-import { canUpdateUserLessonCompleteStatus } from "@/features/lessons/permissions/userLessonComplete"
-import { getCurrentUser } from "@/services/clerk"
-import { and, asc, desc, eq, gt, lt } from "drizzle-orm"
+} from "@/features/lessons/permissions/lessons";
+import { canUpdateUserLessonCompleteStatus } from "@/features/lessons/permissions/userLessonComplete";
+import { getCurrentUser } from "@/services/clerk";
+import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
+import { CheckSquare2Icon, LockIcon, XSquareIcon } from "lucide-react";
+import { cacheTag } from "next/dist/server/use-cache/cache-tag";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ReactNode, Suspense } from "react";
+import { QuestionThread } from "@/features/lessonQuestions/components/QuestionThread";
+import { AskQuestionForm } from "@/features/lessonQuestions/components/AskQuestionForm";
+import { getLessonCourseContext } from "@/features/lessonQuestions/lib/lessonAccess";
 import {
-  CheckSquare2Icon,
-  LockIcon,
-  XSquareIcon,
-} from "lucide-react"
-import { cacheTag } from "next/dist/server/use-cache/cache-tag"
-import Link from "next/link"
-import { notFound } from "next/navigation"
-import { ReactNode, Suspense } from "react"
-import { QuestionThread } from "@/features/lessonQuestions/components/QuestionThread"
-import { AskQuestionForm } from "@/features/lessonQuestions/components/AskQuestionForm"
-import { getLessonCourseContext } from "@/features/lessonQuestions/lib/lessonAccess"
-import { canAskLessonQuestion, canReplyToLessonQuestion, canViewLessonQuestions } from "@/features/lessonQuestions/permissions/lessonQuestions"
-import { getQuestionsForLesson } from "@/features/lessonQuestions/db/lessonQuestions"
+  canAskLessonQuestion,
+  canReplyToLessonQuestion,
+  canViewLessonQuestions,
+} from "@/features/lessonQuestions/permissions/lessonQuestions";
+import { getQuestionsForLesson } from "@/features/lessonQuestions/db/lessonQuestions";
 
 export default async function LessonPage({
   params,
 }: {
-  params: Promise<{ courseId: string; lessonId: string }>
+  params: Promise<{ courseId: string; lessonId: string }>;
 }) {
-  const { courseId, lessonId } = await params
-  const lesson = await getLesson(lessonId)
+  const { courseId, lessonId } = await params;
+  const lesson = await getLesson(lessonId);
 
-  if (lesson == null) return notFound()
+  if (lesson == null) return notFound();
 
   return (
     <Suspense fallback={<LoadingSkeleton />}>
       <SuspenseBoundary lesson={lesson} courseId={courseId} />
     </Suspense>
-  )
+  );
 }
 
 function LoadingSkeleton() {
-  return null
+  return null;
 }
 
 async function SuspenseBoundary({
@@ -67,30 +67,30 @@ async function SuspenseBoundary({
   courseId,
 }: {
   lesson: {
-    id: string
-    name: string
-    description: string | null
-    status: LessonStatus
-    sectionId: string
-    order: number
-  }
-  courseId: string
+    id: string;
+    name: string;
+    description: string | null;
+    status: LessonStatus;
+    sectionId: string;
+    order: number;
+  };
+  courseId: string;
 }) {
-  const { userId, role } = await getCurrentUser()
+  const { userId, role } = await getCurrentUser();
   const isLessonComplete =
     userId == null
       ? false
-      : await getIsLessonComplete({ lessonId: lesson.id, userId })
-  const canView = await canViewLesson({ role, userId }, lesson)
+      : await getIsLessonComplete({ lessonId: lesson.id, userId });
+  const canView = await canViewLesson({ role, userId }, lesson);
   const canUpdateCompletionStatus = await canUpdateUserLessonCompleteStatus(
     { userId },
-    lesson.id
-  )
+    lesson.id,
+  );
 
   const primaryAsset = canView
     ? ((await getPrimaryLessonAsset(lesson.id)) ?? null)
-    : null
-  const attachments = canView ? await getAttachmentLessonAssets(lesson.id) : []
+    : null;
+  const attachments = canView ? await getAttachmentLessonAssets(lesson.id) : [];
 
   return (
     <div className="my-4 flex flex-col gap-4">
@@ -129,7 +129,7 @@ async function SuspenseBoundary({
                 action={updateLessonCompleteStatus.bind(
                   null,
                   lesson.id,
-                  !isLessonComplete
+                  !isLessonComplete,
                 )}
                 variant="outline"
               >
@@ -168,7 +168,7 @@ async function SuspenseBoundary({
               Attachments
             </h2>
             <ul className="flex flex-col gap-1">
-              {attachments.map(attachment => (
+              {attachments.map((attachment) => (
                 <li key={attachment.id}>
                   <AssetDownloadButton
                     lessonId={lesson.id}
@@ -185,14 +185,23 @@ async function SuspenseBoundary({
 
         <div className="flex flex-col gap-4 mt-8 pt-8 border-t">
           <h2 className="text-xl font-semibold">Questions & Answers</h2>
-          <Suspense fallback={<p className="text-sm text-muted-foreground">Loading questions...</p>}>
-            <LessonQnA lessonId={lesson.id} courseId={courseId} userId={userId} role={role} />
+          <Suspense
+            fallback={
+              <p className="text-sm text-muted-foreground">
+                Loading questions...
+              </p>
+            }
+          >
+            <LessonQnA
+              lessonId={lesson.id}
+              userId={userId}
+              role={role}
+            />
           </Suspense>
         </div>
-
       </div>
     </div>
-  )
+  );
 }
 
 // Server component wrapper — decides which client viewer to mount based on
@@ -203,22 +212,22 @@ function LessonContentViewer({
   asset,
   onFinishedVideo,
 }: {
-  lessonId: string
+  lessonId: string;
   asset: {
-    id: string
-    type: string
-    externalId: string | null
-    downloadable: boolean
-    fileName: string | null
-  } | null
-  onFinishedVideo?: () => void
+    id: string;
+    type: string;
+    externalId: string | null;
+    downloadable: boolean;
+    fileName: string | null;
+  } | null;
+  onFinishedVideo?: () => void;
 }) {
   if (asset == null) {
     return (
       <div className="flex items-center justify-center h-full w-full bg-muted rounded-md text-sm text-muted-foreground">
         No content has been uploaded for this lesson yet.
       </div>
-    )
+    );
   }
 
   if (asset.type === "youtube" && asset.externalId) {
@@ -227,7 +236,7 @@ function LessonContentViewer({
         videoId={asset.externalId}
         onFinishedVideo={onFinishedVideo}
       />
-    )
+    );
   }
 
   if (asset.type === "pdf") {
@@ -238,16 +247,24 @@ function LessonContentViewer({
         downloadable={asset.downloadable}
         fileName={asset.fileName}
       />
-    )
+    );
   }
 
-  // video_file (self-hosted via Bunny) — pipeline not built yet, roadmap
-  // step 6. Placeholder so published lessons with this type don't 500.
+  if (asset.type === "video_file") {
+    return (
+      <VideoLessonViewer
+        lessonId={lessonId}
+        assetId={asset.id}
+        onFinishedVideo={onFinishedVideo}
+      />
+    );
+  }
+
   return (
     <div className="flex items-center justify-center h-full w-full bg-muted rounded-md text-sm text-muted-foreground">
-      Video playback for this lesson isn&apos;t available yet.
+      dooooooonasdjfhasjdfhasd
     </div>
-  )
+  );
 }
 
 async function ToLessonButton({
@@ -256,21 +273,21 @@ async function ToLessonButton({
   lessonFunc,
   lesson,
 }: {
-  children: ReactNode
-  courseId: string
+  children: ReactNode;
+  courseId: string;
   lesson: {
-    id: string
-    sectionId: string
-    order: number
-  }
+    id: string;
+    sectionId: string;
+    order: number;
+  };
   lessonFunc: (lesson: {
-    id: string
-    sectionId: string
-    order: number
-  }) => Promise<{ id: string } | undefined>
+    id: string;
+    sectionId: string;
+    order: number;
+  }) => Promise<{ id: string } | undefined>;
 }) {
-  const toLesson = await lessonFunc(lesson)
-  if (toLesson == null) return null
+  const toLesson = await lessonFunc(lesson);
+  if (toLesson == null) return null;
 
   return (
     <Button variant="outline" asChild>
@@ -278,105 +295,105 @@ async function ToLessonButton({
         {children}
       </Link>
     </Button>
-  )
+  );
 }
 
 async function getPreviousLesson(lesson: {
-  id: string
-  sectionId: string
-  order: number
+  id: string;
+  sectionId: string;
+  order: number;
 }) {
   let previousLesson = await db.query.LessonTable.findFirst({
     where: and(
       lt(LessonTable.order, lesson.order),
       eq(LessonTable.sectionId, lesson.sectionId),
-      wherePublicLessons
+      wherePublicLessons,
     ),
     orderBy: desc(LessonTable.order),
     columns: { id: true },
-  })
+  });
 
   if (previousLesson == null) {
     const section = await db.query.CourseSectionTable.findFirst({
       where: eq(CourseSectionTable.id, lesson.sectionId),
       columns: { order: true, courseId: true },
-    })
+    });
 
-    if (section == null) return
+    if (section == null) return;
 
     const previousSection = await db.query.CourseSectionTable.findFirst({
       where: and(
         lt(CourseSectionTable.order, section.order),
         eq(CourseSectionTable.courseId, section.courseId),
-        wherePublicCourseSections
+        wherePublicCourseSections,
       ),
       orderBy: desc(CourseSectionTable.order),
       columns: { id: true },
-    })
+    });
 
-    if (previousSection == null) return
+    if (previousSection == null) return;
 
     previousLesson = await db.query.LessonTable.findFirst({
       where: and(
         eq(LessonTable.sectionId, previousSection.id),
-        wherePublicLessons
+        wherePublicLessons,
       ),
       orderBy: desc(LessonTable.order),
       columns: { id: true },
-    })
+    });
   }
 
-  return previousLesson
+  return previousLesson;
 }
 
 async function getNextLesson(lesson: {
-  id: string
-  sectionId: string
-  order: number
+  id: string;
+  sectionId: string;
+  order: number;
 }) {
   let nextLesson = await db.query.LessonTable.findFirst({
     where: and(
       gt(LessonTable.order, lesson.order),
       eq(LessonTable.sectionId, lesson.sectionId),
-      wherePublicLessons
+      wherePublicLessons,
     ),
     orderBy: asc(LessonTable.order),
     columns: { id: true },
-  })
+  });
 
   if (nextLesson == null) {
     const section = await db.query.CourseSectionTable.findFirst({
       where: eq(CourseSectionTable.id, lesson.sectionId),
       columns: { order: true, courseId: true },
-    })
+    });
 
-    if (section == null) return
+    if (section == null) return;
 
     const nextSection = await db.query.CourseSectionTable.findFirst({
       where: and(
         gt(CourseSectionTable.order, section.order),
         eq(CourseSectionTable.courseId, section.courseId),
-        wherePublicCourseSections
+        wherePublicCourseSections,
       ),
       orderBy: asc(CourseSectionTable.order),
       columns: { id: true },
-    })
+    });
 
-    if (nextSection == null) return
+    if (nextSection == null) return;
 
     nextLesson = await db.query.LessonTable.findFirst({
       where: and(eq(LessonTable.sectionId, nextSection.id), wherePublicLessons),
       orderBy: asc(LessonTable.order),
       columns: { id: true },
-    })
+    });
   }
 
-  return nextLesson
+  return nextLesson;
 }
 
 async function getLesson(id: string) {
-  "use cache"
-  cacheTag(getLessonIdTag(id))
+  "use cache";
+  cacheTag(getLessonIdTag(id));
 
   return db.query.LessonTable.findFirst({
     columns: {
@@ -388,63 +405,57 @@ async function getLesson(id: string) {
       order: true,
     },
     where: and(eq(LessonTable.id, id), wherePublicLessons),
-  })
+  });
 }
 
 async function getIsLessonComplete({
   userId,
   lessonId,
 }: {
-  userId: string
-  lessonId: string
+  userId: string;
+  lessonId: string;
 }) {
-  "use cache"
-  cacheTag(getUserLessonCompleteIdTag({ userId, lessonId }))
+  "use cache";
+  cacheTag(getUserLessonCompleteIdTag({ userId, lessonId }));
 
   const data = await db.query.UserLessonCompleteTable.findFirst({
     where: and(
       eq(UserLessonCompleteTable.userId, userId),
-      eq(UserLessonCompleteTable.lessonId, lessonId)
+      eq(UserLessonCompleteTable.lessonId, lessonId),
     ),
-  })
+  });
 
-  return data != null
+  return data != null;
 }
 
-
-import { UserRole } from "@/drizzle/schema" // ADJUST: confirm this is the actual export name/path for the role enum type — inferred from the error, never seen user.ts
+import { UserRole } from "@/drizzle/schema"; // ADJUST: confirm this is the actual export name/path for the role enum type — inferred from the error, never seen user.ts
+import { VideoLessonViewer } from "@/features/lessons/components/VideoLessonViewer";
 
 async function LessonQnA({
   lessonId,
   userId,
   role,
 }: {
-  lessonId: string
-  courseId: string
-  userId: string | undefined
-  role: UserRole | undefined
+  lessonId: string;
+  userId: string | undefined;
+  role: UserRole | undefined;
 }) {
   if (!canViewLessonQuestions({ role, userId })) {
     return (
       <p className="text-sm text-muted-foreground">
         Sign in to see questions and answers for this lesson.
       </p>
-    )
+    );
   }
 
-  const context = await getLessonCourseContext(lessonId)
-  if (context == null) {
-    // Shouldn't happen for a lesson that resolved via getLesson() above,
-    // but getLessonCourseContext is typed nullable, so satisfy that here
-    // rather than asserting.
-    return null
-  }
+  const context = await getLessonCourseContext(lessonId);
+  if (context == null) return null;
 
   const [canAsk, canReply, questions] = await Promise.all([
-    canAskLessonQuestion({ role, userId }, context.courseId),
-    canReplyToLessonQuestion({ role, userId }, context.courseId),
+    canAskLessonQuestion({ role, userId }, lessonId),
+    canReplyToLessonQuestion({ role, userId }, lessonId),
     getQuestionsForLesson(lessonId),
-  ])
+  ]);
 
   return (
     <>
@@ -462,5 +473,5 @@ async function LessonQnA({
         canReply={canReply}
       />
     </>
-  )
+  );
 }

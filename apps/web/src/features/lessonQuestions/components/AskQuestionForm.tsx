@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "@/components/ui/form"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
-import { askQuestionSchema } from "@/features/lessonQuestions/schemas/lessonQuestions"
-import { askLessonQuestion } from "@/features/lessonQuestions/actions/lessonQuestions"
-import { z } from "zod"
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { askQuestionSchema } from "@/features/lessonQuestions/schemas/lessonQuestions";
+import { askLessonQuestion } from "@/features/lessonQuestions/actions/lessonQuestions";
+import { z } from "zod";
 
 // ADJUST: I don't have DiscountCodeForm.tsx/ProductForm.tsx's real submit
 // pattern in this conversation. This assumes handleSubmit calls the server
@@ -26,31 +26,32 @@ import { z } from "zod"
 // action-bound buttons (mark complete / prev-next), not form submission.
 // If DiscountCodeForm does something different, copy that instead.
 
-type FormValues = z.infer<typeof askQuestionSchema>
+const askBodySchema = askQuestionSchema.pick({ body: true });
+type FormValues = z.infer<typeof askBodySchema>;
 
 export function AskQuestionForm({ lessonId }: { lessonId: string }) {
-  const { toast } = useToast()
-  const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(askQuestionSchema),
+    resolver: zodResolver(askBodySchema),
     defaultValues: { body: "" },
-  })
+  });
 
   async function onSubmit(values: FormValues) {
-    setIsSubmitting(true)
-    const result = await askLessonQuestion(lessonId, values)
-    setIsSubmitting(false)
+    setIsSubmitting(true);
+    const result = await askLessonQuestion(lessonId, values);
+    setIsSubmitting(false);
 
     if (result.error) {
-      toast({ variant: "destructive", description: result.message })
-      return
+      toast({ variant: "destructive", description: result.message });
+      return;
     }
 
-    toast({ description: result.message })
-    form.reset()
-    router.refresh()
+    toast({ description: result.message });
+    form.reset();
+    router.refresh();
   }
 
   return (
@@ -79,5 +80,5 @@ export function AskQuestionForm({ lessonId }: { lessonId: string }) {
         </Button>
       </form>
     </Form>
-  )
+  );
 }

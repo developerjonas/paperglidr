@@ -18,16 +18,16 @@ import { replyToQuestionSchema } from "@/features/lessonQuestions/schemas/lesson
 import { replyToLessonQuestion } from "@/features/lessonQuestions/actions/lessonQuestions"
 import { z } from "zod"
 
-type FormValues = z.infer<typeof replyToQuestionSchema>
+const replyBodySchema = replyToQuestionSchema.pick({ body: true })
+type FormValues = z.infer<typeof replyBodySchema>
 
 export function ReplyForm({ questionId }: { questionId: string }) {
   const { toast } = useToast()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [open, setOpen] = useState(false)
-
   const form = useForm<FormValues>({
-    resolver: zodResolver(replyToQuestionSchema),
+    resolver: zodResolver(replyBodySchema),
     defaultValues: { body: "" },
   })
 

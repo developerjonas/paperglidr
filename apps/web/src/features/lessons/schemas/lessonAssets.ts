@@ -8,6 +8,7 @@ export const requestLessonAssetUploadSchema = z.object({
   fileSizeBytes: z.number().positive(),
   role: z.enum(assetRoles).default("primary"),
   downloadable: z.boolean().default(false),
+  durationSeconds: z.number().int().positive().nullable().optional(),
 });
 
 export type RequestLessonAssetUploadInput = z.infer<
