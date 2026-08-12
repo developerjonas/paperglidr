@@ -3,6 +3,7 @@ import { DiscountCodeTable } from "@/drizzle/schema/discountCode";
 import { DiscountRedemptionTable } from "@/drizzle/schema/discountRedemption";
 import { and, eq, sql } from "drizzle-orm";
 import { DiscountCodeFormValues } from "../schemas/discounts";
+import { revalidateDiscountCodeCache } from "./cache";
 
 export async function insertDiscountCode(
   data: DiscountCodeFormValues & { creatorId: string },
@@ -11,6 +12,8 @@ export async function insertDiscountCode(
     .insert(DiscountCodeTable)
     .values(data)
     .returning();
+  if (discountCode != null)
+    revalidateDiscountCodeCache(discountCode.id, discountCode.creatorId);
   return discountCode;
 }
 
@@ -23,11 +26,18 @@ export async function updateDiscountCode(
     .set(data)
     .where(eq(DiscountCodeTable.id, id))
     .returning();
+  if (discountCode != null)
+    revalidateDiscountCodeCache(discountCode.id, discountCode.creatorId);
   return discountCode;
 }
 
 export async function deleteDiscountCode(id: string) {
-  await db.delete(DiscountCodeTable).where(eq(DiscountCodeTable.id, id));
+  const [discountCode] = await db
+    .delete(DiscountCodeTable)
+    .where(eq(DiscountCodeTable.id, id))
+    .returning();
+  if (discountCode != null)
+    revalidateDiscountCodeCache(discountCode.id, discountCode.creatorId);
 }
 
 export async function getDiscountCodesForCreator(creatorId: string) {
@@ -61,21 +71,25 @@ export async function getUserRedemptionCount(
   return row?.count ?? 0;
 }
 
-// Records a redemption and bumps the running counter atomically. Call this
-// ONLY after validateDiscountCode has confirmed eligibility, and inside the
-// same transaction that creates the Purchase row — otherwise two
-// simultaneous checkouts can both slip in under maxRedemptions.
-export async function recordDiscountRedemption(params: {
-  discountCodeId: string;
-  userId: string;
-  purchaseId: string;
-  amountDiscountedInRupees: number;
-}) {
-  await db.transaction(async (tx) => {
-    await tx.insert(DiscountRedemptionTable).values(params);
-    await tx
-      .update(DiscountCodeTable)
-      .set({ redemptionCount: sql`${DiscountCodeTable.redemptionCount} + 1` })
-      .where(eq(DiscountCodeTable.id, params.discountCodeId));
-  });
+/**
+ * Records a redemption and bumps the running counter. Takes an optional
+ * `trx` (same convention as features/purchases/db/purchases.ts) so
+ * confirmPurchase can call this inside its own transaction — redemption
+ * must commit atomically with purchase completion, or a rolled-back
+ * purchase could still burn a use of the code.
+ */
+export async function recordDiscountRedemption(
+  params: {
+    discountCodeId: string;
+    userId: string;
+    purchaseId: string;
+    amountDiscountedInPaisa: number;
+  },
+  trx: Omit<typeof db, "$client"> = db,
+) {
+  await trx.insert(DiscountRedemptionTable).values(params);
+  await trx
+    .update(DiscountCodeTable)
+    .set({ redemptionCount: sql`${DiscountCodeTable.redemptionCount} + 1` })
+    .where(eq(DiscountCodeTable.id, params.discountCodeId));
 }

@@ -15,14 +15,13 @@ import { userOwnsProduct } from "@/features/products/db/products"
 import { wherePublicProducts } from "@/features/products/permissions/products"
 import { insertPurchase } from "@/features/purchases/db/purchases"
 import { addUserCourseAccess } from "@/features/courses/db/userCourseAcccess"
-import { formatPrice } from "@/lib/formatters"
+import { PurchaseCheckoutCard } from "@/features/purchases/components/PurchaseCheckoutCard"
 import { getCurrentUser } from "@/services/clerk"
 import { and, eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { notFound, redirect } from "next/navigation"
 import { Suspense } from "react"
 import crypto from "crypto"
-import { PurchaseGatewayPicker } from "@/features/purchases/components/PurchaseGatewayPicker"
 
 export default function PurchasePage({
   params,
@@ -75,22 +74,27 @@ async function SuspendedComponent({
           <CardTitle>{product.name}</CardTitle>
           <CardDescription>{product.description}</CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-lg font-semibold">
-            {isFree ? "Free" : formatPrice(product.priceInRupees)}
-          </p>
-        </CardContent>
-        <CardFooter>
-          {isFree ? (
-            <form action={enrollInFreeProduct.bind(null, productId)} className="w-full">
-              <Button type="submit" size="lg" className="w-full">
-                Enroll for Free
-              </Button>
-            </form>
-          ) : (
-            <PurchaseGatewayPicker productId={productId} />
-          )}
-        </CardFooter>
+        {isFree ? (
+          <>
+            <CardContent>
+              <p className="text-lg font-semibold">Free</p>
+            </CardContent>
+            <CardFooter>
+              <form action={enrollInFreeProduct.bind(null, productId)} className="w-full">
+                <Button type="submit" size="lg" className="w-full">
+                  Enroll for Free
+                </Button>
+              </form>
+            </CardFooter>
+          </>
+        ) : (
+          <CardContent>
+            <PurchaseCheckoutCard
+              productId={productId}
+              priceInRupees={product.priceInRupees}
+            />
+          </CardContent>
+        )}
       </Card>
     </div>
   )

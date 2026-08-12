@@ -12,6 +12,7 @@ import { createdAt, id, updatedAt } from "../schemaHelpers";
 import { relations } from "drizzle-orm";
 import { UserTable } from "./user";
 import { ProductTable } from "./product";
+import { DiscountCodeTable } from "./discountCode";
 
 // Extensible — add "bank" or a new gateway later without touching existing rows
 export const purchaseGateways = [
@@ -79,6 +80,14 @@ export const PurchaseTable = pgTable(
     referredByInstructorId: uuid().references(() => UserTable.id, {
       onDelete: "set null",
     }),
+
+    discountCodeId: uuid("discount_code_id").references(
+      () => DiscountCodeTable.id,
+      {
+        onDelete: "set null",
+      },
+    ),
+    discountAmountPaisa: integer("discount_amount_paisa").notNull().default(0),
 
     // Prevents a double-click or a retried request from creating two purchase
     // rows for the same checkout attempt before the gateway even responds.

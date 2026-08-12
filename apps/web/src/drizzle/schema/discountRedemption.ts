@@ -27,8 +27,7 @@ export const DiscountRedemptionTable = pgTable("discount_redemptions", {
   // Snapshot of the actual rupee amount discounted at redemption time.
   // Keeps history accurate if the code's amount/type is edited or the code
   // is deleted later — same pattern as refund_requests' completionPercentAtRequest.
-  amountDiscountedInRupees: integer("amount_discounted_in_rupees").notNull(),
-
+  amountDiscountedInPaisa: integer("amount_discounted_in_paisa").notNull(),
   createdAt,
 });
 

@@ -26,6 +26,8 @@ import { createLedgerEntry } from "@/features/ledger/db/ledger";
 import { createInvoiceForPurchase } from "@/features/invoices/db/invoices";
 import { revalidateProductCache } from "@/features/products/db/cache";
 import { generateAndSendInvoice } from "@/features/invoices/actions/generateAndSendInvoice";
+import { validateDiscountCode } from "@/features/discounts/lib/validateDiscountCode";
+import { recordDiscountRedemption } from "@/features/discounts/db/discounts";
 
 const gateways = {
   esewa: esewaGateway,
@@ -38,20 +40,20 @@ export async function initiatePurchase({
   productId,
   gateway,
   idempotencyKey,
+  discountCode,
 }: {
   productId: string;
   gateway: WiredGateway | "free";
-  // Client generates and holds this (e.g. crypto.randomUUID() on mount /
-  // on "Buy" click) so a retried request or double-click resolves to the
-  // same purchase row instead of creating a duplicate.
   idempotencyKey: string;
+  // Raw code string, typed by the user or carried over from
+  // PromoCodeInput's preview. Re-validated from scratch here — the
+  // preview in applyDiscountCode is UI-only and never trusted for the
+  // actual charge amount.
+  discountCode?: string;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (session?.user == null) return { error: true, message: "Not signed in" };
 
-  // Idempotency short-circuit — if this exact attempt was already inserted
-  // (retry, double submit), return what's already there instead of
-  // re-initiating with the gateway a second time.
   const existing = await getPurchaseByIdempotencyKey(idempotencyKey);
   if (existing != null) {
     return {
@@ -70,9 +72,29 @@ export async function initiatePurchase({
   });
   if (product == null) return { error: true, message: "Product not found" };
 
-  // ASSUMPTION: ProductTable has a priceInPaisa column. Adjust the field
-  // name here if it's actually priceInCents / priceInDollars / etc.
-  const pricePaidInPaisa = Math.round(product.priceInRupees * 100);
+  let discountCodeId: string | null = null;
+  let discountAmountPaisa = 0;
+
+  if (discountCode) {
+    const validation = await validateDiscountCode({
+      code: discountCode,
+      userId: session.user.id,
+      productId,
+      priceInRupees: product.priceInRupees,
+    });
+    // A stale code (expired/exhausted between preview and checkout) is
+    // ignored rather than failing the whole purchase — full price is
+    // charged instead. ADJUST if you'd rather hard-fail the purchase here.
+    if (validation.valid) {
+      discountCodeId = validation.discountCodeId;
+      discountAmountPaisa = Math.round(validation.amountOffInRupees * 100);
+    }
+  }
+
+  const pricePaidInPaisa = Math.max(
+    0,
+    Math.round(product.priceInRupees * 100) - discountAmountPaisa,
+  );
   const referredByInstructorId = await getReferringInstructorId();
 
   const productDetails = {
@@ -81,10 +103,7 @@ export async function initiatePurchase({
     imageUrl: product.imageUrl,
   };
 
-  // Free products skip the gateway entirely — no checkout to initiate,
-  // nothing to verify later. Insert directly as completed; confirmPurchase's
-  // downstream logic (course access, ledger, invoice) still needs to run,
-  // so we call it immediately with a synthetic already-verified path.
+  // Free products, AND products fully discounted to zero, skip the gateway.
   if (gateway === "free" || pricePaidInPaisa === 0) {
     const purchase = await insertPurchase({
       userId: session.user.id,
@@ -92,10 +111,12 @@ export async function initiatePurchase({
       productDetails,
       pricePaidInPaisa: 0,
       gateway: "free",
-      status: "pending", // confirmPurchase flips this to completed
+      status: "pending",
       gatewayCheckoutId: idempotencyKey,
       idempotencyKey,
       referredByInstructorId,
+      discountCodeId,
+      discountAmountPaisa,
     });
     if (purchase == null)
       return { error: true, message: "Could not start free purchase" };
@@ -106,18 +127,12 @@ export async function initiatePurchase({
       redirectUrl: null,
       isFree: true,
     };
-    // Caller is expected to immediately invoke confirmPurchase({ purchaseId })
-    // client-side for the free path, same as a paid gateway's success redirect would.
   }
 
   const wiredGateway = gateways[gateway];
   if (wiredGateway == null)
     return { error: true, message: "Unsupported payment method" };
 
-  // Insert as pending BEFORE calling the gateway, so idempotencyKey is
-  // claimed first — if the gateway call fails/times out after this point,
-  // a retry with the same idempotencyKey finds this row rather than
-  // racing a second insert.
   const purchase = await insertPurchase({
     userId: session.user.id,
     productId,
@@ -128,15 +143,14 @@ export async function initiatePurchase({
     gatewayCheckoutId: idempotencyKey,
     idempotencyKey,
     referredByInstructorId,
+    discountCodeId,
+    discountAmountPaisa,
   });
   if (purchase == null)
     return { error: true, message: "Could not start purchase" };
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL!;
 
-  // ASSUMPTION: each gateway module exposes an `initiate` method shaped
-  // like this. Adjust to match esewaServer.ts / khaltiServer.ts /
-  // fonepayServer.ts's actual exported function names and return shape.
   const initiation = await wiredGateway.initiate({
     purchaseId: purchase.id,
     amountInPaisa: purchase.pricePaidInPaisa,
@@ -145,9 +159,6 @@ export async function initiatePurchase({
     failureUrl: `${baseUrl}/products/purchase-failure?purchaseId=${purchase.id}`,
   });
 
-  // Some gateways assign a transaction id at initiate time (Khalti), others
-  // only assign it once payment completes (eSewa) — persist it now if we
-  // have it so confirmPurchase/verify has something to work with either way.
   if (initiation.gatewayTransactionId != null) {
     await updatePurchase(purchase.id, {
       gatewayTransactionId: initiation.gatewayTransactionId,
@@ -167,7 +178,6 @@ export async function initiatePurchase({
     };
   }
 
-  // type === "qr"
   return {
     error: false,
     purchaseId: purchase.id,
@@ -205,6 +215,22 @@ export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
       trx,
     );
     if (completed == null) return null;
+
+    // Record the redemption atomically with completion — if verification
+    // succeeded but something downstream in this transaction throws, the
+    // whole thing rolls back including this, so the code's usage count
+    // never drifts from reality.
+    if (completed.discountCodeId != null) {
+      await recordDiscountRedemption(
+        {
+          discountCodeId: completed.discountCodeId,
+          userId: completed.userId,
+          purchaseId: completed.id,
+          amountDiscountedInPaisa: completed.discountAmountPaisa ?? 0,
+        },
+        trx,
+      );
+    }
 
     const courseProducts = await trx.query.CourseProductTable.findMany({
       where: eq(CourseProductTable.productId, completed.productId),

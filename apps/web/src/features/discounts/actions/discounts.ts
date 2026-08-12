@@ -4,7 +4,7 @@ import { z } from "zod";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/drizzle/db";
-import { UserTable } from "@/drizzle/schema";
+import { CourseProductTable, UserTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import {
   insertDiscountCode,
@@ -18,17 +18,13 @@ import {
 } from "../permissions/discounts";
 import { discountCodeSchema } from "../schemas/discounts";
 import { validateDiscountCode } from "../lib/validateDiscountCode";
+import { redirect } from "next/navigation";
 
 async function getCurrentUserContext() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) return { userId: undefined, role: undefined };
-
-  const [dbUser] = await db
-    .select({ role: UserTable.role })
-    .from(UserTable)
-    .where(eq(UserTable.id, session.user.id))
-    .limit(1);
-
+  const [dbUser] = await db.select({ role: UserTable.role }).from(UserTable)
+    .where(eq(UserTable.id, session.user.id)).limit(1);
   return { userId: session.user.id, role: dbUser?.role };
 }
 
@@ -42,14 +38,45 @@ export async function createDiscountCode(
     return { error: true, message: "There was an error creating your discount code" };
   }
 
+  // Ownership check via courses, not ProductTable.authorId — that column
+  // doesn't exist. Strictest interpretation: every course in the product
+  // must belong to this user, or the check fails. ADJUST if bundles can
+  // legitimately span multiple authors and any-one-course should qualify.
+  if (data.scopeType === "product" && data.productId) {
+    const productCourses = await db.query.CourseProductTable.findMany({
+      where: eq(CourseProductTable.productId, data.productId),
+      with: { course: { columns: { authorId: true } } },
+    });
+    const ownsProduct =
+      productCourses.length > 0 &&
+      productCourses.every((pc) => pc.course.authorId === user.userId);
+
+    if (!ownsProduct) {
+      return { error: true, message: "You can only create codes for your own products" };
+    }
+  }
+
+  let inserted;
   try {
-    await insertDiscountCode({ ...data, creatorId: user.userId! });
+    inserted = await insertDiscountCode({ ...data, creatorId: user.userId! });
   } catch {
-    // Most likely failure: unique index on `code`.
     return { error: true, message: "That code is already taken" };
   }
 
-  return { error: false, message: "Discount code created" };
+  // insertDiscountCode destructures db.insert(...).returning()'s array
+  // result, so it's typed as possibly undefined (same pattern as
+  // updatedPurchase in purchases/db/purchases.ts) — narrow before using it.
+  if (inserted == null) {
+    return { error: true, message: "There was an error creating your discount code" };
+  }
+
+  // redirect() throws internally — must stay outside the try/catch above
+  // or its throw gets swallowed by the catch as a false "duplicate code" error.
+  redirect(
+    inserted.productId
+      ? `/teach/products/${inserted.productId}/edit`
+      : "/teach/products",
+  );
 }
 
 export async function updateDiscountCodeAction(
