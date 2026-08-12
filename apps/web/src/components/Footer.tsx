@@ -99,7 +99,7 @@ export function Footer({ isAdminPage = false }: FooterProps) {
                   Course Studio
                 </Link>
               </li>
-              <li>
+              {/*<li>
                 <Link
                   href="/admin"
                   className="inline-flex items-center gap-1.5 font-semibold text-amber-600 transition-colors hover:text-amber-500"
@@ -107,7 +107,7 @@ export function Footer({ isAdminPage = false }: FooterProps) {
                   <Shield className="h-3.5 w-3.5" />
                   Admin Dashboard
                 </Link>
-              </li>
+              </li>*/}
             </ul>
           </div>
 
