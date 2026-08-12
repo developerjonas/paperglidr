@@ -1,6 +1,5 @@
 import { createEnv } from "@t3-oss/env-nextjs"
 import { z } from "zod"
-
 export const env = createEnv({
   server: {
     DB_PASSWORD: z.string().min(1),
@@ -15,6 +14,11 @@ export const env = createEnv({
     STRIPE_PPP_20_COUPON_ID: z.string().min(1).optional(),
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    // SMSPasal — demo account creds now, same shape works for production later
+    SMSPASAL_API_KEY: z.string().min(1).optional(),
+    SMSPASAL_SENDER_ID: z.string().min(1).optional(),
+    SMSPASAL_CAMPAIGN_ID: z.string().min(1).optional(),
+    SMSPASAL_ROUTE_ID: z.string().min(1).optional(),
   },
   runtimeEnv: {
     DB_PASSWORD: process.env.DB_PASSWORD,
@@ -29,6 +33,10 @@ export const env = createEnv({
     STRIPE_PPP_20_COUPON_ID: process.env.STRIPE_PPP_20_COUPON_ID,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    SMSPASAL_API_KEY: process.env.SMSPASAL_API_KEY,
+    SMSPASAL_SENDER_ID: process.env.SMSPASAL_SENDER_ID,
+    SMSPASAL_CAMPAIGN_ID: process.env.SMSPASAL_CAMPAIGN_ID,
+    SMSPASAL_ROUTE_ID: process.env.SMSPASAL_ROUTE_ID,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 })

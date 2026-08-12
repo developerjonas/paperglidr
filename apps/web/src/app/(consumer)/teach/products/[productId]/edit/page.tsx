@@ -22,13 +22,6 @@ export default async function EditProductPage({
   const product = await getProduct(productId);
   if (product == null) return notFound();
 
-  // Hoisted out of JSX and narrowed here — inlining
-  // product.courseProducts[0]?.course.authorId directly at the
-  // getDiscountCodesForProduct call site leaves it typed as
-  // string | undefined, since TS can't narrow through a function call.
-  const authorId = product.courseProducts[0]?.course.authorId;
-  if (authorId == null) return notFound(); // product with no courses attached
-
   return (
     <div className="container my-6 flex flex-col gap-10">
       <div>
@@ -41,7 +34,6 @@ export default async function EditProductPage({
           courses={await getCourses()}
         />
       </div>
-
       <div>
         <PageHeader title="Discount Codes">
           <Button asChild>
@@ -52,7 +44,7 @@ export default async function EditProductPage({
         </PageHeader>
         <DiscountCodeTable
           discountCodes={(
-            await getDiscountCodesForProduct(productId, authorId)
+            await getDiscountCodesForProduct(productId, product.authorId)
           ).map((dc) => ({ ...dc, productName: dc.product?.name ?? null }))}
         />
       </div>
@@ -82,7 +74,6 @@ async function getDiscountCodesForProduct(productId: string, authorId: string) {
 async function getCourses() {
   "use cache";
   cacheTag(getCourseGlobalTag());
-
   return db.query.CourseTable.findMany({
     orderBy: asc(CourseTable.name),
     columns: { id: true, name: true },
@@ -100,13 +91,9 @@ async function getProduct(id: string) {
       priceInRupees: true,
       status: true,
       imageUrl: true,
+      authorId: true,
     },
     where: eq(ProductTable.id, id),
-    with: {
-      courseProducts: {
-        columns: { courseId: true },
-        with: { course: { columns: { authorId: true } } },
-      },
-    },
+    with: { courseProducts: { columns: { courseId: true } } },
   });
 }

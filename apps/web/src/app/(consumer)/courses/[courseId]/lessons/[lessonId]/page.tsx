@@ -35,6 +35,11 @@ import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ReactNode, Suspense } from "react"
+import { QuestionThread } from "@/features/lessonQuestions/components/QuestionThread"
+import { AskQuestionForm } from "@/features/lessonQuestions/components/AskQuestionForm"
+import { getLessonCourseContext } from "@/features/lessonQuestions/lib/lessonAccess"
+import { canAskLessonQuestion, canReplyToLessonQuestion, canViewLessonQuestions } from "@/features/lessonQuestions/permissions/lessonQuestions"
+import { getQuestionsForLesson } from "@/features/lessonQuestions/db/lessonQuestions"
 
 export default async function LessonPage({
   params,
@@ -177,6 +182,14 @@ async function SuspenseBoundary({
             </ul>
           </div>
         )}
+
+        <div className="flex flex-col gap-4 mt-8 pt-8 border-t">
+          <h2 className="text-xl font-semibold">Questions & Answers</h2>
+          <Suspense fallback={<p className="text-sm text-muted-foreground">Loading questions...</p>}>
+            <LessonQnA lessonId={lesson.id} courseId={courseId} userId={userId} role={role} />
+          </Suspense>
+        </div>
+
       </div>
     </div>
   )
@@ -396,4 +409,58 @@ async function getIsLessonComplete({
   })
 
   return data != null
+}
+
+
+import { UserRole } from "@/drizzle/schema" // ADJUST: confirm this is the actual export name/path for the role enum type — inferred from the error, never seen user.ts
+
+async function LessonQnA({
+  lessonId,
+  userId,
+  role,
+}: {
+  lessonId: string
+  courseId: string
+  userId: string | undefined
+  role: UserRole | undefined
+}) {
+  if (!canViewLessonQuestions({ role, userId })) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Sign in to see questions and answers for this lesson.
+      </p>
+    )
+  }
+
+  const context = await getLessonCourseContext(lessonId)
+  if (context == null) {
+    // Shouldn't happen for a lesson that resolved via getLesson() above,
+    // but getLessonCourseContext is typed nullable, so satisfy that here
+    // rather than asserting.
+    return null
+  }
+
+  const [canAsk, canReply, questions] = await Promise.all([
+    canAskLessonQuestion({ role, userId }, context.courseId),
+    canReplyToLessonQuestion({ role, userId }, context.courseId),
+    getQuestionsForLesson(lessonId),
+  ])
+
+  return (
+    <>
+      {canAsk ? (
+        <AskQuestionForm lessonId={lessonId} />
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Purchase this course to ask a question.
+        </p>
+      )}
+      <QuestionThread
+        questions={questions}
+        courseAuthorId={context.courseAuthorId}
+        currentUserId={userId}
+        canReply={canReply}
+      />
+    </>
+  )
 }

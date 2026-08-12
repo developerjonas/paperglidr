@@ -13,7 +13,8 @@ type CACHE_TAG =
   | "payouts"
   | "lessonAssets"
   | "lessonAssetsByLesson"
-  | "discountCodes";
+  | "discountCodes"
+  | "lessonQuestions";
 
 export function getGlobalTag(tag: CACHE_TAG) {
   return `global:${tag}` as const;
