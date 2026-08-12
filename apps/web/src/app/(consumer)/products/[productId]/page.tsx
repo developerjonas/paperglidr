@@ -1,54 +1,62 @@
-import { SkeletonButton } from "@/components/Skeleton"
+import { SkeletonButton } from "@/components/Skeleton";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { db } from "@/drizzle/db"
-import { CourseSectionTable, LessonTable, ProductTable } from "@/drizzle/schema"
-import { getCourseIdTag } from "@/features/courses/db/cache/courses"
-import { getCourseSectionCourseTag } from "@/features/courseSections/db/cache"
-import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections"
-import { getLessonCourseTag } from "@/features/lessons/db/cache/lessons"
-import { wherePublicLessons } from "@/features/lessons/permissions/lessons"
-import { getProductIdTag } from "@/features/products/db/cache"
-import { userOwnsProduct } from "@/features/products/db/products"
-import { wherePublicProducts } from "@/features/products/permissions/products"
-import { formatPlural, formatPrice } from "@/lib/formatters"
-import { sumArray } from "@/lib/sumArray"
-import { getUserCoupon } from "@/lib/userCountryHeader"
-import { getCurrentUser } from "@/services/clerk"
-import { and, asc, eq } from "drizzle-orm"
-import { BookOpenIcon, CheckCircle2Icon, PlayCircleIcon, VideoIcon } from "lucide-react"
-import { cacheTag } from "next/dist/server/use-cache/cache-tag"
-import Image from "next/image"
-import Link from "next/link"
-import { notFound } from "next/navigation"
-import { Suspense } from "react"
+} from "@/components/ui/card";
+import { db } from "@/drizzle/db";
+import {
+  CourseSectionTable,
+  LessonTable,
+  ProductTable,
+} from "@/drizzle/schema";
+import { getCourseIdTag } from "@/features/courses/db/cache/courses";
+import { getCourseSectionCourseTag } from "@/features/courseSections/db/cache";
+import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections";
+import { getLessonCourseTag } from "@/features/lessons/db/cache/lessons";
+import { wherePublicLessons } from "@/features/lessons/permissions/lessons";
+import { getProductIdTag } from "@/features/products/db/cache";
+import { userOwnsProduct } from "@/features/products/db/products";
+import { wherePublicProducts } from "@/features/products/permissions/products";
+import { formatPlural, formatPrice } from "@/lib/formatters";
+import { sumArray } from "@/lib/sumArray";
+import { getCurrentUser } from "@/services/clerk";
+import { and, asc, eq } from "drizzle-orm";
+import {
+  BookOpenIcon,
+  CheckCircle2Icon,
+  PlayCircleIcon,
+  VideoIcon,
+} from "lucide-react";
+import { cacheTag } from "next/dist/server/use-cache/cache-tag";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 export default async function ProductPage({
   params,
 }: {
-  params: Promise<{ productId: string }>
+  params: Promise<{ productId: string }>;
 }) {
-  const { productId } = await params
-  const product = await getPublicProduct(productId)
+  const { productId } = await params;
+  const product = await getPublicProduct(productId);
 
-  if (product == null) return notFound()
+  if (product == null) return notFound();
 
-  const courseCount = product.courses.length
-  const lessonCount = sumArray(product.courses, course =>
-    sumArray(course.courseSections, s => s.lessons.length)
-  )
+  const courseCount = product.courses.length;
+  const lessonCount = sumArray(product.courses, (course) =>
+    sumArray(course.courseSections, (s) => s.lessons.length),
+  );
 
   return (
     <div className="container my-6 lg:my-10">
@@ -102,7 +110,7 @@ export default async function ProductPage({
               Course content
             </h2>
             <div className="flex flex-col gap-4">
-              {product.courses.map(course => (
+              {product.courses.map((course) => (
                 <Card
                   key={course.id}
                   className="overflow-hidden border-white/30 bg-white/50 backdrop-blur-md dark:border-white/10 dark:bg-white/[0.02]"
@@ -116,17 +124,20 @@ export default async function ProductPage({
                       })}{" "}
                       •{" "}
                       {formatPlural(
-                        sumArray(course.courseSections, s => s.lessons.length),
+                        sumArray(
+                          course.courseSections,
+                          (s) => s.lessons.length,
+                        ),
                         {
                           plural: "lessons",
                           singular: "lesson",
-                        }
+                        },
                       )}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Accordion type="multiple" className="-mx-2">
-                      {course.courseSections.map(section => (
+                      {course.courseSections.map((section) => (
                         <AccordionItem
                           key={section.id}
                           value={section.id}
@@ -146,7 +157,7 @@ export default async function ProductPage({
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="flex flex-col gap-1 px-2">
-                            {section.lessons.map(lesson => (
+                            {section.lessons.map((lesson) => (
                               <div
                                 key={lesson.id}
                                 className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground"
@@ -223,13 +234,13 @@ export default async function ProductPage({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 async function PurchaseButton({ productId }: { productId: string }) {
-  const { userId } = await getCurrentUser()
+  const { userId } = await getCurrentUser();
   const alreadyOwnsProduct =
-    userId != null && (await userOwnsProduct({ userId, productId }))
+    userId != null && (await userOwnsProduct({ userId, productId }));
 
   if (alreadyOwnsProduct) {
     return (
@@ -237,24 +248,23 @@ async function PurchaseButton({ productId }: { productId: string }) {
         <CheckCircle2Icon className="size-4 text-primary" />
         You already own this course
       </div>
-    )
+    );
   }
 
   return (
     <Button size="xl" className="w-full" asChild>
       <Link href={`/products/${productId}/purchase`}>Get Now</Link>
     </Button>
-  )
+  );
 }
 
 async function Price({ price }: { price: number }) {
-  const coupon = await getUserCoupon()
-  if (price === 0 || coupon == null) {
+  if (price === 0) {
     return (
       <div className="text-2xl font-bold tracking-tight">
         {formatPrice(price)}
       </div>
-    )
+    );
   }
 
   return (
@@ -263,15 +273,15 @@ async function Price({ price }: { price: number }) {
         {formatPrice(price)}
       </div>
       <div className="text-2xl font-bold tracking-tight">
-        {formatPrice(price * (1 - coupon.discountPercentage))}
+        {formatPrice(price)}
       </div>
     </div>
-  )
+  );
 }
 
 async function getPublicProduct(id: string) {
-  "use cache"
-  cacheTag(getProductIdTag(id))
+  "use cache";
+  cacheTag(getProductIdTag(id));
 
   const product = await db.query.ProductTable.findFirst({
     columns: {
@@ -306,22 +316,22 @@ async function getPublicProduct(id: string) {
         },
       },
     },
-  })
+  });
 
-  if (product == null) return product
+  if (product == null) return product;
 
   cacheTag(
-    ...product.courseProducts.flatMap(cp => [
+    ...product.courseProducts.flatMap((cp) => [
       getLessonCourseTag(cp.course.id),
       getCourseSectionCourseTag(cp.course.id),
       getCourseIdTag(cp.course.id),
-    ])
-  )
+    ]),
+  );
 
-  const { courseProducts, ...other } = product
+  const { courseProducts, ...other } = product;
 
   return {
     ...other,
-    courses: courseProducts.map(cp => cp.course),
-  }
+    courses: courseProducts.map((cp) => cp.course),
+  };
 }

@@ -1,6 +1,3 @@
-import { pppCoupons } from "@/data/pppCoupons"
-import { headers } from "next/headers"
-
 const COUNTRY_HEADER_KEY = "x-user-country"
 
 export function setUserCountryHeader(
@@ -14,23 +11,6 @@ export function setUserCountryHeader(
   }
 }
 
-async function getUserCountry() {
-  const head = await headers()
-  return head.get(COUNTRY_HEADER_KEY)
-}
-
-export async function getUserCoupon() {
-  const country = await getUserCountry()
-  if (country == null) return
-
-  const coupon = pppCoupons.find(coupon =>
-    coupon.countryCodes.includes(country)
-  )
-
-  if (coupon == null) return
-
-  return {
-    stripeCouponId: coupon.stripeCouponId,
-    discountPercentage: coupon.discountPercentage,
-  }
-}
+// getUserCountry / getUserCoupon (PPP pricing) removed — PPP is cancelled,
+// pppCoupons.ts deleted. setUserCountryHeader stays since middleware still
+// needs to stamp the country header for whatever else reads it.

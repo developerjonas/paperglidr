@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,12 +6,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { formatPrice } from "@/lib/formatters"
-import { getUserCoupon } from "@/lib/userCountryHeader"
-import Image from "next/image"
-import Link from "next/link"
-import { Suspense } from "react"
+} from "@/components/ui/card";
+import { formatPrice } from "@/lib/formatters";
+import Image from "next/image";
+import Link from "next/link";
+import { Suspense } from "react";
 
 export function ProductCard({
   id,
@@ -20,11 +19,11 @@ export function ProductCard({
   priceInRupees,
   description,
 }: {
-  id: string
-  imageUrl: string
-  name: string
-  priceInRupees: number
-  description: string
+  id: string;
+  imageUrl: string;
+  name: string;
+  priceInRupees: number;
+  description: string;
 }) {
   return (
     <Card className="overflow-hidden flex flex-col w-full max-w-[500px] mx-auto">
@@ -48,13 +47,12 @@ export function ProductCard({
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
 
 async function Price({ price }: { price: number }) {
-  const coupon = await getUserCoupon()
-  if (price === 0 || coupon == null) {
-    return formatPrice(price)
+  if (price === 0) {
+    return formatPrice(price);
   }
 
   return (
@@ -62,7 +60,7 @@ async function Price({ price }: { price: number }) {
       <div className="line-through text-xs opacity-50">
         {formatPrice(price)}
       </div>
-      <div>{formatPrice(price * (1 - coupon.discountPercentage))}</div>
+      <div>{formatPrice(price)}</div>
     </div>
-  )
+  );
 }
