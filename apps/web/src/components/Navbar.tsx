@@ -11,6 +11,7 @@ import { canAccessAdminPages } from "@/permissions/general";
 import { getCurrentUser } from "@/services/clerk";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SearchBar } from "@/features/products/components/SearchBar";
+import { MobileSearchTrigger } from "@/features/products/components/MobileSearchTrigger";
 import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -26,6 +27,8 @@ import {
   Package,
   DollarSign,
   Wallet,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -39,31 +42,30 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
       className="sticky top-0 z-50 w-full border-b border-white/20 bg-white/60 shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_8px_30px_-12px_rgba(0,0,0,0.1)] backdrop-blur-2xl backdrop-saturate-150
       dark:border-white/10 dark:bg-black/40 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset,0_8px_30px_-12px_rgba(0,0,0,0.5)]"
     >
-      <div className="container relative flex flex-col gap-3 px-4 py-3 sm:px-8 md:h-16 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
-        <div className="flex w-full items-center justify-between md:w-auto">
-          <Link
-            href="/"
-            className="flex shrink-0 items-center gap-2 text-xl font-extrabold tracking-tight"
-          >
-            PAPERGLIDR
-            {isAdminPage && (
-              <Badge
-                variant="secondary"
-                className="ml-1 rounded-[5px] border border-amber-500/30 bg-amber-500/10 text-amber-600 text-xs backdrop-blur-sm"
-              >
-                STUDIO
-              </Badge>
-            )}
-          </Link>
-        </div>
+      <div className="container relative flex h-16 items-center justify-between gap-2 px-4 sm:px-8">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-2 text-xl font-extrabold tracking-tight"
+        >
+          PAPERGLIDR
+          {isAdminPage && (
+            <Badge
+              variant="secondary"
+              className="ml-1 rounded-[5px] border border-amber-500/30 bg-amber-500/10 text-amber-600 text-xs backdrop-blur-sm"
+            >
+              STUDIO
+            </Badge>
+          )}
+        </Link>
 
+        {/* Full search bar — desktop only, centered on the header */}
         {!isAdminPage && (
           <Suspense
             fallback={
-              <div className="h-11 w-full rounded-[5px] bg-white/40 backdrop-blur-md dark:bg-white/5 md:absolute md:left-1/2 md:top-1/2 md:w-full md:max-w-md md:-translate-x-1/2 md:-translate-y-1/2" />
+              <div className="hidden h-11 w-full max-w-md rounded-[5px] bg-white/40 backdrop-blur-md dark:bg-white/5 md:absolute md:left-1/2 md:top-1/2 md:block md:-translate-x-1/2 md:-translate-y-1/2" />
             }
           >
-            <div className="w-full md:absolute md:left-1/2 md:top-1/2 md:w-full md:max-w-md md:-translate-x-1/2 md:-translate-y-1/2">
+            <div className="hidden md:absolute md:left-1/2 md:top-1/2 md:block md:w-full md:max-w-md md:-translate-x-1/2 md:-translate-y-1/2">
               <SearchBar />
             </div>
           </Suspense>
@@ -71,9 +73,9 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
 
         <Suspense
           fallback={
-            <div className="hidden items-center gap-3 md:flex">
+            <div className="flex items-center gap-2">
               <div className="h-9 w-9 animate-pulse rounded-[5px] bg-white/40 backdrop-blur-md dark:bg-white/5" />
-              <div className="h-9 w-[60px] animate-pulse rounded-[5px] bg-white/40 backdrop-blur-md dark:bg-white/5" />
+              <div className="h-9 w-9 animate-pulse rounded-full bg-white/40 backdrop-blur-md dark:bg-white/5" />
             </div>
           }
         >
@@ -95,13 +97,14 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
 async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
   const user = await getCurrentUser({ allData: true });
 
-  // Guest state — no dropdown exists yet, so theme control stays inline here.
+  // ---------------- GUEST ----------------
   if (!user || !user.userId) {
     return (
       <div className="flex items-center justify-end gap-2 sm:gap-4">
+        {/* Desktop only */}
         <Link
           href="/teach"
-          className="hidden rounded-[5px] px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground sm:block dark:hover:bg-white/10"
+          className="hidden rounded-[5px] px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground md:block dark:hover:bg-white/10"
         >
           Teach
         </Link>
@@ -111,21 +114,71 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
         <Button
           asChild
           size="sm"
-          className="rounded-[5px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]"
+          className="hidden rounded-[5px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] md:inline-flex"
         >
           <Link href="/sign-up">Get Started</Link>
         </Button>
+
+        {/* Mobile only: search trigger + dummy avatar */}
+        {!isAdminPage && <MobileSearchTrigger />}
+        <div className="md:hidden">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Account menu"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
+              >
+                <User className="h-5 w-5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              className="w-56 rounded-[5px] border-white/30 bg-white/80 p-1.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/70"
+            >
+              <div className="flex flex-col gap-0.5">
+                <Link
+                  href="/sign-in"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Log in
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Sign up
+                </Link>
+                <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
+                <Link
+                  href="/teach"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <Presentation className="h-4 w-4" />
+                  Teach on Paperglidr
+                </Link>
+                <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
+                <GroupLabel>Appearance</GroupLabel>
+                <div className="px-1 pb-1">
+                  <ThemeToggle />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
     );
   }
 
   const isAdmin = canAccessAdminPages(user);
 
-  // Admin/Studio mode — kept as a standalone control, same reasoning as guest.
+  // ---------------- ADMIN / STUDIO PAGE ----------------
   if (isAdminPage) {
     return (
       <div className="flex items-center justify-end gap-3">
-        <div className="w-[132px]">
+        <div className="hidden w-[132px] md:block">
           <ThemeToggle />
         </div>
         <Link
@@ -138,6 +191,7 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
     );
   }
 
+  // ---------------- SIGNED IN ----------------
   const instructor = await db.query.InstructorTable.findFirst({
     where: eq(InstructorTable.userId, user.userId),
     columns: { id: true },
@@ -154,6 +208,8 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
 
   return (
     <div className="flex items-center justify-end gap-2 sm:gap-3">
+      <MobileSearchTrigger />
+
       <Popover>
         <PopoverTrigger asChild>
           <button
@@ -184,7 +240,6 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
           className="w-64 rounded-[5px] border-white/30 bg-white/80 p-1.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/70"
         >
           <div className="flex flex-col gap-0.5">
-            {/* ---------------- LEARNING GROUP ---------------- */}
             <GroupLabel>Learning</GroupLabel>
             <Link
               href="/courses"
@@ -210,7 +265,6 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
 
             <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
 
-            {/* ---------------- TEACHING GROUP ---------------- */}
             {isAdmin ? (
               <>
                 <GroupLabel>Admin</GroupLabel>
@@ -274,7 +328,6 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
               Profile
             </Link>
 
-            {/* ---------------- APPEARANCE GROUP ---------------- */}
             <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
             <GroupLabel>Appearance</GroupLabel>
             <div className="px-1 pb-1">
