@@ -2,8 +2,8 @@ import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/features/products/components/ProductCard";
-import { getPublicProducts } from "@/features/products/db/products";
-import { SearchBar } from "@/features/products/components/SearchBar";
+import { searchProducts } from "@/features/search/db/search";
+import { SearchBar } from "@/features/search/components/SearchBar";
 import { Suspense } from "react";
 import { db } from "@/drizzle/db";
 import { CategoryTable } from "@/drizzle/schema";
@@ -22,9 +22,17 @@ export default async function BrowsePage({
     orderBy: asc(CategoryTable.name),
   });
 
-  const products = await getPublicProducts({
-    query,
-    categorySlug: currentCategory,
+  // resolve slug -> id, since the search layer filters by categoryId
+  const categoryId =
+    currentCategory !== "all"
+      ? categories.find((c) => c.slug === currentCategory)?.id
+      : undefined;
+
+  const results = await searchProducts({
+    q: query || undefined,
+    categoryId,
+    sort: "relevance",
+    page: 1,
   });
 
   return (
@@ -95,14 +103,19 @@ export default async function BrowsePage({
             </h2>
           </div>
           <Badge variant="outline" className="w-fit">
-            {products.length} {products.length === 1 ? "Course" : "Courses"}
+            {results.length} {results.length === 1 ? "Course" : "Courses"}
           </Badge>
         </div>
 
-        {products.length > 0 ? (
+        {results.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <ProductCard key={product.id} {...product} />
+            {results.map(({ product, avgRating, reviewCount }) => (
+              <ProductCard
+                key={product.id}
+                {...product}
+                avgRating={avgRating ? Number(avgRating) : undefined}
+                reviewCount={reviewCount}
+              />
             ))}
           </div>
         ) : (

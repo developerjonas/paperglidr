@@ -1,5 +1,12 @@
-import { relations } from "drizzle-orm";
-import { pgTable, text, integer, pgEnum, uuid } from "drizzle-orm/pg-core";
+import { relations, sql, type SQL } from "drizzle-orm";
+import {
+  pgTable,
+  text,
+  integer,
+  pgEnum,
+  uuid,
+  customType,
+} from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../schemaHelpers";
 import { CourseProductTable } from "./courseProduct";
 import { UserTable } from "./user";
@@ -9,6 +16,13 @@ import { ProductTagTable } from "./tag";
 export const productStatuses = ["public", "private"] as const;
 export type ProductStatus = (typeof productStatuses)[number];
 export const productStatusEnum = pgEnum("product_status", productStatuses);
+
+// Drizzle has no built-in tsvector type yet, so this defines one
+const tsvector = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
 
 export const ProductTable = pgTable("products", {
   id: id(),
@@ -23,6 +37,10 @@ export const ProductTable = pgTable("products", {
   authorId: uuid("author_id")
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),
+  searchVector: tsvector("search_vector").generatedAlwaysAs(
+    (): SQL =>
+      sql`setweight(to_tsvector('english', coalesce(${ProductTable.name}, '')), 'A') || setweight(to_tsvector('english', coalesce(${ProductTable.description}, '')), 'B')`,
+  ),
   createdAt,
   updatedAt,
 });

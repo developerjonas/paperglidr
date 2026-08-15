@@ -21,7 +21,7 @@ import { khaltiGateway } from "@/services/payments/khalti/khaltiServer";
 import { fonepayGateway } from "@/services/payments/fonepay/fonepayServer";
 import { auth } from "@/lib/auth"; // ASSUMPTION: however you currently get the logged-in user server-side
 import { headers } from "next/headers";
-import { addUserCourseAccess } from "@/features/courses/db/userCourseAcccess";
+import { addUserCourseAccess } from "@/features/courses/db/userCourseAccess";
 import { createLedgerEntry } from "@/features/ledger/db/ledger";
 import { createInvoiceForPurchase } from "@/features/invoices/db/invoices";
 import { revalidateProductCache } from "@/features/products/db/cache";

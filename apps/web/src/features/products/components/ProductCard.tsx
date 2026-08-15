@@ -4,7 +4,10 @@
 // fetched by the caller (wherever ProductCard is rendered — /browse,
 // /wishlist, etc.) and passed down, same as name/priceInRupees/etc.,
 // rather than each card doing its own async lookup.
-
+//
+// Added: avgRating/reviewCount props, same pattern — computed by the
+// caller (e.g. features/search/db/search.ts) and passed down rather
+// than each card querying reviews itself.
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { formatPrice } from "@/lib/formatters";
 import { WishlistButton } from "@/features/wishlist/components/WishlistButton";
+import { StarIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -27,6 +31,8 @@ export function ProductCard({
   priceInRupees,
   description,
   isWishlisted = false,
+  avgRating,
+  reviewCount,
 }: {
   id: string;
   imageUrl: string;
@@ -34,7 +40,11 @@ export function ProductCard({
   priceInRupees: number;
   description: string;
   isWishlisted?: boolean;
+  avgRating?: number;
+  reviewCount?: number;
 }) {
+  const hasRating = avgRating !== undefined && !!reviewCount && reviewCount > 0;
+
   return (
     <Card className="overflow-hidden flex flex-col w-full max-w-[500px] mx-auto">
       <div className="relative aspect-video w-full">
@@ -46,11 +56,22 @@ export function ProductCard({
         />
       </div>
       <CardHeader className="space-y-0">
-        <CardDescription>
-          <Suspense fallback={formatPrice(priceInRupees)}>
-            <Price price={priceInRupees} />
-          </Suspense>
-        </CardDescription>
+        <div className="flex items-center justify-between gap-2">
+          <CardDescription>
+            <Suspense fallback={formatPrice(priceInRupees)}>
+              <Price price={priceInRupees} />
+            </Suspense>
+          </CardDescription>
+          {hasRating && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <StarIcon className="size-3.5 fill-amber-400 text-amber-400" />
+              <span className="font-medium text-foreground">
+                {avgRating.toFixed(1)}
+              </span>
+              <span>({reviewCount})</span>
+            </div>
+          )}
+        </div>
         <CardTitle className="text-xl">{name}</CardTitle>
       </CardHeader>
       <CardContent>
@@ -64,6 +85,7 @@ export function ProductCard({
     </Card>
   );
 }
+
 async function Price({ price }: { price: number }) {
   if (price === 0) {
     return formatPrice(price);
