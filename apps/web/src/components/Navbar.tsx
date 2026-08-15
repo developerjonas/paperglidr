@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Popover,
@@ -11,7 +10,6 @@ import { canAccessAdminPages } from "@/permissions/general";
 import { getCurrentUser } from "@/services/clerk";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SearchBar } from "@/features/products/components/SearchBar";
-import { MobileSearchTrigger } from "@/features/products/components/MobileSearchTrigger";
 import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -29,6 +27,7 @@ import {
   Wallet,
   LogIn,
   UserPlus,
+  SearchIcon,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -38,10 +37,7 @@ type NavbarProps = {
 
 export function Navbar({ isAdminPage = false }: NavbarProps) {
   return (
-    <header
-      className="sticky top-0 z-50 w-full border-b border-white/20 bg-white/60 shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_8px_30px_-12px_rgba(0,0,0,0.1)] backdrop-blur-2xl backdrop-saturate-150
-      dark:border-white/10 dark:bg-black/40 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset,0_8px_30px_-12px_rgba(0,0,0,0.5)]"
-    >
+    <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-white/60 shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_8px_30px_-12px_rgba(0,0,0,0.1)] backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset,0_8px_30px_-12px_rgba(0,0,0,0.5)]">
       <div className="container relative flex h-16 items-center justify-between gap-2 px-4 sm:px-8">
         <Link
           href="/"
@@ -51,14 +47,14 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
           {isAdminPage && (
             <Badge
               variant="secondary"
-              className="ml-1 rounded-[5px] border border-amber-500/30 bg-amber-500/10 text-amber-600 text-xs backdrop-blur-sm"
+              className="ml-1 rounded-[5px] border border-amber-500/30 bg-amber-500/10 text-xs text-amber-600 backdrop-blur-sm"
             >
               STUDIO
             </Badge>
           )}
         </Link>
 
-        {/* Full search bar — desktop only, centered on the header */}
+        {/* Desktop Search */}
         {!isAdminPage && (
           <Suspense
             fallback={
@@ -74,7 +70,6 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
         <Suspense
           fallback={
             <div className="flex items-center gap-2">
-              <div className="h-9 w-9 animate-pulse rounded-[5px] bg-white/40 backdrop-blur-md dark:bg-white/5" />
               <div className="h-9 w-9 animate-pulse rounded-full bg-white/40 backdrop-blur-md dark:bg-white/5" />
             </div>
           }
@@ -88,7 +83,7 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
 
 function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+    <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
       {children}
     </div>
   );
@@ -96,47 +91,78 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
 
 async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
   const user = await getCurrentUser({ allData: true });
+  const isLoggedIn = Boolean(user?.userId);
+  const isAdmin = isLoggedIn ? canAccessAdminPages(user) : false;
 
-  // ---------------- GUEST ----------------
-  if (!user || !user.userId) {
+  let isInstructor = false;
+  if (isLoggedIn && user?.userId) {
+    const instructor = await db.query.InstructorTable.findFirst({
+      where: eq(InstructorTable.userId, user.userId),
+      columns: { id: true },
+    });
+    isInstructor = instructor != null;
+  }
+
+  const initials =
+    user?.user?.name
+      ?.split(" ")
+      .map((part: string) => part[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() ?? null;
+
+  if (isAdminPage) {
     return (
-      <div className="flex items-center justify-end gap-2 sm:gap-4">
-        {/* Desktop only */}
+      <div className="flex items-center justify-end gap-3">
         <Link
-          href="/teach"
-          className="hidden rounded-[5px] px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground md:block dark:hover:bg-white/10"
+          href="/"
+          className="rounded-[5px] px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground dark:hover:bg-white/10"
         >
-          Teach
+          Exit Studio
         </Link>
-        <div className="hidden w-[132px] md:block">
-          <ThemeToggle />
-        </div>
-        <Button
-          asChild
-          size="sm"
-          className="hidden rounded-[5px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] md:inline-flex"
-        >
-          <Link href="/sign-up">Get Started</Link>
-        </Button>
+      </div>
+    );
+  }
 
-        {/* Mobile only: search trigger + dummy avatar */}
-        {!isAdminPage && <MobileSearchTrigger />}
-        <div className="md:hidden">
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                aria-label="Account menu"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
-              >
-                <User className="h-5 w-5" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              className="w-56 rounded-[5px] border-white/30 bg-white/80 p-1.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/70"
-            >
-              <div className="flex flex-col gap-0.5">
+  return (
+    <div className="flex items-center justify-end gap-2">
+      {/* Mobile Search Button -> /browse */}
+      <MobileSearchTrigger />
+
+      {/* Unified Account Popover (Guest & Logged-In) */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label="Account menu"
+            className="flex items-center gap-1 rounded-[5px] p-0.5 transition-colors hover:bg-white/50 dark:hover:bg-white/10"
+          >
+            <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-muted text-xs font-bold text-foreground dark:border-white/10">
+              {user?.user?.image ? (
+                <Image
+                  src={user.user.image}
+                  alt="User Avatar"
+                  fill
+                  className="object-cover"
+                />
+              ) : initials ? (
+                initials
+              ) : (
+                <User className="h-4 w-4 text-muted-foreground" />
+              )}
+            </span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        </PopoverTrigger>
+
+        <PopoverContent
+          align="end"
+          className="w-56 rounded-[5px] border-white/30 bg-white/80 p-1.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/70"
+        >
+          <div className="flex flex-col gap-0.5">
+            {!isLoggedIn ? (
+              /* GUEST CONTENT */
+              <>
                 <Link
                   href="/sign-in"
                   className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
@@ -159,175 +185,101 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
                   <Presentation className="h-4 w-4" />
                   Teach on Paperglidr
                 </Link>
-                <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
-                <GroupLabel>Appearance</GroupLabel>
-                <div className="px-1 pb-1">
-                  <ThemeToggle />
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-    );
-  }
-
-  const isAdmin = canAccessAdminPages(user);
-
-  // ---------------- ADMIN / STUDIO PAGE ----------------
-  if (isAdminPage) {
-    return (
-      <div className="flex items-center justify-end gap-3">
-        <div className="hidden w-[132px] md:block">
-          <ThemeToggle />
-        </div>
-        <Link
-          href="/"
-          className="rounded-[5px] px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground dark:hover:bg-white/10"
-        >
-          Exit Studio
-        </Link>
-      </div>
-    );
-  }
-
-  // ---------------- SIGNED IN ----------------
-  const instructor = await db.query.InstructorTable.findFirst({
-    where: eq(InstructorTable.userId, user.userId),
-    columns: { id: true },
-  });
-  const isInstructor = instructor != null;
-
-  const initials =
-    user.user?.name
-      ?.split(" ")
-      .map((part: string) => part[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() ?? null;
-
-  return (
-    <div className="flex items-center justify-end gap-2 sm:gap-3">
-      <MobileSearchTrigger />
-
-      <Popover>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            aria-label="Account menu"
-            className="flex items-center gap-1 rounded-[5px] p-0.5 transition-colors hover:bg-white/50 dark:hover:bg-white/10"
-          >
-            <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-gradient-to-b from-primary to-primary/80 text-xs font-bold text-primary-foreground dark:border-white/10">
-              {user.user?.image ? (
-                <Image
-                  src={user.user.image}
-                  alt=""
-                  fill
-                  className="object-cover"
-                />
-              ) : initials ? (
-                initials
-              ) : (
-                <User className="h-4 w-4" />
-              )}
-            </span>
-            <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
-          </button>
-        </PopoverTrigger>
-
-        <PopoverContent
-          align="end"
-          className="w-64 rounded-[5px] border-white/30 bg-white/80 p-1.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/70"
-        >
-          <div className="flex flex-col gap-0.5">
-            <GroupLabel>Learning</GroupLabel>
-            <Link
-              href="/courses"
-              className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-            >
-              <GraduationCap className="h-4 w-4" />
-              My Courses
-            </Link>
-            <Link
-              href="/certificates"
-              className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-            >
-              <Briefcase className="h-4 w-4" />
-              My Certificates
-            </Link>
-            <Link
-              href="/purchases"
-              className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-            >
-              <CoinsIcon className="h-4 w-4" />
-              My Purchases
-            </Link>
-
-            <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
-
-            {isAdmin ? (
-              <>
-                <GroupLabel>Admin</GroupLabel>
-                <Link
-                  href="/admin"
-                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-amber-600 transition-colors hover:bg-amber-500/10"
-                >
-                  <Shield className="h-4 w-4" />
-                  Creator Studio
-                </Link>
-              </>
-            ) : isInstructor ? (
-              <>
-                <GroupLabel>Teaching</GroupLabel>
-                <Link
-                  href="/teach/courses"
-                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Courses
-                </Link>
-                <Link
-                  href="/teach/products"
-                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-                >
-                  <Package className="h-4 w-4" />
-                  Products
-                </Link>
-                <Link
-                  href="/teach/sales"
-                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-                >
-                  <DollarSign className="h-4 w-4" />
-                  Sales
-                </Link>
-                <Link
-                  href="/teach/payouts"
-                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-                >
-                  <Wallet className="h-4 w-4" />
-                  Payouts
-                </Link>
               </>
             ) : (
-              <Link
-                href="/instructors/onboarding"
-                className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-              >
-                <Presentation className="h-4 w-4" />
-                Become a Tutor
-              </Link>
+              /* LOGGED-IN CONTENT */
+              <>
+                <GroupLabel>Learning</GroupLabel>
+                <Link
+                  href="/courses"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  My Courses
+                </Link>
+                <Link
+                  href="/certificates"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <Briefcase className="h-4 w-4" />
+                  My Certificates
+                </Link>
+                <Link
+                  href="/purchases"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <CoinsIcon className="h-4 w-4" />
+                  My Purchases
+                </Link>
+
+                <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
+
+                {isAdmin ? (
+                  <>
+                    <GroupLabel>Admin</GroupLabel>
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-amber-600 transition-colors hover:bg-amber-500/10"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Creator Studio
+                    </Link>
+                  </>
+                ) : isInstructor ? (
+                  <>
+                    <GroupLabel>Teaching</GroupLabel>
+                    <Link
+                      href="/teach/courses"
+                      className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      Courses
+                    </Link>
+                    <Link
+                      href="/teach/products"
+                      className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                    >
+                      <Package className="h-4 w-4" />
+                      Products
+                    </Link>
+                    <Link
+                      href="/teach/sales"
+                      className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                    >
+                      <DollarSign className="h-4 w-4" />
+                      Sales
+                    </Link>
+                    <Link
+                      href="/teach/payouts"
+                      className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                    >
+                      <Wallet className="h-4 w-4" />
+                      Payouts
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href="/instructors/onboarding"
+                    className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                  >
+                    <Presentation className="h-4 w-4" />
+                    Become a Tutor
+                  </Link>
+                )}
+
+                <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
+
+                <Link
+                  href="/account"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <User className="h-4 w-4" />
+                  Profile
+                </Link>
+              </>
             )}
 
-            <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
-
-            <Link
-              href="/account"
-              className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-            >
-              <User className="h-4 w-4" />
-              Profile
-            </Link>
-
+            {/* COMMON FOOTER */}
             <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
             <GroupLabel>Appearance</GroupLabel>
             <div className="px-1 pb-1">
@@ -337,5 +289,17 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
         </PopoverContent>
       </Popover>
     </div>
+  );
+}
+
+export function MobileSearchTrigger() {
+  return (
+    <Link
+      href="/browse"
+      aria-label="Search"
+      className="flex h-9 w-9 items-center justify-center rounded-[5px] text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground md:hidden dark:hover:bg-white/10"
+    >
+      <SearchIcon className="h-5 w-5" />
+    </Link>
   );
 }
