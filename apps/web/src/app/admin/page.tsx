@@ -1,3 +1,7 @@
+// Destination: apps/web/src/app/admin/page.tsx
+// Added LinkCards for /admin/payouts, /admin/reviews, and the new
+// /admin/revenue page — everything else is unchanged from what you pasted.
+
 import {
   Card,
   CardDescription,
@@ -89,6 +93,21 @@ export default async function AdminPage() {
           title="Courses"
           description="Manage courses, sections, and lessons"
           href="/admin/courses"
+        />
+        <LinkCard
+          title="Payouts"
+          description="Review and process instructor payout requests"
+          href="/admin/payouts"
+        />
+        <LinkCard
+          title="Reviews"
+          description="Moderate course reviews and instructor replies"
+          href="/admin/reviews"
+        />
+        <LinkCard
+          title="Revenue"
+          description="Platform revenue, monthly trends, and referral split"
+          href="/admin/revenue"
         />
       </div>
     </div>
