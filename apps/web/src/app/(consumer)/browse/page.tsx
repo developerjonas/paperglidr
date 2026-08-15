@@ -41,6 +41,16 @@ export default async function BrowsePage({
             Find the right course by title, topic, or category.
           </p>
         </div>
+        {/* Mobile-Only Search Bar */}
+        <div className="mt-6 md:hidden">
+          <Suspense
+            fallback={
+              <div className="h-10 w-full animate-pulse rounded-[5px] bg-muted" />
+            }
+          >
+            <SearchBar autoFocus />
+          </Suspense>
+        </div>
       </section>
 
       {/* ---------------- CATEGORY BAR (decorative until step 2) ---------------- */}
