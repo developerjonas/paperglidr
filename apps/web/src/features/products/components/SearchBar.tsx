@@ -1,12 +1,10 @@
 "use client";
-
 import { Input } from "@/components/ui/input";
 import { SearchIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-
 export function SearchBar({
-  redirectTo = "/",
+  redirectTo = "/browse",
   className,
 }: {
   /** Where results are shown. Search always routes here + ?q=... */
@@ -17,16 +15,13 @@ export function SearchBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const onResultsPage = pathname === redirectTo;
-
   const [value, setValue] = useState(
     onResultsPage ? (searchParams.get("q") ?? "") : "",
   );
   const [isPending, startTransition] = useTransition();
-
   useEffect(() => {
     if (onResultsPage) setValue(searchParams.get("q") ?? "");
   }, [searchParams, onResultsPage]);
-
   useEffect(() => {
     const timeout = setTimeout(() => {
       const params = new URLSearchParams(
@@ -38,17 +33,14 @@ export function SearchBar({
         params.delete("q");
       }
       startTransition(() => {
-        router.push(
-          `${redirectTo}${params.toString() ? `?${params}` : ""}#courses`,
-          { scroll: onResultsPage ? false : true },
-        );
+        router.push(`${redirectTo}${params.toString() ? `?${params}` : ""}`, {
+          scroll: onResultsPage ? false : true,
+        });
       });
     }, 350);
-
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
-
   return (
     <div className={`relative w-full ${className ?? ""}`}>
       <SearchIcon className="absolute left-4 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground" />
