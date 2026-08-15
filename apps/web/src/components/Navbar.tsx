@@ -1,15 +1,16 @@
-import Link from "next/link"
-import { Suspense } from "react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { canAccessAdminPages } from "@/permissions/general"
-import { getCurrentUser } from "@/services/clerk" // Swap with your Better Auth session call if needed
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Shield, User, GraduationCap, Presentation } from "lucide-react"
+import Link from "next/link";
+import { Suspense } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { canAccessAdminPages } from "@/permissions/general";
+import { getCurrentUser } from "@/services/clerk";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { SearchBar } from "@/features/products/components/SearchBar";
+import { Shield, User, GraduationCap, Presentation } from "lucide-react";
 
 type NavbarProps = {
-  isAdminPage?: boolean
-}
+  isAdminPage?: boolean;
+};
 
 export function Navbar({ isAdminPage = false }: NavbarProps) {
   return (
@@ -17,21 +18,42 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
       className="sticky top-0 z-50 w-full border-b border-white/20 bg-white/60 shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_8px_30px_-12px_rgba(0,0,0,0.1)] backdrop-blur-2xl backdrop-saturate-150
       dark:border-white/10 dark:bg-black/40 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset,0_8px_30px_-12px_rgba(0,0,0,0.5)]"
     >
-      <div className="container flex h-16 items-center justify-between px-4 sm:px-8">
-        <Link href="/" className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
-          PAPERGLIDR
-          {isAdminPage && (
-            <Badge
-              variant="secondary"
-              className="ml-1 border border-amber-500/30 bg-amber-500/10 text-amber-600 text-xs backdrop-blur-sm"
-            >
-              STUDIO
-            </Badge>
-          )}
-        </Link>
+      <div className="container flex flex-col gap-3 px-4 py-3 sm:px-8 md:h-16 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
+        <div className="flex w-full items-center justify-between md:w-auto">
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2 text-xl font-extrabold tracking-tight"
+          >
+            PAPERGLIDR
+            {isAdminPage && (
+              <Badge
+                variant="secondary"
+                className="ml-1 border border-amber-500/30 bg-amber-500/10 text-amber-600 text-xs backdrop-blur-sm"
+              >
+                STUDIO
+              </Badge>
+            )}
+          </Link>
+
+          {/* Mobile-only: theme toggle stays up top next to logo */}
+          <div className="md:hidden">
+            <ThemeToggle />
+          </div>
+        </div>
+
+        {!isAdminPage && (
+          <Suspense
+            fallback={
+              <div className="h-11 w-full max-w-md rounded-full bg-white/40 backdrop-blur-md dark:bg-white/5 md:mx-auto" />
+            }
+          >
+            <SearchBar className="md:mx-auto md:max-w-md" />
+          </Suspense>
+        )}
+
         <Suspense
           fallback={
-            <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-3 md:flex">
               <div className="h-9 w-40 animate-pulse rounded-full bg-white/40 backdrop-blur-md dark:bg-white/5" />
               <div className="h-9 w-[60px] animate-pulse rounded-full bg-white/40 backdrop-blur-md dark:bg-white/5" />
             </div>
@@ -41,23 +63,24 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
         </Suspense>
       </div>
     </header>
-  )
+  );
 }
 
 async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser();
 
-  // Guest state — Udemy-style: browse, become a tutor, sign in
   if (!user || !user.userId) {
     return (
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center justify-end gap-2 sm:gap-4">
         <Link
           href="/teach"
           className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground sm:block dark:hover:bg-white/10"
         >
           Teach
         </Link>
-        <ThemeToggle />
+        <div className="hidden md:block">
+          <ThemeToggle />
+        </div>
         <Button
           asChild
           size="sm"
@@ -66,15 +89,14 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
           <Link href="/sign-up">Get Started</Link>
         </Button>
       </div>
-    )
+    );
   }
 
-  const isAdmin = canAccessAdminPages(user)
+  const isAdmin = canAccessAdminPages(user);
 
-  // Admin/Studio mode — kept minimal, exit link only (assume a sidebar handles admin nav)
   if (isAdminPage) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-end gap-3">
         <ThemeToggle />
         <Link
           href="/"
@@ -83,12 +105,11 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
           Exit Studio
         </Link>
       </div>
-    )
+    );
   }
 
-  // Logged-in consumer mode
   return (
-    <div className="flex items-center gap-1 sm:gap-3">
+    <div className="flex items-center justify-end gap-1 sm:gap-3">
       {isAdmin ? (
         <Link
           href="/admin"
@@ -113,7 +134,9 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
         <GraduationCap className="h-4 w-4" />
         My Courses
       </Link>
-      <ThemeToggle />
+      <div className="hidden md:block">
+        <ThemeToggle />
+      </div>
       <Button
         asChild
         variant="outline"
@@ -126,5 +149,5 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
         </Link>
       </Button>
     </div>
-  )
+  );
 }

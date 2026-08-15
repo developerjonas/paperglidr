@@ -1,6 +1,6 @@
-import { and, eq, isNull } from "drizzle-orm"
+import { and, asc, eq, ilike, isNull } from "drizzle-orm"
 import { db } from "@/drizzle/db"
-import { revalidateProductCache } from "./cache"
+import { getProductGlobalTag, revalidateProductCache } from "./cache"
 import {
   CourseProductTable,
   ProductTable,
@@ -8,6 +8,7 @@ import {
 } from "@/drizzle/schema"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { getPurchaseUserTag } from "@/features/purchases/db/cache"
+import { wherePublicProducts } from "../permissions/products"
 
 export async function userOwnsProduct({
   userId,
@@ -99,4 +100,23 @@ export async function deleteProduct(id: string) {
   revalidateProductCache(deletedProduct.id)
 
   return deletedProduct
+}
+
+export async function searchPublicProducts(query: string) {
+  "use cache"
+  cacheTag(getProductGlobalTag())
+
+  const trimmed = query.trim()
+
+  return db.query.ProductTable.findMany({
+    columns: {
+      id: true,
+      name: true,
+      description: true,
+      priceInRupees: true,
+      imageUrl: true,
+    },
+    where: and(wherePublicProducts, ilike(ProductTable.name, `%${trimmed}%`)),
+    orderBy: asc(ProductTable.name),
+  })
 }

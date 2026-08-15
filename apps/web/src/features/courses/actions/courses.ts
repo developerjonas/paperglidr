@@ -5,7 +5,7 @@ import { courseSchema } from "../schemas/courses";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/services/clerk";
 import {
-    canCreateCourse,
+  canCreateCourse,
   canCreateCourses,
   canDeleteCourses,
   canUpdateCourses,
