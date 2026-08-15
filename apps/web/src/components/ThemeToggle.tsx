@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useTheme } from "next-themes"
-import { Moon, Sun } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   // Avoid a hydration mismatch — resolvedTheme is only known client-side
-  useEffect(() => setMounted(true), [])
+  useEffect(() => setMounted(true), []);
 
   if (!mounted) {
     return (
@@ -17,10 +17,10 @@ export function ThemeToggle() {
         aria-hidden
         className="h-9 w-[60px] shrink-0 rounded-full border border-white/30 bg-white/40 backdrop-blur-md dark:border-white/10 dark:bg-white/5"
       />
-    )
+    );
   }
 
-  const isDark = resolvedTheme === "dark"
+  const isDark = resolvedTheme === "dark";
 
   return (
     <button
@@ -47,5 +47,5 @@ export function ThemeToggle() {
         )}
       </span>
     </button>
-  )
+  );
 }

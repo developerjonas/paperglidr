@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/popover";
 import { canAccessAdminPages } from "@/permissions/general";
 import { getCurrentUser } from "@/services/clerk";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { SearchBar } from "@/features/products/components/SearchBar";
 import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";
@@ -55,10 +55,6 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
               </Badge>
             )}
           </Link>
-
-          <div className="md:hidden">
-            <ThemeToggle />
-          </div>
         </div>
 
         {!isAdminPage && (
@@ -99,6 +95,7 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
 async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
   const user = await getCurrentUser({ allData: true });
 
+  // Guest state — no dropdown exists yet, so theme control stays inline here.
   if (!user || !user.userId) {
     return (
       <div className="flex items-center justify-end gap-2 sm:gap-4">
@@ -108,7 +105,7 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
         >
           Teach
         </Link>
-        <div className="hidden md:block">
+        <div className="hidden w-[132px] md:block">
           <ThemeToggle />
         </div>
         <Button
@@ -124,10 +121,13 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
 
   const isAdmin = canAccessAdminPages(user);
 
+  // Admin/Studio mode — kept as a standalone control, same reasoning as guest.
   if (isAdminPage) {
     return (
       <div className="flex items-center justify-end gap-3">
-        <ThemeToggle />
+        <div className="w-[132px]">
+          <ThemeToggle />
+        </div>
         <Link
           href="/"
           className="rounded-[5px] px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground dark:hover:bg-white/10"
@@ -138,9 +138,6 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
     );
   }
 
-  // NOTE: swap this for whatever cached lookup already exists in
-  // features/instructors/db/instructors.ts (e.g. getInstructorByUserId) —
-  // this inline query works but bypasses your existing cache-tag setup.
   const instructor = await db.query.InstructorTable.findFirst({
     where: eq(InstructorTable.userId, user.userId),
     columns: { id: true },
@@ -157,10 +154,6 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
 
   return (
     <div className="flex items-center justify-end gap-2 sm:gap-3">
-      <div className="hidden md:block">
-        <ThemeToggle />
-      </div>
-
       <Popover>
         <PopoverTrigger asChild>
           <button
@@ -280,14 +273,12 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
               <User className="h-4 w-4" />
               Profile
             </Link>
-            <div className="md:hidden">
-              <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
-              <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Theme
-                </span>
-                <ThemeToggle />
-              </div>
+
+            {/* ---------------- APPEARANCE GROUP ---------------- */}
+            <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
+            <GroupLabel>Appearance</GroupLabel>
+            <div className="px-1 pb-1">
+              <ThemeToggle />
             </div>
           </div>
         </PopoverContent>
