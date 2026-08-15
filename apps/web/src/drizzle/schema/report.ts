@@ -3,6 +3,10 @@ import { createdAt, updatedAt } from "../schemaHelpers";
 import { relations } from "drizzle-orm";
 import { UserTable } from "./user";
 import { CourseTable } from "./course";
+import { CourseReviewTable } from "./review";
+import { CourseProductTable } from "./courseProduct";
+import { UserCourseAccessTable } from "./userCourseAccess";
+import { CourseSectionTable } from "./courseSection";
 
 // Kept generic on purpose: today it's only used for courses, but "report the
 // instructor" / "report a specific lesson" are one enum value away, no migration needed.
@@ -64,3 +68,28 @@ export const ReportRelationships = relations(ReportTable, ({ one }) => ({
     references: [UserTable.id],
   }),
 }));
+
+export const CourseRelationships = relations(CourseTable, ({ one, many }) => ({
+  author: one(UserTable, {
+    fields: [CourseTable.authorId],
+    references: [UserTable.id],
+  }),
+  courseProducts: many(CourseProductTable),
+  userCourseAccesses: many(UserCourseAccessTable),
+  courseSections: many(CourseSectionTable),
+  courseReviews: many(CourseReviewTable),
+}));
+
+export const CourseReviewRelationships = relations(
+  CourseReviewTable,
+  ({ one }) => ({
+    course: one(CourseTable, {
+      fields: [CourseReviewTable.courseId],
+      references: [CourseTable.id],
+    }),
+    user: one(UserTable, {
+      fields: [CourseReviewTable.userId],
+      references: [UserTable.id],
+    }),
+  }),
+);
