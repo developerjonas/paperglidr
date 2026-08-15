@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   Form,
   FormControl,
@@ -10,41 +10,44 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { RequiredLabelIcon } from "@/components/RequiredLabelIcon"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { actionToast } from "@/hooks/use-toast"
-import { productSchema } from "../schema/products"
-import { ProductStatus, productStatuses } from "@/drizzle/schema"
-import { createProduct, updateProduct } from "../actions/products"
+} from "@/components/ui/form";
+import { RequiredLabelIcon } from "@/components/RequiredLabelIcon";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { actionToast } from "@/hooks/use-toast";
+import { productSchema } from "../schema/products";
+import { ProductStatus, productStatuses } from "@/drizzle/schema";
+import { createProduct, updateProduct } from "../actions/products";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { MultiSelect } from "@/components/ui/custom/multi-select"
+} from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/custom/multi-select";
 
 export function ProductForm({
   product,
   courses,
+  categories,
+  tags,
 }: {
   product?: {
-    id: string
-    name: string
-    description: string
-    priceInRupees: number
-    imageUrl: string
-    status: ProductStatus
-    courseIds: string[]
-  }
-  courses: {
-    id: string
-    name: string
-  }[]
+    id: string;
+    name: string;
+    description: string;
+    priceInRupees: number;
+    imageUrl: string;
+    status: ProductStatus;
+    categoryId?: string | null;
+    tagIds: string[];
+    courseIds: string[];
+  };
+  courses: { id: string; name: string }[];
+  categories: { id: string; name: string }[];
+  tags: { id: string; name: string }[];
 }) {
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
@@ -52,17 +55,19 @@ export function ProductForm({
       name: "",
       description: "",
       courseIds: [],
+      tagIds: [],
+      categoryId: null,
       imageUrl: "",
       priceInRupees: 0,
       status: "private",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof productSchema>) {
     const action =
-      product == null ? createProduct : updateProduct.bind(null, product.id)
-    const data = await action(values)
-    actionToast({ actionData: data })
+      product == null ? createProduct : updateProduct.bind(null, product.id);
+    const data = await action(values);
+    actionToast({ actionData: data });
   }
 
   return (
@@ -78,8 +83,7 @@ export function ProductForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  <RequiredLabelIcon />
-                  Name
+                  <RequiredLabelIcon /> Name
                 </FormLabel>
                 <FormControl>
                   <Input {...field} />
@@ -94,8 +98,7 @@ export function ProductForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  <RequiredLabelIcon />
-                  Price
+                  <RequiredLabelIcon /> Price
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -103,11 +106,11 @@ export function ProductForm({
                     {...field}
                     step={1}
                     min={0}
-                    onChange={e =>
+                    onChange={(e) =>
                       field.onChange(
                         isNaN(e.target.valueAsNumber)
                           ? ""
-                          : e.target.valueAsNumber
+                          : e.target.valueAsNumber,
                       )
                     }
                   />
@@ -122,8 +125,7 @@ export function ProductForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  <RequiredLabelIcon />
-                  Image Url
+                  <RequiredLabelIcon /> Image Url
                 </FormLabel>
                 <FormControl>
                   <Input {...field} />
@@ -148,7 +150,7 @@ export function ProductForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {productStatuses.map(status => (
+                    {productStatuses.map((status) => (
                       <SelectItem key={status} value={status}>
                         {status}
                       </SelectItem>
@@ -159,7 +161,57 @@ export function ProductForm({
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="categoryId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value ?? undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
+
+        <FormField
+          control={form.control}
+          name="tagIds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Product Tags</FormLabel>
+              <FormControl>
+                <MultiSelect
+                  selectPlaceholder="Select tags"
+                  searchPlaceholder="Search tags"
+                  options={tags}
+                  getLabel={(t) => t.name}
+                  getValue={(t) => t.id}
+                  selectedValues={field.value}
+                  onSelectedValuesChange={field.onChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="courseIds"
@@ -171,8 +223,8 @@ export function ProductForm({
                   selectPlaceholder="Select courses"
                   searchPlaceholder="Search courses"
                   options={courses}
-                  getLabel={c => c.name}
-                  getValue={c => c.id}
+                  getLabel={(c) => c.name}
+                  getValue={(c) => c.id}
                   selectedValues={field.value}
                   onSelectedValuesChange={field.onChange}
                 />
@@ -181,14 +233,14 @@ export function ProductForm({
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="description"
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                <RequiredLabelIcon />
-                Description
+                <RequiredLabelIcon /> Description
               </FormLabel>
               <FormControl>
                 <Textarea className="min-h-20 resize-none" {...field} />
@@ -197,6 +249,7 @@ export function ProductForm({
             </FormItem>
           )}
         />
+
         <div className="self-end">
           <Button disabled={form.formState.isSubmitting} type="submit">
             Save
@@ -204,5 +257,5 @@ export function ProductForm({
         </div>
       </form>
     </Form>
-  )
+  );
 }

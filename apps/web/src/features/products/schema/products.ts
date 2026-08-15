@@ -1,5 +1,5 @@
-import { productStatuses } from "@/drizzle/schema"
-import { z } from "zod"
+import { productStatuses } from "@/drizzle/schema";
+import { z } from "zod";
 
 export const productSchema = z.object({
   name: z.string().min(1, "Required"),
@@ -10,5 +10,7 @@ export const productSchema = z.object({
     z.string().startsWith("/", "Invalid url"),
   ]),
   status: z.enum(productStatuses),
+  categoryId: z.string().nullable().optional(),
+  tagIds: z.array(z.string()).default([]),
   courseIds: z.array(z.string()).min(1, "At least one course is required"),
-})
+});

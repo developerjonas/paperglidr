@@ -4,17 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Presentation, ArrowRight, Sparkles } from "lucide-react";
 import { ProductCard } from "@/features/products/components/ProductCard";
 import { getPublicProducts } from "@/features/products/db/products";
-
-const CATEGORIES = [
-  { id: "tech", name: "Web & Software" },
-  { id: "loksewa", name: "Lok Sewa & Govt." },
-  { id: "academics", name: "SEE & Class 11/12" },
-  { id: "design", name: "UI/UX & Design" },
-  { id: "business", name: "Business & Marketing" },
-];
+import { getPublicCategories } from "@/features/categories/db/categories"; // Import your fetch helper
 
 export default async function HomePage() {
-  const products = await getPublicProducts();
+  const [products, categories] = await Promise.all([
+    getPublicProducts(),
+    getPublicCategories(),
+  ]);
 
   return (
     <div className="flex flex-col">
@@ -36,18 +32,20 @@ export default async function HomePage() {
             </h1>
           </div>
 
-          {/* Category chips */}
-          <div className="no-scrollbar mt-6 flex items-center justify-center gap-2 overflow-x-auto py-1">
-            {CATEGORIES.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/browse?category=${cat.id}`}
-                className="inline-flex shrink-0 items-center gap-2 rounded-[5px] bg-muted/50 px-4 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-              >
-                {cat.name}
-              </Link>
-            ))}
-          </div>
+          {/* Dynamic Category Chips */}
+          {categories.length > 0 && (
+            <div className="no-scrollbar mt-6 flex items-center justify-center gap-2 overflow-x-auto py-1">
+              {categories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  href={`/browse?category=${cat.id}`}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-[5px] bg-muted/50 px-4 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+                >
+                  {cat.name}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

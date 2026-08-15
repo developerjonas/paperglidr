@@ -1,132 +1,136 @@
-import { and, asc, eq, ilike, isNull } from "drizzle-orm";
+import { and, asc, eq, ilike } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { getProductGlobalTag, revalidateProductCache } from "./cache";
 import {
   CourseProductTable,
   ProductTable,
-  PurchaseTable,
+  ProductTagTable,
+  CategoryTable,
 } from "@/drizzle/schema";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
-import { getPurchaseUserTag } from "@/features/purchases/db/cache";
 import { wherePublicProducts } from "../permissions/products";
 
-export async function userOwnsProduct({
-  userId,
-  productId,
-}: {
-  userId: string;
-  productId: string;
-}) {
-  "use cache";
-  cacheTag(getPurchaseUserTag(userId));
-
-  const existingPurchase = await db.query.PurchaseTable.findFirst({
-    where: and(
-      eq(PurchaseTable.productId, productId),
-      eq(PurchaseTable.userId, userId),
-      isNull(PurchaseTable.refundedAt),
-    ),
-  });
-
-  return existingPurchase != null;
-}
-
 export async function insertProduct(
-  data: typeof ProductTable.$inferInsert & { courseIds: string[] },
+  data: typeof ProductTable.$inferInsert & {
+    courseIds: string[];
+    tagIds?: string[];
+  },
 ) {
+  const { courseIds, tagIds = [], ...productValues } = data;
+
   const newProduct = await db.transaction(async (trx) => {
     const [newProduct] = await trx
       .insert(ProductTable)
-      .values(data)
+      .values(productValues)
       .returning();
+
     if (newProduct == null) {
       trx.rollback();
       throw new Error("Failed to create product");
     }
 
-    await trx.insert(CourseProductTable).values(
-      data.courseIds.map((courseId) => ({
-        productId: newProduct.id,
-        courseId,
-      })),
-    );
+    if (courseIds.length > 0) {
+      await trx.insert(CourseProductTable).values(
+        courseIds.map((courseId) => ({
+          productId: newProduct.id,
+          courseId,
+        })),
+      );
+    }
+
+    if (tagIds.length > 0) {
+      await trx.insert(ProductTagTable).values(
+        tagIds.map((tagId) => ({
+          productId: newProduct.id,
+          tagId,
+        })),
+      );
+    }
 
     return newProduct;
   });
 
   revalidateProductCache(newProduct.id);
-
   return newProduct;
 }
 
 export async function updateProduct(
   id: string,
-  data: Partial<typeof ProductTable.$inferInsert> & { courseIds: string[] },
+  data: Partial<typeof ProductTable.$inferInsert> & {
+    courseIds: string[];
+    tagIds?: string[];
+  },
 ) {
+  const { courseIds, tagIds = [], ...productValues } = data;
+
   const updatedProduct = await db.transaction(async (trx) => {
     const [updatedProduct] = await trx
       .update(ProductTable)
-      .set(data)
+      .set(productValues)
       .where(eq(ProductTable.id, id))
       .returning();
+
     if (updatedProduct == null) {
       trx.rollback();
-      throw new Error("Failed to create product");
+      throw new Error("Failed to update product");
     }
 
     await trx
       .delete(CourseProductTable)
       .where(eq(CourseProductTable.productId, updatedProduct.id));
 
-    await trx.insert(CourseProductTable).values(
-      data.courseIds.map((courseId) => ({
-        productId: updatedProduct.id,
-        courseId,
-      })),
-    );
+    if (courseIds.length > 0) {
+      await trx.insert(CourseProductTable).values(
+        courseIds.map((courseId) => ({
+          productId: updatedProduct.id,
+          courseId,
+        })),
+      );
+    }
+
+    await trx
+      .delete(ProductTagTable)
+      .where(eq(ProductTagTable.productId, updatedProduct.id));
+
+    if (tagIds.length > 0) {
+      await trx.insert(ProductTagTable).values(
+        tagIds.map((tagId) => ({
+          productId: updatedProduct.id,
+          tagId,
+        })),
+      );
+    }
 
     return updatedProduct;
   });
 
   revalidateProductCache(updatedProduct.id);
-
   return updatedProduct;
 }
 
-export async function deleteProduct(id: string) {
-  const [deletedProduct] = await db
-    .delete(ProductTable)
-    .where(eq(ProductTable.id, id))
-    .returning();
-  if (deletedProduct == null) throw new Error("Failed to delete product");
-
-  revalidateProductCache(deletedProduct.id);
-
-  return deletedProduct;
-}
-
-export async function searchPublicProducts(query: string) {
+export async function getPublicProducts({
+  query = "",
+  categorySlug,
+}: {
+  query?: string;
+  categorySlug?: string;
+} = {}) {
   "use cache";
   cacheTag(getProductGlobalTag());
 
   const trimmed = query.trim();
 
-  return db.query.ProductTable.findMany({
-    columns: {
-      id: true,
-      name: true,
-      description: true,
-      priceInRupees: true,
-      imageUrl: true,
-    },
-    where: and(wherePublicProducts, ilike(ProductTable.name, `%${trimmed}%`)),
-    orderBy: asc(ProductTable.name),
-  });
-}
+  let categoryIdFilter: string | undefined;
 
-export async function getPublicProducts() {
-  "use cache";
-  cacheTag(getProductGlobalTag());
+  if (categorySlug && categorySlug !== "all") {
+    const category = await db.query.CategoryTable.findFirst({
+      where: eq(CategoryTable.slug, categorySlug),
+      columns: { id: true },
+    });
+    if (category) {
+      categoryIdFilter = category.id;
+    }
+  }
 
   return db.query.ProductTable.findMany({
     columns: {
@@ -136,7 +140,13 @@ export async function getPublicProducts() {
       priceInRupees: true,
       imageUrl: true,
     },
-    where: wherePublicProducts,
+    where: and(
+      wherePublicProducts,
+      trimmed ? ilike(ProductTable.name, `%${trimmed}%`) : undefined,
+      categoryIdFilter
+        ? eq(ProductTable.categoryId, categoryIdFilter)
+        : undefined,
+    ),
     orderBy: asc(ProductTable.name),
   });
 }

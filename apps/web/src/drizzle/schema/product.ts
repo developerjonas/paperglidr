@@ -2,7 +2,9 @@ import { relations } from "drizzle-orm";
 import { pgTable, text, integer, pgEnum, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../schemaHelpers";
 import { CourseProductTable } from "./courseProduct";
-import { UserTable } from "./user"; // Make sure this import points to your user schema
+import { UserTable } from "./user";
+import { CategoryTable } from "./category";
+import { ProductTagTable } from "./tag";
 
 export const productStatuses = ["public", "private"] as const;
 export type ProductStatus = (typeof productStatuses)[number];
@@ -15,12 +17,12 @@ export const ProductTable = pgTable("products", {
   imageUrl: text().notNull(),
   priceInRupees: integer().notNull(),
   status: productStatusEnum().notNull().default("private"),
-
-  // Links product to the user who created it
+  categoryId: uuid("category_id").references(() => CategoryTable.id, {
+    onDelete: "set null",
+  }),
   authorId: uuid("author_id")
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),
-
   createdAt,
   updatedAt,
 });
@@ -28,11 +30,15 @@ export const ProductTable = pgTable("products", {
 export const ProductRelationships = relations(
   ProductTable,
   ({ one, many }) => ({
-    // Relates product back to its author/creator
     author: one(UserTable, {
       fields: [ProductTable.authorId],
       references: [UserTable.id],
     }),
+    category: one(CategoryTable, {
+      fields: [ProductTable.categoryId],
+      references: [CategoryTable.id],
+    }),
     courseProducts: many(CourseProductTable),
+    productTags: many(ProductTagTable),
   }),
 );
