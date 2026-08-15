@@ -6,6 +6,7 @@ import {
   ProductTable,
   ProductTagTable,
   CategoryTable,
+  PurchaseTable,
 } from "@/drizzle/schema";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { wherePublicProducts } from "../permissions/products";
@@ -149,4 +150,32 @@ export async function getPublicProducts({
     ),
     orderBy: asc(ProductTable.name),
   });
+}
+
+export async function userOwnsProduct({
+  userId,
+  productId,
+}: {
+  userId: string;
+  productId: string;
+}) {
+  if (!userId) return false;
+
+  const existingPurchase = await db.query.PurchaseTable.findFirst({
+    where: and(
+      eq(PurchaseTable.userId, userId),
+      eq(PurchaseTable.productId, productId),
+    ),
+  });
+
+  return existingPurchase != null;
+}
+
+export async function deleteProduct(id: string) {
+  const [deletedProduct] = await db
+    .delete(ProductTable)
+    .where(eq(ProductTable.id, id))
+    .returning();
+
+  return deletedProduct;
 }

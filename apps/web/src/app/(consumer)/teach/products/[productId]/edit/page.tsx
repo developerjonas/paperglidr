@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { db } from "@/drizzle/db";
-import { CourseTable, ProductTable } from "@/drizzle/schema";
+import { CourseTable, ProductTable, CategoryTable, TagTable } from "@/drizzle/schema";
 import { getCourseGlobalTag } from "@/features/courses/db/cache/courses";
 import { ProductForm } from "@/features/products/components/ProductForm";
 import { getProductIdTag } from "@/features/products/db/cache";
@@ -22,6 +22,13 @@ export default async function EditProductPage({
   const product = await getProduct(productId);
   if (product == null) return notFound();
 
+  // Fetch all options for the form
+  const [courses, categories, tags] = await Promise.all([
+    getCourses(),
+    getCategories(),
+    getTags(),
+  ]);
+
   return (
     <div className="container my-6 flex flex-col gap-10">
       <div>
@@ -29,9 +36,13 @@ export default async function EditProductPage({
         <ProductForm
           product={{
             ...product,
+            categoryId: product.categoryId ?? null,
             courseIds: product.courseProducts.map((c) => c.courseId),
+            tagIds: product.productTags?.map((t) => t.tagId) ?? [],
           }}
-          courses={await getCourses()}
+          courses={courses}
+          categories={categories}
+          tags={tags}
         />
       </div>
       <div>
@@ -56,9 +67,6 @@ async function getDiscountCodesForProduct(productId: string, authorId: string) {
   "use cache";
   cacheTag(getDiscountCodeCreatorTag(authorId));
   return db.query.DiscountCodeTable.findMany({
-    // A product's page shows codes scoped directly to it, PLUS any
-    // storewide code this creator has running — both are redeemable
-    // against this product at checkout.
     where: or(
       eq(DbDiscountCodeTable.productId, productId),
       and(
@@ -80,6 +88,20 @@ async function getCourses() {
   });
 }
 
+async function getCategories() {
+  return db.query.CategoryTable.findMany({
+    orderBy: asc(CategoryTable.name),
+    columns: { id: true, name: true },
+  });
+}
+
+async function getTags() {
+  return db.query.TagTable.findMany({
+    orderBy: asc(TagTable.name),
+    columns: { id: true, name: true },
+  });
+}
+
 async function getProduct(id: string) {
   "use cache";
   cacheTag(getProductIdTag(id));
@@ -92,8 +114,12 @@ async function getProduct(id: string) {
       status: true,
       imageUrl: true,
       authorId: true,
+      categoryId: true,
     },
     where: eq(ProductTable.id, id),
-    with: { courseProducts: { columns: { courseId: true } } },
+    with: {
+      courseProducts: { columns: { courseId: true } },
+      productTags: { columns: { tagId: true } },
+    },
   });
 }
