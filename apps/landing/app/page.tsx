@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "next/link";
 import {
   Upload,
   Wallet,
@@ -6,7 +6,7 @@ import {
   ShieldCheck,
   Smartphone,
   ArrowRight,
-} from "lucide-react"
+} from "lucide-react";
 
 export default function Home() {
   return (
@@ -48,7 +48,10 @@ export default function Home() {
           </div>
 
           <div className="relative h-80 w-full sm:h-100" aria-hidden="true">
-            <svg viewBox="0 0 400 400" className="absolute inset-0 h-full w-full">
+            <svg
+              viewBox="0 0 400 400"
+              className="absolute inset-0 h-full w-full"
+            >
               <path
                 d="M 40 340 C 120 260, 160 180, 340 60"
                 fill="none"
@@ -118,7 +121,10 @@ export default function Home() {
               body: "Students check out with QR and mobile wallets, not a foreign card form that fails at checkout.",
             },
           ].map(({ icon: Icon, title, body }) => (
-            <div key={title} className="rounded-2xl bg-[#E8E4D9] p-8 dark:bg-white/4">
+            <div
+              key={title}
+              className="rounded-2xl bg-[#E8E4D9] p-8 dark:bg-white/4"
+            >
               <Icon className="h-6 w-6 text-[#6FA8DC]" />
               <h3 className="mt-4 text-lg font-medium text-[#14213D] dark:text-[#F5F3EE]">
                 {title}
@@ -132,7 +138,10 @@ export default function Home() {
       </section>
 
       {/* ---------- HOW IT WORKS ---------- */}
-      <section id="how-it-works" className="mx-auto w-full max-w-7xl px-6 py-20 sm:py-28 lg:px-8">
+      <section
+        id="how-it-works"
+        className="mx-auto w-full max-w-7xl px-6 py-20 sm:py-28 lg:px-8"
+      >
         <h2
           className="text-3xl font-medium text-[#14213D] dark:text-[#F5F3EE] sm:text-4xl"
           style={{ fontFamily: "'Fraunces', serif" }}
@@ -189,7 +198,7 @@ export default function Home() {
             Every payout lands in the wallet you already use.
           </h2>
           <div className="mt-8 flex flex-wrap gap-3">
-            {["eSewa", "Khalti", "Fonepay"].map(name => (
+            {["eSewa", "Khalti", "Fonepay"].map((name) => (
               <span
                 key={name}
                 className="rounded-full border border-[#F5F3EE]/20 px-4 py-2 text-sm font-medium text-[#F5F3EE]"
@@ -226,7 +235,9 @@ export default function Home() {
       {/* ---------- FOOTER ---------- */}
       <footer className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-6 py-10 text-sm text-[#14213D]/60 dark:text-[#F5F3EE]/50 sm:flex-row lg:px-8">
         <span style={{ fontFamily: "'Fraunces', serif" }}>PaperGlidr</span>
-        <span>&copy; {new Date().getFullYear()} PaperGlidr. All rights reserved.</span>
+        <span>
+          &copy; {new Date().getFullYear()} PaperGlidr. All rights reserved.
+        </span>
       </footer>
 
       <style>{`
@@ -245,5 +256,5 @@ export default function Home() {
         }
       `}</style>
     </div>
-  )
+  );
 }
