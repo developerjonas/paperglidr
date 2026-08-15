@@ -77,3 +77,31 @@ export async function getUserCourseCompletionPercent(
   ).length;
   return completedCount / lessons.length;
 }
+
+/**
+ * The course author (instructor) or an admin can reply to a review.
+ */
+export async function canReplyToCourseReview(
+  { userId, role }: { userId: string | undefined; role: UserRole | undefined },
+  reviewId: string,
+) {
+  if (!userId || !reviewId) return false;
+  if (canAccessAdminPages({ role })) return true;
+
+  const review = await db.query.CourseReviewTable.findFirst({
+    where: eq(CourseReviewTable.id, reviewId),
+    with: { course: true },
+  });
+  return review?.course?.authorId === userId;
+}
+
+/**
+ * Instructors can view all reviews on courses they authored; admins can view all.
+ */
+export function canViewCourseReviewsDashboard({
+  role,
+}: {
+  role: UserRole | undefined;
+}) {
+  return canAccessAdminPages({ role }); // instructors get their own filtered query below, no special flag needed
+}

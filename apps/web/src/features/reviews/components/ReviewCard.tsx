@@ -13,6 +13,7 @@ export function ReviewCard({
     content: string | null;
     createdAt: Date;
     updatedAt: Date;
+    instructorReply: string | null;
     user: { name: string; image: string | null };
   };
   isAuthenticated: boolean;
@@ -32,7 +33,7 @@ export function ReviewCard({
         </span>
       </CardHeader>
       {review.content && (
-        <CardContent>
+        <CardContent className="flex flex-col gap-3">
           {isAuthenticated ? (
             <p className="text-sm text-muted-foreground">{review.content}</p>
           ) : (
@@ -45,6 +46,13 @@ export function ReviewCard({
                   <Link href="/sign-in">Sign in to read this review</Link>
                 </Button>
               </div>
+            </div>
+          )}
+
+          {review.instructorReply && (
+            <div className="rounded-md bg-muted p-3 text-sm">
+              <div className="font-medium mb-1">Instructor response</div>
+              <p className="text-muted-foreground">{review.instructorReply}</p>
             </div>
           )}
         </CardContent>

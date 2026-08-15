@@ -1,5 +1,5 @@
 import { db } from "@/drizzle/db";
-import { CourseReviewTable } from "@/drizzle/schema";
+import { CourseReviewTable, UserRole } from "@/drizzle/schema";
 import { and, avg, count, eq } from "drizzle-orm";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { revalidateCourseReviewCache, getCourseReviewCourseTag } from "./cache";
@@ -96,4 +96,51 @@ export async function getUserReviewForCourse(userId: string, courseId: string) {
     where: (reviews, { and, eq }) =>
       and(eq(reviews.userId, userId), eq(reviews.courseId, courseId)),
   });
+}
+
+export async function setInstructorReply(id: string, reply: string | null) {
+  return updateReview(id, {
+    instructorReply: reply,
+    instructorReplyAt: reply ? new Date() : null,
+  });
+}
+
+// Student edits should clear any existing instructor reply, matching Udemy's behavior.
+export async function updateReviewContent(
+  id: string,
+  data: { rating: number; content?: string },
+) {
+  return updateReview(id, {
+    ...data,
+    instructorReply: null,
+    instructorReplyAt: null,
+  });
+}
+
+/**
+ * All reviews for courses authored by this instructor (or all reviews, for admins).
+ * Includes hidden reviews — instructors/admins need to see those too.
+ */
+export async function getReviewsForInstructor({
+  userId,
+  role,
+  courseId,
+}: {
+  userId: string;
+  role: UserRole | undefined;
+  courseId?: string;
+}) {
+  const isAdmin = role === "admin";
+  const reviews = await db.query.CourseReviewTable.findMany({
+    where: (reviews, { eq }) =>
+      courseId ? eq(reviews.courseId, courseId) : undefined,
+    orderBy: (reviews, { desc }) => desc(reviews.createdAt),
+    with: {
+      user: { columns: { name: true, image: true } },
+      course: { columns: { id: true, name: true, authorId: true } },
+    },
+  });
+  return isAdmin
+    ? reviews
+    : reviews.filter((r) => r.course.authorId === userId);
 }
