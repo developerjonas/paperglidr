@@ -1,17 +1,13 @@
 import { BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/features/products/components/ProductCard";
-import { searchPublicProducts } from "@/features/products/db/products";
+import {
+  getPublicProducts,
+  searchPublicProducts,
+} from "@/features/products/db/products";
 import { SearchBar } from "@/features/products/components/SearchBar";
 import { Suspense } from "react";
-import { wherePublicProducts } from "@/features/products/permissions/products";
-import { ProductTable } from "@/drizzle/schema";
-import { asc } from "drizzle-orm";
-import { db } from "@/drizzle/db";
-import { cacheTag } from "next/dist/server/use-cache/cache-tag";
-import { getProductGlobalTag } from "@/features/products/db/cache";
 
-// Same hardcoded list for now — becomes DB-driven in step 2
 const HARDCODED_CATEGORIES = [
   { id: "all", name: "All Courses" },
   { id: "tech", name: "Web & Software" },
@@ -110,21 +106,4 @@ export default async function BrowsePage({
       </section>
     </div>
   );
-}
-
-export async function getPublicProducts() {
-  "use cache";
-  cacheTag(getProductGlobalTag());
-
-  return db.query.ProductTable.findMany({
-    columns: {
-      id: true,
-      name: true,
-      description: true,
-      priceInRupees: true,
-      imageUrl: true,
-    },
-    where: wherePublicProducts,
-    orderBy: asc(ProductTable.name),
-  });
 }

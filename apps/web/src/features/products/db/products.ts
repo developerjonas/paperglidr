@@ -1,112 +1,115 @@
-import { and, asc, eq, ilike, isNull } from "drizzle-orm"
-import { db } from "@/drizzle/db"
-import { getProductGlobalTag, revalidateProductCache } from "./cache"
+import { and, asc, eq, ilike, isNull } from "drizzle-orm";
+import { db } from "@/drizzle/db";
+import { getProductGlobalTag, revalidateProductCache } from "./cache";
 import {
   CourseProductTable,
   ProductTable,
   PurchaseTable,
-} from "@/drizzle/schema"
-import { cacheTag } from "next/dist/server/use-cache/cache-tag"
-import { getPurchaseUserTag } from "@/features/purchases/db/cache"
-import { wherePublicProducts } from "../permissions/products"
+} from "@/drizzle/schema";
+import { cacheTag } from "next/dist/server/use-cache/cache-tag";
+import { getPurchaseUserTag } from "@/features/purchases/db/cache";
+import { wherePublicProducts } from "../permissions/products";
 
 export async function userOwnsProduct({
   userId,
   productId,
 }: {
-  userId: string
-  productId: string
+  userId: string;
+  productId: string;
 }) {
-  "use cache"
-  cacheTag(getPurchaseUserTag(userId))
+  "use cache";
+  cacheTag(getPurchaseUserTag(userId));
 
   const existingPurchase = await db.query.PurchaseTable.findFirst({
     where: and(
       eq(PurchaseTable.productId, productId),
       eq(PurchaseTable.userId, userId),
-      isNull(PurchaseTable.refundedAt)
+      isNull(PurchaseTable.refundedAt),
     ),
-  })
+  });
 
-  return existingPurchase != null
+  return existingPurchase != null;
 }
 
 export async function insertProduct(
-  data: typeof ProductTable.$inferInsert & { courseIds: string[] }
+  data: typeof ProductTable.$inferInsert & { courseIds: string[] },
 ) {
-  const newProduct = await db.transaction(async trx => {
-    const [newProduct] = await trx.insert(ProductTable).values(data).returning()
+  const newProduct = await db.transaction(async (trx) => {
+    const [newProduct] = await trx
+      .insert(ProductTable)
+      .values(data)
+      .returning();
     if (newProduct == null) {
-      trx.rollback()
-      throw new Error("Failed to create product")
+      trx.rollback();
+      throw new Error("Failed to create product");
     }
 
     await trx.insert(CourseProductTable).values(
-      data.courseIds.map(courseId => ({
+      data.courseIds.map((courseId) => ({
         productId: newProduct.id,
         courseId,
-      }))
-    )
+      })),
+    );
 
-    return newProduct
-  })
+    return newProduct;
+  });
 
-  revalidateProductCache(newProduct.id)
+  revalidateProductCache(newProduct.id);
 
-  return newProduct
+  return newProduct;
 }
 
 export async function updateProduct(
   id: string,
-  data: Partial<typeof ProductTable.$inferInsert> & { courseIds: string[] }
+  data: Partial<typeof ProductTable.$inferInsert> & { courseIds: string[] },
 ) {
-  const updatedProduct = await db.transaction(async trx => {
+  const updatedProduct = await db.transaction(async (trx) => {
     const [updatedProduct] = await trx
       .update(ProductTable)
       .set(data)
       .where(eq(ProductTable.id, id))
-      .returning()
+      .returning();
     if (updatedProduct == null) {
-      trx.rollback()
-      throw new Error("Failed to create product")
+      trx.rollback();
+      throw new Error("Failed to create product");
     }
 
     await trx
       .delete(CourseProductTable)
-      .where(eq(CourseProductTable.productId, updatedProduct.id))
+      .where(eq(CourseProductTable.productId, updatedProduct.id));
 
     await trx.insert(CourseProductTable).values(
-      data.courseIds.map(courseId => ({
+      data.courseIds.map((courseId) => ({
         productId: updatedProduct.id,
         courseId,
-      }))
-    )
+      })),
+    );
 
-    return updatedProduct
-  })
+    return updatedProduct;
+  });
 
-  revalidateProductCache(updatedProduct.id)
+  revalidateProductCache(updatedProduct.id);
 
-  return updatedProduct
+  return updatedProduct;
 }
 
 export async function deleteProduct(id: string) {
   const [deletedProduct] = await db
     .delete(ProductTable)
     .where(eq(ProductTable.id, id))
-    .returning()
-  if (deletedProduct == null) throw new Error("Failed to delete product")
+    .returning();
+  if (deletedProduct == null) throw new Error("Failed to delete product");
 
-  revalidateProductCache(deletedProduct.id)
+  revalidateProductCache(deletedProduct.id);
 
-  return deletedProduct
+  return deletedProduct;
 }
 
 export async function searchPublicProducts(query: string) {
-  "use cache"
-  cacheTag(getProductGlobalTag())
+  "use cache";
+  cacheTag(getProductGlobalTag());
 
-  const trimmed = query.trim()
+  const trimmed = query.trim();
 
   return db.query.ProductTable.findMany({
     columns: {
@@ -118,5 +121,22 @@ export async function searchPublicProducts(query: string) {
     },
     where: and(wherePublicProducts, ilike(ProductTable.name, `%${trimmed}%`)),
     orderBy: asc(ProductTable.name),
-  })
+  });
+}
+
+export async function getPublicProducts() {
+  "use cache";
+  cacheTag(getProductGlobalTag());
+
+  return db.query.ProductTable.findMany({
+    columns: {
+      id: true,
+      name: true,
+      description: true,
+      priceInRupees: true,
+      imageUrl: true,
+    },
+    where: wherePublicProducts,
+    orderBy: asc(ProductTable.name),
+  });
 }
