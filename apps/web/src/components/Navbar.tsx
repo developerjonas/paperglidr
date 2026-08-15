@@ -11,12 +11,21 @@ import { canAccessAdminPages } from "@/permissions/general";
 import { getCurrentUser } from "@/services/clerk";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SearchBar } from "@/features/products/components/SearchBar";
+import { db } from "@/drizzle/db";
+import { InstructorTable } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 import {
   Shield,
   User,
   GraduationCap,
   Presentation,
   ChevronDown,
+  Briefcase,
+  CoinsIcon,
+  BookOpen,
+  Package,
+  DollarSign,
+  Wallet,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -47,15 +56,11 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
             )}
           </Link>
 
-          {/* Mobile-only: theme toggle stays up top next to logo */}
           <div className="md:hidden">
             <ThemeToggle />
           </div>
         </div>
 
-        {/* Search — absolutely centered on the header itself on desktop,
-            independent of how wide the logo or nav links are.
-            On mobile it stays in normal flow (own full-width row). */}
         {!isAdminPage && (
           <Suspense
             fallback={
@@ -80,6 +85,14 @@ export function Navbar({ isAdminPage = false }: NavbarProps) {
         </Suspense>
       </div>
     </header>
+  );
+}
+
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+      {children}
+    </div>
   );
 }
 
@@ -125,6 +138,15 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
     );
   }
 
+  // NOTE: swap this for whatever cached lookup already exists in
+  // features/instructors/db/instructors.ts (e.g. getInstructorByUserId) —
+  // this inline query works but bypasses your existing cache-tag setup.
+  const instructor = await db.query.InstructorTable.findFirst({
+    where: eq(InstructorTable.userId, user.userId),
+    columns: { id: true },
+  });
+  const isInstructor = instructor != null;
+
   const initials =
     user.user?.name
       ?.split(" ")
@@ -151,7 +173,8 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
                 <Image
                   src={user.user.image}
                   alt=""
-                  className="h-full w-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               ) : initials ? (
                 initials
@@ -165,27 +188,11 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
 
         <PopoverContent
           align="end"
-          className="w-56 rounded-[5px] border-white/30 bg-white/80 p-1.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/70"
+          className="w-64 rounded-[5px] border-white/30 bg-white/80 p-1.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/70"
         >
           <div className="flex flex-col gap-0.5">
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-amber-600 transition-colors hover:bg-amber-500/10"
-              >
-                <Shield className="h-4 w-4" />
-                Creator Studio
-              </Link>
-            )}
-            {!isAdmin && (
-              <Link
-                href="/teach"
-                className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-              >
-                <Presentation className="h-4 w-4" />
-                Teach
-              </Link>
-            )}
+            {/* ---------------- LEARNING GROUP ---------------- */}
+            <GroupLabel>Learning</GroupLabel>
             <Link
               href="/courses"
               className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
@@ -193,7 +200,79 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
               <GraduationCap className="h-4 w-4" />
               My Courses
             </Link>
+            <Link
+              href="/certificates"
+              className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+            >
+              <Briefcase className="h-4 w-4" />
+              My Certificates
+            </Link>
+            <Link
+              href="/purchases"
+              className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+            >
+              <CoinsIcon className="h-4 w-4" />
+              My Purchases
+            </Link>
+
             <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
+
+            {/* ---------------- TEACHING GROUP ---------------- */}
+            {isAdmin ? (
+              <>
+                <GroupLabel>Admin</GroupLabel>
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-amber-600 transition-colors hover:bg-amber-500/10"
+                >
+                  <Shield className="h-4 w-4" />
+                  Creator Studio
+                </Link>
+              </>
+            ) : isInstructor ? (
+              <>
+                <GroupLabel>Teaching</GroupLabel>
+                <Link
+                  href="/teach/courses"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Courses
+                </Link>
+                <Link
+                  href="/teach/products"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <Package className="h-4 w-4" />
+                  Products
+                </Link>
+                <Link
+                  href="/teach/sales"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <DollarSign className="h-4 w-4" />
+                  Sales
+                </Link>
+                <Link
+                  href="/teach/payouts"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <Wallet className="h-4 w-4" />
+                  Payouts
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/instructors/onboarding"
+                className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+              >
+                <Presentation className="h-4 w-4" />
+                Become a Tutor
+              </Link>
+            )}
+
+            <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
+
             <Link
               href="/account"
               className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
