@@ -17,10 +17,10 @@ export default async function HomePage() {
   const products = await getPublicProducts();
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col">
       {/* ---------------- SLIM DISCOVERY HERO ---------------- */}
       <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-10 md:py-14">
-        <div className="absolute top-0 left-1/2 -z-10 h-[220px] w-[420px] -translate-x-1/2 rounded-full bg-primary/10 blur-[100px]" />
+        <div className="absolute left-1/2 top-0 -z-10 h-[220px] w-[420px] -translate-x-1/2 rounded-full bg-primary/10 blur-[100px]" />
 
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center gap-2 text-center">
@@ -37,7 +37,7 @@ export default async function HomePage() {
           </div>
 
           {/* Category chips */}
-          <div className="mt-6 flex items-center justify-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="no-scrollbar mt-6 flex items-center justify-center gap-2 overflow-x-auto py-1">
             {CATEGORIES.map((cat) => (
               <Link
                 key={cat.id}
@@ -51,9 +51,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ---------------- CATALOG ---------------- */}
-      <section className="container mx-auto px-4 py-10">
-        <div className="flex items-end justify-between mb-6">
+      {/* ---------------- CATALOG (Pushes CTA down cleanly) ---------------- */}
+      <section className="container mx-auto flex-1 px-4 py-10">
+        <div className="mb-6 flex items-end justify-between">
           <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
             Featured Courses
           </h2>
@@ -66,25 +66,25 @@ export default async function HomePage() {
         </div>
 
         {products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.slice(0, 8).map((product) => (
               <ProductCard key={product.id} {...product} />
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-white/20 p-12 text-center bg-muted/20">
+          <div className="rounded-2xl border border-dashed border-white/20 bg-muted/20 p-12 text-center">
             <BookOpen className="mx-auto h-10 w-10 text-muted-foreground/60" />
             <h3 className="mt-4 text-lg font-semibold">
               No courses published yet
             </h3>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm text-muted-foreground">
               Check back soon — instructors are preparing new content.
             </p>
           </div>
         )}
       </section>
 
-      {/* ---------------- SLIM INSTRUCTOR STRIP (not a full pitch — that's landing's job) ---------------- */}
+      {/* ---------------- SLIM INSTRUCTOR STRIP (Directly meets footer) ---------------- */}
       <section className="border-t border-white/10 bg-muted/20 py-10">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 text-center sm:flex-row sm:text-left">
           <div className="flex items-center gap-3">
@@ -98,7 +98,7 @@ export default async function HomePage() {
               </p>
             </div>
           </div>
-          <Button asChild className="rounded-[5px] shrink-0">
+          <Button asChild className="shrink-0 rounded-[5px]">
             <Link href="/instructors/onboarding">Become a Tutor</Link>
           </Button>
         </div>
