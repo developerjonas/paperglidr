@@ -17,7 +17,8 @@ type CACHE_TAG =
   | "lessonQuestions"
   | "categories"
   | "reviews"
-  | "wishlist";
+  | "wishlist"
+  | "supportTickets";
 
 export function getGlobalTag(tag: CACHE_TAG) {
   return `global:${tag}` as const;

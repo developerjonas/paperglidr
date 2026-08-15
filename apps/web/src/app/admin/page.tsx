@@ -109,6 +109,11 @@ export default async function AdminPage() {
           description="Platform revenue, monthly trends, and referral split"
           href="/admin/revenue"
         />
+        <LinkCard
+          title="Support"
+          description="Respond to open support tickets"
+          href="/admin/support"
+        />
       </div>
     </div>
   );
