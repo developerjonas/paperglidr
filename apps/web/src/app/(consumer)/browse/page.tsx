@@ -40,16 +40,6 @@ export default async function BrowsePage({
           <p className="mt-1 text-sm text-muted-foreground sm:text-base">
             Find the right course by title, topic, or category.
           </p>
-
-          <div className="mt-6 max-w-xl">
-            <Suspense
-              fallback={
-                <div className="h-11 w-full rounded-full bg-white/40 backdrop-blur-md dark:bg-white/5" />
-              }
-            >
-              <SearchBar redirectTo="/browse" />
-            </Suspense>
-          </div>
         </div>
       </section>
 
