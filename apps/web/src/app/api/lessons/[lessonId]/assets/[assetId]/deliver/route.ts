@@ -6,6 +6,7 @@ import { UserCourseAccessTable } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { getLessonAsset } from "@/features/lessons/db/lessonAssets";
 import { getDownloadUrl } from "@/services/storage/r2";
+import { getBunnyEmbedUrl } from "@/services/bunny/streamToken";
 // import { getBunnyStreamToken } from "@/services/bunny/streamToken";
 
 const PDF_INLINE_EXPIRY_SECONDS = 60 * 15;
@@ -18,7 +19,7 @@ const DEFAULT_VIDEO_EXPIRY_SECONDS = 60 * 30;
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ lessonId: string; assetId: string }> }
+  { params }: { params: Promise<{ lessonId: string; assetId: string }> },
 ) {
   const { lessonId, assetId } = await params;
   const user = await getCurrentUser();
@@ -36,7 +37,7 @@ export async function GET(
   const access = await db.query.UserCourseAccessTable.findFirst({
     where: and(
       eq(UserCourseAccessTable.userId, userId),
-      eq(UserCourseAccessTable.courseId, lesson.section.course.id)
+      eq(UserCourseAccessTable.courseId, lesson.section.course.id),
     ),
   });
   if (!access) {
@@ -52,14 +53,14 @@ export async function GET(
     // response so the route shape is correct once getBunnyStreamToken exists.
     return NextResponse.json(
       { error: "Video delivery not yet implemented" },
-      { status: 501 }
+      { status: 501 },
     );
   }
   if (asset.provider === "r2") {
     if (!asset.storageKey) {
       return NextResponse.json(
         { error: "Asset has no storage key" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -69,9 +70,9 @@ export async function GET(
     const expirySeconds = asset.downloadable
       ? PDF_DOWNLOAD_EXPIRY_SECONDS
       : asset.type === "video_file"
-        ? (asset.durationSeconds != null
-            ? asset.durationSeconds * 2
-            : DEFAULT_VIDEO_EXPIRY_SECONDS)
+        ? asset.durationSeconds != null
+          ? asset.durationSeconds * 2
+          : DEFAULT_VIDEO_EXPIRY_SECONDS
         : PDF_INLINE_EXPIRY_SECONDS;
 
     const url = await getDownloadUrl({
@@ -90,5 +91,20 @@ export async function GET(
   if (asset.provider === "youtube") {
     return NextResponse.json({ type: "youtube", externalId: asset.externalId });
   }
+
+  if (asset.provider === "bunny") {
+    // ASSUMPTION: Bunny's video GUID is stored in asset.externalId, mirroring
+    // how the youtube branch below uses externalId for its video ID. If your
+    // lessonAsset schema stores it elsewhere (e.g. storageKey), swap this.
+    if (!asset.externalId) {
+      return NextResponse.json(
+        { error: "Asset has no Bunny video ID" },
+        { status: 500 },
+      );
+    }
+    const { embedUrl } = getBunnyEmbedUrl({ videoId: asset.externalId });
+    return NextResponse.json({ type: "bunny_embed", url: embedUrl });
+  }
+
   return NextResponse.json({ error: "Unsupported provider" }, { status: 500 });
 }
