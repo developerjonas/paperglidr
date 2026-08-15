@@ -27,6 +27,8 @@ import { wherePublicLessons } from "@/features/lessons/permissions/lessons";
 import { getProductIdTag } from "@/features/products/db/cache";
 import { userOwnsProduct } from "@/features/products/db/products";
 import { wherePublicProducts } from "@/features/products/permissions/products";
+import { isProductWishlisted } from "@/features/wishlist/db/wishlist";
+import { WishlistButton } from "@/features/wishlist/components/WishlistButton";
 import { formatPlural, formatPrice } from "@/lib/formatters";
 import { sumArray } from "@/lib/sumArray";
 import { getCurrentUser } from "@/services/clerk";
@@ -211,9 +213,22 @@ export default async function ProductPage({
                 <Price price={product.priceInRupees} />
               </Suspense>
 
-              <Suspense fallback={<SkeletonButton className="h-12 w-full" />}>
-                <PurchaseButton productId={product.id} />
-              </Suspense>
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Suspense
+                    fallback={<SkeletonButton className="h-12 w-full" />}
+                  >
+                    <PurchaseButton productId={product.id} />
+                  </Suspense>
+                </div>
+                <Suspense
+                  fallback={
+                    <SkeletonButton className="h-12 w-12 shrink-0" />
+                  }
+                >
+                  <WishlistToggle productId={product.id} />
+                </Suspense>
+              </div>
 
               <ul className="flex flex-col gap-2 border-t border-white/20 pt-4 text-sm text-muted-foreground dark:border-white/10">
                 <li className="flex items-center gap-2">
@@ -255,6 +270,23 @@ async function PurchaseButton({ productId }: { productId: string }) {
     <Button size="xl" className="w-full" asChild>
       <Link href={`/products/${productId}/purchase`}>Get Now</Link>
     </Button>
+  );
+}
+
+// Signed-out users still get the button — clicking it surfaces the
+// "sign in to save courses" message from the toggleWishlist action
+// rather than hiding the affordance entirely.
+async function WishlistToggle({ productId }: { productId: string }) {
+  const { userId } = await getCurrentUser();
+  const initialIsWishlisted =
+    userId != null && (await isProductWishlisted(userId, productId));
+
+  return (
+    <WishlistButton
+      productId={productId}
+      initialIsWishlisted={initialIsWishlisted}
+      className="h-12 w-12 shrink-0"
+    />
   );
 }
 

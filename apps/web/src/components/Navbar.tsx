@@ -211,6 +211,13 @@ async function NavLinks({ isAdminPage }: { isAdminPage: boolean }) {
                   <CoinsIcon className="h-4 w-4" />
                   My Purchases
                 </Link>
+                <Link
+                  href="/wishlist"
+                  className="flex items-center gap-2 rounded-[5px] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/60 dark:hover:bg-white/10"
+                >
+                  <CoinsIcon className="h-4 w-4" />
+                  My Wishlist
+                </Link>
 
                 <div className="my-1 h-px bg-white/20 dark:bg-white/10" />
 
