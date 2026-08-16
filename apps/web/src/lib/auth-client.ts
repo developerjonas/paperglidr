@@ -4,7 +4,6 @@ export const authClient = createBetterAuthClient({
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3001",
 });
 
-// Helper functions & Hooks exported directly from authClient
 export const { signIn, signOut, signUp, useSession } = authClient;
 
 export type SignIn = typeof authClient.signIn;

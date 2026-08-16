@@ -1,7 +1,7 @@
 // Destination: apps/web/src/app/(consumer)/support/new/page.tsx
 
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { SupportTicketForm } from "@/features/support/components/SupportTicketForm";
 import { PageHeader } from "@/components/PageHeader";
 

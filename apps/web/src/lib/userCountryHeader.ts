@@ -10,7 +10,3 @@ export function setUserCountryHeader(
     headers.set(COUNTRY_HEADER_KEY, country)
   }
 }
-
-// getUserCountry / getUserCoupon (PPP pricing) removed — PPP is cancelled,
-// pppCoupons.ts deleted. setUserCountryHeader stays since middleware still
-// needs to stamp the country header for whatever else reads it.

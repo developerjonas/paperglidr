@@ -3,7 +3,7 @@
 "use server";
 
 import { z } from "zod";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { SupportTicketStatus, supportTicketStatuses } from "@/drizzle/schema";
 import { newTicketSchema, replySchema } from "../schemas/supportTickets";
 import {

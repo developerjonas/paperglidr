@@ -7,7 +7,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { canAccessAdminPages } from "@/permissions/general";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SearchBar } from "@/features/search/components/SearchBar";
 import { db } from "@/drizzle/db";

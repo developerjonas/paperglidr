@@ -5,7 +5,7 @@ import { PurchaseTable } from "@/drizzle/schema/purchase";
 import { eq } from "drizzle-orm";
 import { getRefundEligibility } from "../lib/eligibility";
 import { createRefundRequest } from "../db/refunds";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 
 async function getOwnedPurchase(purchaseId: string, userId: string) {
   const purchase = await db.query.PurchaseTable.findFirst({

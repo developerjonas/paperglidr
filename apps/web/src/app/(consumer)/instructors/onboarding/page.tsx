@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { getInstructorByUserId } from "@/features/instructors/db/instructors";
 import { InstructorForm } from "@/features/instructors/components/InstructorForm";
 import { PhoneVerificationForm } from "@/features/instructors/components/PhoneVerificationForm";

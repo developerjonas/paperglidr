@@ -1,6 +1,6 @@
 "use server";
 
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { instructorSchema, type InstructorFormValues } from "../schemas/instructors";
 import { canCreateInstructorProfile } from "../permissions/instructors";
 import { upsertInstructor, getInstructorByHandle } from "../db/instructors";

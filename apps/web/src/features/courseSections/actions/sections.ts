@@ -1,7 +1,7 @@
 "use server"
 
 import { z } from "zod"
-import { getCurrentUser } from "@/services/clerk"
+import { getCurrentUser } from "@/services/auth"
 import { sectionSchema } from "../schemas/sections"
 import {
   canCreateCourseSections,

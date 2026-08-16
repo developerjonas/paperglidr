@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Presentation, ArrowRight, Sparkles } from "lucide-react";
 import { ProductCard } from "@/features/products/components/ProductCard";
 import { getPublicProducts } from "@/features/products/db/products";
-import { getPublicCategories } from "@/features/categories/db/categories"; // Import your fetch helper
+import { getPublicCategories } from "@/features/categories/db/categories";
 
 export default async function HomePage() {
   const [products, categories] = await Promise.all([

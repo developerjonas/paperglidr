@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { getUserCertificates } from "@/features/certificates/db/certificates";
 import { CertificateCard } from "@/features/certificates/components/CertificateCard";
 import { Award, Sparkles } from "lucide-react";

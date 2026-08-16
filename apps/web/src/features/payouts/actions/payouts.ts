@@ -1,6 +1,6 @@
 "use server"
 import { revalidatePath } from "next/cache"
-import { getCurrentUser } from "@/services/clerk"
+import { getCurrentUser } from "@/services/auth"
 import { canManagePayouts, canRequestPayout } from "../permissions/payouts"
 import {
   getInstructorAvailableBalance,

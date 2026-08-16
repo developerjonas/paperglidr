@@ -15,7 +15,7 @@ import { asc, countDistinct, eq } from "drizzle-orm"
 import { getUserCourseAccessGlobalTag } from "@/features/courses/db/cache/userCourseAccess"
 import { getCourseSectionGlobalTag } from "@/features/courseSections/db/cache"
 import { getLessonGlobalTag } from "@/features/lessons/db/cache/lessons"
-import { getCurrentUser } from "@/services/clerk" // adjust to wherever getCurrentUser actually lives
+import { getCurrentUser } from "@/services/auth"
 
 export default async function TeachCoursesPage() {
   const { userId, redirectToSignIn } = await getCurrentUser()

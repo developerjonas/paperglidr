@@ -2,7 +2,7 @@
 
 import { reportCourseSchema, type ReportCourseInput } from "../schemas/reports";
 import { insertReport } from "../db/reports";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 
 export async function reportCourse(input: ReportCourseInput) {
   const session = await getCurrentUser();

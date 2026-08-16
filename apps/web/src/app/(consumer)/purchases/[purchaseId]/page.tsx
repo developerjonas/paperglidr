@@ -14,7 +14,7 @@ import { db } from "@/drizzle/db";
 import { PurchaseTable } from "@/drizzle/schema";
 import { getPurchaseIdTag } from "@/features/purchases/db/cache";
 import { formatDate } from "@/lib/formatters";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { and, eq } from "drizzle-orm";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import Link from "next/link";

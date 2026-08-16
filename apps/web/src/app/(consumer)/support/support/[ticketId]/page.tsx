@@ -1,7 +1,7 @@
 // Destination: apps/web/src/app/(consumer)/support/[ticketId]/page.tsx
 
 import { redirect, notFound } from "next/navigation";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { getTicketWithMessages } from "@/features/support/db/supportTickets";
 import { canViewTicket } from "@/features/support/permissions/supportTickets";
 import { SupportTicketThread } from "@/features/support/components/SupportTicketThread";

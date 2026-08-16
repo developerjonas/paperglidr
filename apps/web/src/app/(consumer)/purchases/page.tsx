@@ -7,7 +7,7 @@ import {
   UserPurchaseTableSkeleton,
 } from "@/features/purchases/components/UserPurchaseTable"
 import { getPurchaseUserTag } from "@/features/purchases/db/cache"
-import { getCurrentUser } from "@/services/clerk"
+import { getCurrentUser } from "@/services/auth"
 import { desc, eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import Link from "next/link"

@@ -1,7 +1,7 @@
 "use server"
 import { z } from "zod"
 import { lessonSchema } from "../schemas/lessons"
-import { getCurrentUser } from "@/services/clerk"
+import { getCurrentUser } from "@/services/auth"
 import {
   canCreateLessons,
   canDeleteLessons,

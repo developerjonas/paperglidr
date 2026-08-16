@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { getTicketsForUser } from "@/features/support/db/supportTickets";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";

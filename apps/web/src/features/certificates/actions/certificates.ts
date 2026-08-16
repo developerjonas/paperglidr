@@ -1,5 +1,5 @@
 "use server"
-import { getCurrentUser } from "@/services/clerk"
+import { getCurrentUser } from "@/services/auth"
 import { canRevokeCertificate, canViewCertificate } from "../permissions/certificates"
 import {
   getCertificate,

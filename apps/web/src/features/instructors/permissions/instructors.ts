@@ -1,4 +1,4 @@
-import type { AppUser } from "@/services/clerk";
+import type { AppUser } from "@/services/auth";
 
 export function canCreateInstructorProfile(user: AppUser | null) {
   return !!user;
@@ -9,5 +9,5 @@ export function canEditInstructorProfile(user: AppUser | null, instructor: { use
 }
 
 export function canVerifyInstructor(user: AppUser | null) {
-  return !!user && user.role === "admin"; // adjust to however you already gate /admin routes
+  return !!user && user.role === "admin";
 }

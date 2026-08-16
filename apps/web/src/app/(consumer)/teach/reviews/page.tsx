@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { getReviewsForInstructor } from "@/features/reviews/db/reviews";
 import { InstructorReviewRow } from "@/features/reviews/components/InstructorReviewRow";
 

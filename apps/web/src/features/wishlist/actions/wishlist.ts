@@ -2,7 +2,7 @@
 
 "use server";
 
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { canManageWishlist } from "../permissions/wishlist";
 import {
   addToWishlist,

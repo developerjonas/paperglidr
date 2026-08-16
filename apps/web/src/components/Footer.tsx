@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { canAccessAdminPages } from "@/permissions/general";
 import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";

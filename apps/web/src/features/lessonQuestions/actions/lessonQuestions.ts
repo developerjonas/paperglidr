@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm"
 import { db } from "@/drizzle/db"
 import { UserTable } from "@/drizzle/schema"
-import { getCurrentUser } from "@/services/clerk"
+import { getCurrentUser } from "@/services/auth"
 import {
   askQuestionSchema,
   replyToQuestionSchema,

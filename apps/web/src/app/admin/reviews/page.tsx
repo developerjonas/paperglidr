@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/PageHeader";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { getReviewsForInstructor } from "@/features/reviews/db/reviews";
 import { AdminReviewRowActions } from "@/features/reviews/components/AdminReviewRowActions";
 import { StarRatingDisplay } from "@/features/reviews/components/StarRatingDisplay";

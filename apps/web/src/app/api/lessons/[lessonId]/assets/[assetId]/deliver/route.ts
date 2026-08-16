@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/drizzle/db";
 import { LessonTable } from "@/drizzle/schema/lesson";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { UserCourseAccessTable } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { getLessonAsset } from "@/features/lessons/db/lessonAssets";
 import { getDownloadUrl } from "@/services/storage/r2";
 import { getBunnyEmbedUrl } from "@/services/bunny/streamToken";
-// import { getBunnyStreamToken } from "@/services/bunny/streamToken";
 
 const PDF_INLINE_EXPIRY_SECONDS = 60 * 15;
 const PDF_DOWNLOAD_EXPIRY_SECONDS = 60 * 15;

@@ -7,7 +7,7 @@ import {
 import { PurchaseTable } from "@/features/purchases/components/PurchaseTable";
 import { getPurchaseGlobalTag } from "@/features/purchases/db/cache";
 import { getUserGlobalTag } from "@/features/users/db/cache";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { desc, eq, inArray } from "drizzle-orm";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { redirect } from "next/navigation";

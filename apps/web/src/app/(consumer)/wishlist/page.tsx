@@ -1,11 +1,5 @@
-// Destination: apps/web/src/app/(consumer)/wishlist/page.tsx
-//
-// ASSUMPTION FLAGGED: ProductCard's prop name/shape below (`product={...}`)
-// is a guess — swap in however ProductCard actually takes its data if it
-// differs (e.g. it might expect flattened props instead of a full row).
-
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { getWishlistForUser } from "@/features/wishlist/db/wishlist";
 import { ProductCard } from "@/features/products/components/ProductCard";
 import { PageHeader } from "@/components/PageHeader";

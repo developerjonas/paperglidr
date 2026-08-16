@@ -18,7 +18,7 @@ import { asc, eq } from "drizzle-orm"
 import { EyeClosed, PlusIcon } from "lucide-react"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { notFound } from "next/navigation"
-import { getCurrentUser } from "@/services/clerk" // adjust to wherever this actually lives
+import { getCurrentUser } from "@/services/auth"
 
 export default async function EditCoursePage({
   params,

@@ -3,7 +3,7 @@
 import { db } from "@/drizzle/db"
 import { InstructorTable, InstructorPhoneOtpTable } from "@/drizzle/schema"
 import { and, eq, isNull, gt } from "drizzle-orm"
-import { getCurrentUser } from "@/services/clerk"
+import { getCurrentUser } from "@/services/auth"
 import { sendSms } from "@/services/sms/smsPasalServer"
 import {
   generateOtpCode,

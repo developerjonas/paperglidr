@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/PageHeader"
-import { getCurrentUser } from "@/services/clerk"
+import { getCurrentUser } from "@/services/auth"
 import {
   getMyAvailableBalanceInRupees,
 } from "@/features/payouts/actions/payouts"

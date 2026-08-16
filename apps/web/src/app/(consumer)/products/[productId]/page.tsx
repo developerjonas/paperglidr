@@ -31,7 +31,7 @@ import { isProductWishlisted } from "@/features/wishlist/db/wishlist";
 import { WishlistButton } from "@/features/wishlist/components/WishlistButton";
 import { formatPlural, formatPrice } from "@/lib/formatters";
 import { sumArray } from "@/lib/sumArray";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { and, asc, eq } from "drizzle-orm";
 import {
   BookOpenIcon,

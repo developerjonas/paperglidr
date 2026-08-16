@@ -1,7 +1,7 @@
 import { db } from "@/drizzle/db";
 import { LessonTable } from "@/drizzle/schema/lesson";
 import { eq } from "drizzle-orm";
-import { getCurrentUser } from "@/services/clerk";
+import { getCurrentUser } from "@/services/auth";
 import { canUpdateLessons } from "./lessons";
 
 /**
