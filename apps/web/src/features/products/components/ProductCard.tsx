@@ -1,13 +1,4 @@
 // Destination: apps/web/src/features/products/components/ProductCard.tsx
-// Added: WishlistButton as an absolute-positioned overlay on the thumbnail
-// (top-right corner), plus a new isWishlisted prop. Wishlist status is
-// fetched by the caller (wherever ProductCard is rendered — /browse,
-// /wishlist, etc.) and passed down, same as name/priceInRupees/etc.,
-// rather than each card doing its own async lookup.
-//
-// Added: avgRating/reviewCount props, same pattern — computed by the
-// caller (e.g. features/search/db/search.ts) and passed down rather
-// than each card querying reviews itself.
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,24 +37,30 @@ export function ProductCard({
   const hasRating = avgRating !== undefined && !!reviewCount && reviewCount > 0;
 
   return (
-    <Card className="overflow-hidden flex flex-col w-full max-w-[500px] mx-auto">
-      <div className="relative aspect-video w-full">
-        <Image src={imageUrl} alt={name} fill className="object-cover" />
+    <Card className="group overflow-hidden flex flex-col w-full max-w-[500px] mx-auto border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 transition-transform hover:-translate-y-0.5 dark:border-white/10 dark:bg-black/40 pt-0 gap-0">
+      <div className="relative aspect-video w-full overflow-hidden">
+        <Image
+          src={imageUrl}
+          alt={name}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+        />
         <WishlistButton
           productId={id}
           initialIsWishlisted={isWishlisted}
-          className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background"
+          className="absolute top-2 right-2 rounded-full border border-white/30 bg-white/70 backdrop-blur-md hover:bg-white/90 dark:border-white/10 dark:bg-black/50 dark:hover:bg-black/70"
         />
       </div>
-      <CardHeader className="space-y-0">
+
+      <CardHeader className="space-y-0 pt-4">
         <div className="flex items-center justify-between gap-2">
-          <CardDescription>
+          <CardDescription className="text-sm">
             <Suspense fallback={formatPrice(priceInRupees)}>
               <Price price={priceInRupees} />
             </Suspense>
           </CardDescription>
           {hasRating && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 rounded-[4px] bg-white/40 px-1.5 py-0.5 text-xs text-muted-foreground dark:bg-white/[0.05]">
               <StarIcon className="size-3.5 fill-amber-400 text-amber-400" />
               <span className="font-medium text-foreground">
                 {avgRating.toFixed(1)}
@@ -72,13 +69,17 @@ export function ProductCard({
             </div>
           )}
         </div>
-        <CardTitle className="text-xl">{name}</CardTitle>
+        <CardTitle className="text-lg leading-snug">{name}</CardTitle>
       </CardHeader>
+
       <CardContent>
-        <p className="line-clamp-3">{description}</p>
+        <p className="line-clamp-3 text-sm text-muted-foreground">
+          {description}
+        </p>
       </CardContent>
-      <CardFooter className="mt-auto">
-        <Button className="w-full text-md py-y" asChild>
+
+      <CardFooter className="mt-auto pt-2">
+        <Button className="w-full" asChild>
           <Link href={`/products/${id}`}>View Course</Link>
         </Button>
       </CardFooter>
@@ -95,7 +96,7 @@ async function Price({ price }: { price: number }) {
       <div className="line-through text-xs opacity-50">
         {formatPrice(price)}
       </div>
-      <div>{formatPrice(price)}</div>
+      <div className="font-medium text-foreground">{formatPrice(price)}</div>
     </div>
   );
 }

@@ -61,15 +61,17 @@ export default async function ProductPage({
   );
 
   return (
-    <div className="container my-6 lg:my-10">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 items-start">
-        {/* ─── Main column ─────────────────────────────── */}
-        <div className="flex flex-col gap-10 min-w-0 order-2 lg:order-1">
+    <div className="flex flex-col min-h-screen">
+      {/* ---------------- HERO ---------------- */}
+      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
+        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+
+        <div className="container mx-auto px-4">
           <div className="flex flex-col gap-4">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance">
+            <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl text-balance">
               {product.name}
             </h1>
-            <p className="text-lg text-muted-foreground text-pretty leading-relaxed">
+            <p className="max-w-2xl text-sm text-muted-foreground sm:text-base leading-relaxed text-pretty">
               {product.description}
             </p>
 
@@ -93,7 +95,7 @@ export default async function ProductPage({
             {/* Instructor block — placeholder until real instructor profiles exist */}
             <Link
               href="/instructors/jonas"
-              className="group mt-2 flex w-fit items-center gap-3 rounded-2xl border border-white/30 bg-white/40 px-4 py-3 backdrop-blur-md transition-colors hover:bg-white/60 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.07]"
+              className="group mt-2 flex w-fit items-center gap-3 rounded-[5px] border border-white/30 bg-white/40 px-4 py-3 backdrop-blur-md transition-colors hover:bg-white/60 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.07]"
             >
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-sm font-bold text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
                 TJ
@@ -106,19 +108,24 @@ export default async function ProductPage({
               </div>
             </Link>
           </div>
+        </div>
+      </section>
 
-          <div className="flex flex-col gap-4">
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Course content
-            </h2>
+      {/* ---------------- CONTENT ---------------- */}
+      <section className="container mx-auto px-4 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 items-start">
+          {/* ─── Main column ─────────────────────────────── */}
+          <div className="flex flex-col gap-6 min-w-0 order-2 lg:order-1">
+            <h2 className="text-lg font-semibold px-1">Course content</h2>
+
             <div className="flex flex-col gap-4">
               {product.courses.map((course) => (
                 <Card
                   key={course.id}
-                  className="overflow-hidden border-white/30 bg-white/50 backdrop-blur-md dark:border-white/10 dark:bg-white/[0.02]"
+                  className="overflow-hidden border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40"
                 >
                   <CardHeader>
-                    <CardTitle className="text-xl">{course.name}</CardTitle>
+                    <CardTitle className="text-lg">{course.name}</CardTitle>
                     <CardDescription>
                       {formatPlural(course.courseSections.length, {
                         plural: "sections",
@@ -162,7 +169,7 @@ export default async function ProductPage({
                             {section.lessons.map((lesson) => (
                               <div
                                 key={lesson.id}
-                                className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground"
+                                className="flex items-center gap-2.5 rounded-[5px] px-2 py-1.5 text-sm text-muted-foreground"
                               >
                                 <VideoIcon className="size-4 shrink-0" />
                                 {lesson.status === "preview" ? (
@@ -188,66 +195,64 @@ export default async function ProductPage({
               ))}
             </div>
           </div>
-        </div>
 
-        {/* ─── Sticky purchase card ─────────────────────── */}
-        <div className="order-1 lg:order-2 lg:sticky lg:top-24">
-          <Card className="overflow-hidden border-white/30 bg-white/60 shadow-lg backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40 py-0 gap-0">
-            <div className="relative aspect-video w-full">
-              <Image
-                src={product.imageUrl}
-                fill
-                alt={product.name}
-                className="object-cover"
-                priority
-              />
-            </div>
-            <div className="flex flex-col gap-4 p-6">
-              <Suspense
-                fallback={
-                  <div className="text-2xl font-bold">
-                    {formatPrice(product.priceInRupees)}
-                  </div>
-                }
-              >
-                <Price price={product.priceInRupees} />
-              </Suspense>
-
-              <div className="flex items-center gap-2">
-                <div className="flex-1">
-                  <Suspense
-                    fallback={<SkeletonButton className="h-12 w-full" />}
-                  >
-                    <PurchaseButton productId={product.id} />
-                  </Suspense>
-                </div>
+          {/* ─── Sticky purchase card ─────────────────────── */}
+          <div className="order-1 lg:order-2 lg:sticky lg:top-24">
+            <Card className="overflow-hidden border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40 py-0 gap-0">
+              <div className="relative aspect-video w-full">
+                <Image
+                  src={product.imageUrl}
+                  fill
+                  alt={product.name}
+                  className="object-cover"
+                  priority
+                />
+              </div>
+              <div className="flex flex-col gap-4 p-6">
                 <Suspense
                   fallback={
-                    <SkeletonButton className="h-12 w-12 shrink-0" />
+                    <div className="text-2xl font-bold">
+                      {formatPrice(product.priceInRupees)}
+                    </div>
                   }
                 >
-                  <WishlistToggle productId={product.id} />
+                  <Price price={product.priceInRupees} />
                 </Suspense>
-              </div>
 
-              <ul className="flex flex-col gap-2 border-t border-white/20 pt-4 text-sm text-muted-foreground dark:border-white/10">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
-                  Full lifetime access
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
-                  Certificate of completion
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
-                  Learn at your own pace
-                </li>
-              </ul>
-            </div>
-          </Card>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Suspense
+                      fallback={<SkeletonButton className="h-12 w-full" />}
+                    >
+                      <PurchaseButton productId={product.id} />
+                    </Suspense>
+                  </div>
+                  <Suspense
+                    fallback={<SkeletonButton className="h-12 w-12 shrink-0" />}
+                  >
+                    <WishlistToggle productId={product.id} />
+                  </Suspense>
+                </div>
+
+                <ul className="flex flex-col gap-2 border-t border-white/20 pt-4 text-sm text-muted-foreground dark:border-white/10">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
+                    Full lifetime access
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
+                    Certificate of completion
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
+                    Learn at your own pace
+                  </li>
+                </ul>
+              </div>
+            </Card>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
@@ -259,7 +264,7 @@ async function PurchaseButton({ productId }: { productId: string }) {
 
   if (alreadyOwnsProduct) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/40 px-4 py-3 text-sm font-medium backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+      <div className="flex items-center gap-2 rounded-[5px] border border-white/30 bg-white/40 px-4 py-3 text-sm font-medium backdrop-blur-md dark:border-white/10 dark:bg-white/5">
         <CheckCircle2Icon className="size-4 text-primary" />
         You already own this course
       </div>
@@ -273,9 +278,6 @@ async function PurchaseButton({ productId }: { productId: string }) {
   );
 }
 
-// Signed-out users still get the button — clicking it surfaces the
-// "sign in to save courses" message from the toggleWishlist action
-// rather than hiding the affordance entirely.
 async function WishlistToggle({ productId }: { productId: string }) {
   const { userId } = await getCurrentUser();
   const initialIsWishlisted =

@@ -1,7 +1,3 @@
-// Destination: apps/web/src/app/admin/page.tsx
-// Added LinkCards for /admin/payouts, /admin/reviews, and the new
-// /admin/revenue page — everything else is unchanged from what you pasted.
-
 import {
   Card,
   CardDescription,
@@ -29,7 +25,62 @@ import { formatNumber, formatPrice } from "@/lib/formatters";
 import { count, countDistinct, isNotNull, sql, sum } from "drizzle-orm";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import Link from "next/link";
+import {
+  BookOpenIcon,
+  DollarSignIcon,
+  FolderIcon,
+  LayersIcon,
+  LifeBuoyIcon,
+  PackageIcon,
+  StarIcon,
+  WalletIcon,
+} from "lucide-react";
 import { ReactNode } from "react";
+
+const MANAGEMENT_LINKS = [
+  {
+    title: "Categories",
+    description: "Manage course categories and metadata",
+    href: "/admin/categories",
+    icon: FolderIcon,
+  },
+  {
+    title: "Products",
+    description: "Manage digital products and pricing",
+    href: "/admin/products",
+    icon: PackageIcon,
+  },
+  {
+    title: "Courses",
+    description: "Manage courses, sections, and lessons",
+    href: "/admin/courses",
+    icon: BookOpenIcon,
+  },
+  {
+    title: "Payouts",
+    description: "Review and process instructor payout requests",
+    href: "/admin/payouts",
+    icon: WalletIcon,
+  },
+  {
+    title: "Reviews",
+    description: "Moderate course reviews and instructor replies",
+    href: "/admin/reviews",
+    icon: StarIcon,
+  },
+  {
+    title: "Revenue",
+    description: "Platform revenue, monthly trends, and referral split",
+    href: "/admin/revenue",
+    icon: DollarSignIcon,
+  },
+  {
+    title: "Support",
+    description: "Respond to open support tickets",
+    href: "/admin/support",
+    icon: LifeBuoyIcon,
+  },
+];
 
 export default async function AdminPage() {
   const {
@@ -40,91 +91,91 @@ export default async function AdminPage() {
     totalRefunds,
   } = await getPurchaseDetails();
 
-  return (
-    <div className="container my-6 space-y-6">
-      {/* ---------------- STATS OVERVIEW ---------------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 md:grid-cols-4 gap-4">
-        <StatCard title="Net Sales">{formatPrice(netSales)}</StatCard>
-        <StatCard title="Refunded Sales">{formatPrice(totalRefunds)}</StatCard>
-        <StatCard title="Un-Refunded Purchases">
-          {formatNumber(netPurchases)}
-        </StatCard>
-        <StatCard title="Refunded Purchases">
-          {formatNumber(refundedPurchases)}
-        </StatCard>
-        <StatCard title="Purchases Per User">
-          {formatNumber(averageNetPurchasesPerCustomer, {
-            maximumFractionDigits: 2,
-          })}
-        </StatCard>
-        <StatCard title="Students">
-          {formatNumber(await getTotalStudents())}
-        </StatCard>
-        <StatCard title="Categories">
-          {formatNumber(await getTotalCategories())}
-        </StatCard>
-        <StatCard title="Products">
-          {formatNumber(await getTotalProducts())}
-        </StatCard>
-        <StatCard title="Courses">
-          {formatNumber(await getTotalCourses())}
-        </StatCard>
-        <StatCard title="CourseSections">
-          {formatNumber(await getTotalCourseSections())}
-        </StatCard>
-        <StatCard title="Lessons">
-          {formatNumber(await getTotalLessons())}
-        </StatCard>
-      </div>
+  const [
+    totalStudents,
+    totalCategories,
+    totalProducts,
+    totalCourses,
+    totalCourseSections,
+    totalLessons,
+  ] = await Promise.all([
+    getTotalStudents(),
+    getTotalCategories(),
+    getTotalProducts(),
+    getTotalCourses(),
+    getTotalCourseSections(),
+    getTotalLessons(),
+  ]);
 
-      {/* ---------------- QUICK ACTIONS & MANAGEMENT LINKS ---------------- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <LinkCard
-          title="Categories"
-          description="Manage course categories and metadata"
-          href="/admin/categories"
-        />
-        <LinkCard
-          title="Products"
-          description="Manage digital products and pricing"
-          href="/admin/products"
-        />
-        <LinkCard
-          title="Courses"
-          description="Manage courses, sections, and lessons"
-          href="/admin/courses"
-        />
-        <LinkCard
-          title="Payouts"
-          description="Review and process instructor payout requests"
-          href="/admin/payouts"
-        />
-        <LinkCard
-          title="Reviews"
-          description="Moderate course reviews and instructor replies"
-          href="/admin/reviews"
-        />
-        <LinkCard
-          title="Revenue"
-          description="Platform revenue, monthly trends, and referral split"
-          href="/admin/revenue"
-        />
-        <LinkCard
-          title="Support"
-          description="Respond to open support tickets"
-          href="/admin/support"
-        />
-      </div>
+  const STATS = [
+    { title: "Net Sales", value: formatPrice(netSales) },
+    { title: "Refunded Sales", value: formatPrice(totalRefunds) },
+    { title: "Un-Refunded Purchases", value: formatNumber(netPurchases) },
+    { title: "Refunded Purchases", value: formatNumber(refundedPurchases) },
+    {
+      title: "Purchases Per User",
+      value: formatNumber(averageNetPurchasesPerCustomer, {
+        maximumFractionDigits: 2,
+      }),
+    },
+    { title: "Students", value: formatNumber(totalStudents) },
+    { title: "Categories", value: formatNumber(totalCategories) },
+    { title: "Products", value: formatNumber(totalProducts) },
+    { title: "Courses", value: formatNumber(totalCourses) },
+    { title: "Course Sections", value: formatNumber(totalCourseSections) },
+    { title: "Lessons", value: formatNumber(totalLessons) },
+  ];
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {/* ---------------- HERO ---------------- */}
+      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
+        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+        <div className="container mx-auto px-4">
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+            Admin Dashboard
+          </h1>
+        </div>
+      </section>
+
+      {/* ---------------- CONTENT ---------------- */}
+      <section className="container mx-auto px-4 py-10">
+        <div className="flex flex-col gap-10">
+          {/* ---- Stats overview ---- */}
+          <div className="flex flex-col gap-4">
+            <h2 className="text-lg font-semibold px-1">Overview</h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {STATS.map((stat) => (
+                <StatCard key={stat.title} title={stat.title}>
+                  {stat.value}
+                </StatCard>
+              ))}
+            </div>
+          </div>
+
+          {/* ---- Management links ---- */}
+          <div className="flex flex-col gap-4">
+            <h2 className="text-lg font-semibold px-1">Manage</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {MANAGEMENT_LINKS.map((link) => (
+                <LinkCard key={link.href} {...link} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
 function StatCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Card>
+    <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
       <CardHeader className="text-center">
-        <CardDescription>{title}</CardDescription>
-        <CardTitle className="font-bold text-2xl">{children}</CardTitle>
+        <CardDescription className="text-[11px] uppercase tracking-wide">
+          {title}
+        </CardDescription>
+        <CardTitle className="text-2xl font-bold">{children}</CardTitle>
       </CardHeader>
     </Card>
   );
@@ -134,16 +185,21 @@ function LinkCard({
   title,
   description,
   href,
+  icon: Icon,
 }: {
   title: string;
   description: string;
   href: string;
+  icon: React.FC<React.SVGProps<SVGSVGElement>>;
 }) {
   return (
-    <Link href={href} className="block transition-transform hover:scale-[1.01]">
-      <Card className="h-full border border-primary/10 hover:border-primary/40">
-        <CardHeader>
-          <CardTitle className="text-xl">{title}</CardTitle>
+    <Link href={href} className="block transition-transform hover:scale-[1.02]">
+      <Card className="h-full border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg">{title}</CardTitle>
+          <Icon className="h-5 w-5 text-muted-foreground" />
+        </CardHeader>
+        <CardHeader className="pt-0">
           <CardDescription>{description}</CardDescription>
         </CardHeader>
       </Card>

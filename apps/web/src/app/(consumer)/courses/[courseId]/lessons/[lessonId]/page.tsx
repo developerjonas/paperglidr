@@ -1,6 +1,7 @@
 import { ActionButton } from "@/components/ActionButton";
 import { SkeletonButton } from "@/components/Skeleton";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { db } from "@/drizzle/db";
 import {
   CourseSectionTable,
@@ -40,6 +41,8 @@ import {
   canViewLessonQuestions,
 } from "@/features/lessonQuestions/permissions/lessonQuestions";
 import { getQuestionsForLesson } from "@/features/lessonQuestions/db/lessonQuestions";
+import { UserRole } from "@/drizzle/schema";
+import { VideoLessonViewer } from "@/features/lessons/components/VideoLessonViewer";
 
 export default async function LessonPage({
   params,
@@ -93,120 +96,126 @@ async function SuspenseBoundary({
   const attachments = canView ? await getAttachmentLessonAssets(lesson.id) : [];
 
   return (
-    <div className="my-4 flex flex-col gap-4">
-      <div className="aspect-video">
-        {canView ? (
-          <LessonContentViewer
-            lessonId={lesson.id}
-            asset={primaryAsset}
-            onFinishedVideo={
-              !isLessonComplete && canUpdateCompletionStatus
-                ? updateLessonCompleteStatus.bind(null, lesson.id, true)
-                : undefined
-            }
-          />
-        ) : (
-          <div className="flex items-center justify-center bg-primary text-primary-foreground h-full w-full">
-            <LockIcon className="size-16" />
-          </div>
-        )}
-      </div>
-      <div className="flex flex-col gap-2">
-        <div className="flex justify-between items-start gap-4">
-          <h1 className="text-2xl font-semibold">{lesson.name}</h1>
-          <div className="flex gap-2 justify-end">
-            <Suspense fallback={<SkeletonButton />}>
-              <ToLessonButton
-                lesson={lesson}
-                courseId={courseId}
-                lessonFunc={getPreviousLesson}
-              >
-                Previous
-              </ToLessonButton>
-            </Suspense>
-            {canUpdateCompletionStatus && (
-              <ActionButton
-                action={updateLessonCompleteStatus.bind(
-                  null,
-                  lesson.id,
-                  !isLessonComplete,
-                )}
-                variant="outline"
-              >
-                <div className="flex gap-2 items-center">
-                  {isLessonComplete ? (
-                    <>
-                      <CheckSquare2Icon /> Mark Incomplete
-                    </>
-                  ) : (
-                    <>
-                      <XSquareIcon /> Mark Complete
-                    </>
-                  )}
-                </div>
-              </ActionButton>
-            )}
-            <Suspense fallback={<SkeletonButton />}>
-              <ToLessonButton
-                lesson={lesson}
-                courseId={courseId}
-                lessonFunc={getNextLesson}
-              >
-                Next
-              </ToLessonButton>
-            </Suspense>
-          </div>
-        </div>
-        {canView ? (
-          lesson.description && <p>{lesson.description}</p>
-        ) : (
-          <p>This lesson is locked. Please purchase the course to view it.</p>
-        )}
-        {canView && attachments.length > 0 && (
-          <div className="flex flex-col gap-2 mt-2">
-            <h2 className="text-sm font-medium text-muted-foreground">
-              Attachments
-            </h2>
-            <ul className="flex flex-col gap-1">
-              {attachments.map((attachment) => (
-                <li key={attachment.id}>
-                  <AssetDownloadButton
-                    lessonId={lesson.id}
-                    assetId={attachment.id}
-                    fileName={attachment.fileName}
-                    label={attachment.fileName ?? "Download attachment"}
-                    variant="outline"
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-4 mt-8 pt-8 border-t">
-          <h2 className="text-xl font-semibold">Questions & Answers</h2>
-          <Suspense
-            fallback={
-              <p className="text-sm text-muted-foreground">
-                Loading questions...
-              </p>
-            }
-          >
-            <LessonQnA
+    <div className="flex flex-col gap-6">
+      {/* ---- Video/content card ---- */}
+      <Card className="overflow-hidden border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 p-0 gap-0 dark:border-white/10 dark:bg-black/40">
+        <div className="aspect-video">
+          {canView ? (
+            <LessonContentViewer
               lessonId={lesson.id}
-              userId={userId}
-              role={role}
+              asset={primaryAsset}
+              onFinishedVideo={
+                !isLessonComplete && canUpdateCompletionStatus
+                  ? updateLessonCompleteStatus.bind(null, lesson.id, true)
+                  : undefined
+              }
             />
-          </Suspense>
+          ) : (
+            <div className="flex items-center justify-center bg-primary text-primary-foreground h-full w-full">
+              <LockIcon className="size-16" />
+            </div>
+          )}
         </div>
-      </div>
+
+        <div className="flex flex-col gap-2 p-6">
+          <div className="flex justify-between items-start gap-4">
+            <h1 className="text-xl font-semibold">{lesson.name}</h1>
+            <div className="flex gap-2 justify-end shrink-0">
+              <Suspense fallback={<SkeletonButton />}>
+                <ToLessonButton
+                  lesson={lesson}
+                  courseId={courseId}
+                  lessonFunc={getPreviousLesson}
+                >
+                  Previous
+                </ToLessonButton>
+              </Suspense>
+              {canUpdateCompletionStatus && (
+                <ActionButton
+                  action={updateLessonCompleteStatus.bind(
+                    null,
+                    lesson.id,
+                    !isLessonComplete,
+                  )}
+                  variant="outline"
+                >
+                  <div className="flex gap-2 items-center">
+                    {isLessonComplete ? (
+                      <>
+                        <CheckSquare2Icon /> Mark Incomplete
+                      </>
+                    ) : (
+                      <>
+                        <XSquareIcon /> Mark Complete
+                      </>
+                    )}
+                  </div>
+                </ActionButton>
+              )}
+              <Suspense fallback={<SkeletonButton />}>
+                <ToLessonButton
+                  lesson={lesson}
+                  courseId={courseId}
+                  lessonFunc={getNextLesson}
+                >
+                  Next
+                </ToLessonButton>
+              </Suspense>
+            </div>
+          </div>
+
+          {canView ? (
+            lesson.description && (
+              <p className="text-sm text-muted-foreground">
+                {lesson.description}
+              </p>
+            )
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              This lesson is locked. Please purchase the course to view it.
+            </p>
+          )}
+
+          {canView && attachments.length > 0 && (
+            <div className="flex flex-col gap-2 mt-2 rounded-[5px] border border-white/30 bg-white/40 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+              <h2 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Attachments
+              </h2>
+              <ul className="flex flex-col gap-1">
+                {attachments.map((attachment) => (
+                  <li key={attachment.id}>
+                    <AssetDownloadButton
+                      lessonId={lesson.id}
+                      assetId={attachment.id}
+                      fileName={attachment.fileName}
+                      label={attachment.fileName ?? "Download attachment"}
+                      variant="outline"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* ---- Q&A card ---- */}
+      <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 p-6 gap-4 dark:border-white/10 dark:bg-black/40">
+        <h2 className="text-lg font-semibold">Questions & Answers</h2>
+        <Suspense
+          fallback={
+            <p className="text-sm text-muted-foreground">
+              Loading questions...
+            </p>
+          }
+        >
+          <LessonQnA lessonId={lesson.id} userId={userId} role={role} />
+        </Suspense>
+      </Card>
     </div>
   );
 }
 
-// Server component wrapper — decides which client viewer to mount based on
-// asset.type. Keeps LessonAssetTable's "youtube" / "pdf" / "video_file"
-// branching in one place instead of scattering it across the page.
 function LessonContentViewer({
   lessonId,
   asset,
@@ -224,7 +233,7 @@ function LessonContentViewer({
 }) {
   if (asset == null) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-muted rounded-md text-sm text-muted-foreground">
+      <div className="flex items-center justify-center h-full w-full bg-muted text-sm text-muted-foreground">
         No content has been uploaded for this lesson yet.
       </div>
     );
@@ -261,8 +270,8 @@ function LessonContentViewer({
   }
 
   return (
-    <div className="flex items-center justify-center h-full w-full bg-muted rounded-md text-sm text-muted-foreground">
-      dooooooonasdjfhasjdfhasd
+    <div className="flex items-center justify-center h-full w-full bg-muted text-sm text-muted-foreground">
+      Unsupported lesson content type.
     </div>
   );
 }
@@ -427,9 +436,6 @@ async function getIsLessonComplete({
 
   return data != null;
 }
-
-import { UserRole } from "@/drizzle/schema"; // ADJUST: confirm this is the actual export name/path for the role enum type — inferred from the error, never seen user.ts
-import { VideoLessonViewer } from "@/features/lessons/components/VideoLessonViewer";
 
 async function LessonQnA({
   lessonId,
