@@ -32,8 +32,8 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # --- added for the paperglidr mobile scaffold ---
-  go_router: ^17.2.3 # navigation — see lib/core/router.dart
-  provider: ^6.1.5 # app-wide state — see lib/core/auth/auth_state.dart
+  go_router: ^17.5.0 # navigation — see lib/core/router.dart
+  provider: ^6.1.5+1 # app-wide state — see lib/core/auth/auth_state.dart
   http: ^1.5.0 # API calls — see lib/core/api_client.dart
   flutter_secure_storage: ^10.3.1 # bearer token storage — see lib/core/auth/secure_storage.dart
 
