@@ -1,24 +1,24 @@
+// lib/features/courses/data/courses_api.dart
 import 'dart:convert';
 import '../../../core/api_client.dart';
+import '../../../core/api_paths.dart';
+import 'course.dart';
 
-/// Example data layer for the courses feature — mirrors
-/// apps/web/src/features/courses/db/courses.ts, but as HTTP calls
-/// against your existing Next.js routes/actions instead of direct
-/// Drizzle queries. Replicate this pattern per feature.
 class CoursesApi {
-  static Future<List<dynamic>> fetchPublicCourses() async {
-    final res = await ApiClient.instance.get('/api/courses'); // TODO: confirm real path
+  static Future<List<Course>> fetchPublicCourses() async {
+    final res = await ApiClient.instance.get('$kApiV1/courses');
     if (res.statusCode != 200) {
       throw Exception('Failed to load courses (${res.statusCode})');
     }
-    return jsonDecode(res.body) as List<dynamic>;
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => Course.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  static Future<Map<String, dynamic>> fetchCourse(String courseId) async {
-    final res = await ApiClient.instance.get('/api/courses/$courseId'); // TODO: confirm real path
+  static Future<Course> fetchCourse(String courseId) async {
+    final res = await ApiClient.instance.get('$kApiV1/courses/$courseId');
     if (res.statusCode != 200) {
       throw Exception('Failed to load course (${res.statusCode})');
     }
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    return Course.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
 }

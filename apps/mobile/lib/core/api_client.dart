@@ -5,7 +5,7 @@ import 'auth/secure_storage.dart';
 /// Base URL for your Next.js backend.
 /// TODO: point this at your deployed apps/web URL (or localhost while
 /// developing — use 10.0.2.2 instead of localhost on the Android emulator).
-const String kApiBaseUrl = 'https://your-paperglidr-domain.com';
+const String kApiBaseUrl = 'https://www.paperglidr.com';
 
 /// Single HTTP client for the whole app. Every feature's data/ layer
 /// should go through this instead of calling package:http directly,
