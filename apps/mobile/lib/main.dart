@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -24,10 +25,26 @@ class _PaperglidrAppState extends State<PaperglidrApp> {
   @override
   void initState() {
     super.initState();
-    // Any 401 from the API bounces the user back to sign-in automatically.
     ApiClient.instance.onUnauthorized = _authState.signOut;
     _router = buildRouter(_authState);
-    _authState.bootstrap();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    try {
+      await _authState.bootstrap();
+    } catch (e, st) {
+      // Restoring a saved session failed (corrupt token, etc). Fail safe
+      // into "signed out" rather than leaving the app stuck loading.
+      debugPrint('Auth bootstrap failed: $e\n$st');
+      await _authState.signOut();
+    }
+  }
+
+  @override
+  void dispose() {
+    _authState.dispose();
+    super.dispose();
   }
 
   @override
@@ -38,6 +55,7 @@ class _PaperglidrAppState extends State<PaperglidrApp> {
         title: 'paperglidr',
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.system,
         routerConfig: _router,
         debugShowCheckedModeBanner: false,
       ),

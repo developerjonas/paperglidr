@@ -65,3 +65,28 @@ export async function getInstructorPublishedCourses(instructorUserId: string) {
 
   return rows
 }
+
+export async function getPublicInstructorByHandle(handle: string) {
+  const [instructor] = await db
+    .select()
+    .from(InstructorTable)
+    .where(eq(InstructorTable.handle, handle))
+
+  if (!instructor) return null
+
+  const courses = await db
+    .select({
+      id: ProductTable.id,
+      name: ProductTable.name,
+      imageUrl: ProductTable.imageUrl,
+    })
+    .from(ProductTable)
+    .where(
+      and(
+        eq(ProductTable.authorId, instructor.id),
+        eq(ProductTable.status, "public")
+      )
+    )
+
+  return { ...instructor, courses }
+}
