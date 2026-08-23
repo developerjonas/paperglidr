@@ -1,6 +1,7 @@
 "use client";
+
 import { Input } from "@/components/ui/input";
-import { SearchIcon, XIcon } from "lucide-react";
+import { Loader2Icon, SearchIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
@@ -8,13 +9,13 @@ export function SearchBar({
   redirectTo = "/browse",
   className,
   autoFocus = false,
-  onNavigate,
+  onNavigateAction,
 }: {
   redirectTo?: string;
   className?: string;
   autoFocus?: boolean;
   /** Fired right after a navigation is triggered — lets a parent overlay close itself. */
-  onNavigate?: () => void;
+  onNavigateAction?: () => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -25,6 +26,8 @@ export function SearchBar({
     onResultsPage ? (searchParams.get("q") ?? "") : "",
   );
   const [isPending, startTransition] = useTransition();
+
+  // FIX: Using ReturnType<typeof setTimeout> resolves browser/Node type conflict
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -33,7 +36,9 @@ export function SearchBar({
 
   function navigateNow() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    const params = new URLSearchParams(onResultsPage ? searchParams.toString() : "");
+    const params = new URLSearchParams(
+      onResultsPage ? searchParams.toString() : "",
+    );
     if (value.trim()) {
       params.set("q", value.trim());
     } else {
@@ -44,7 +49,7 @@ export function SearchBar({
         scroll: onResultsPage ? false : true,
       });
     });
-    onNavigate?.();
+    onNavigateAction?.();
   }
 
   useEffect(() => {
@@ -57,7 +62,8 @@ export function SearchBar({
 
   return (
     <div className={`relative w-full ${className ?? ""}`}>
-      <SearchIcon className="absolute left-4 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground" />
+      <SearchIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500 transition-colors group-hover:text-neutral-700 dark:text-neutral-400 dark:group-hover:text-neutral-200" />
+
       <Input
         autoFocus={autoFocus}
         value={value}
@@ -66,23 +72,25 @@ export function SearchBar({
           if (e.key === "Enter") navigateNow();
         }}
         placeholder="Search courses by title..."
-        className="h-11 rounded-full border-white/30 bg-white/50 pl-11 pr-9 text-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] backdrop-blur-md transition-colors focus-visible:bg-white/80 dark:border-white/10 dark:bg-white/[0.04] dark:focus-visible:bg-white/[0.08]"
+        className="h-10 rounded-full border border-neutral-300 bg-white/80 pl-10 pr-10 text-sm text-neutral-900 placeholder:text-neutral-500 shadow-sm backdrop-blur-md transition-all duration-200 hover:border-neutral-400 focus-visible:border-neutral-900 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-neutral-900 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-100 dark:placeholder:text-neutral-400 dark:hover:border-neutral-700 dark:focus-visible:border-neutral-400 dark:focus-visible:bg-neutral-900 dark:focus-visible:ring-neutral-400"
       />
-      {value && (
-        <button
-          type="button"
-          onClick={() => setValue("")}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          aria-label="Clear search"
-        >
-          <XIcon className="size-4" />
-        </button>
-      )}
-      {isPending && (
-        <span className="absolute -bottom-5 left-1 text-xs text-muted-foreground">
-          Searching…
-        </span>
-      )}
+
+      <div className="absolute right-3.5 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+        {isPending && (
+          <Loader2Icon className="size-4 animate-spin text-neutral-400 dark:text-neutral-500" />
+        )}
+
+        {value && (
+          <button
+            type="button"
+            onClick={() => setValue("")}
+            className="rounded-full p-0.5 text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            aria-label="Clear search"
+          >
+            <XIcon className="size-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
