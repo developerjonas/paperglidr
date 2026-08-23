@@ -1,3 +1,4 @@
+// lib/features/purchases/screens/purchases_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../data/purchase.dart';
@@ -90,15 +91,14 @@ class _PurchasesListScreenState extends State<PurchasesListScreen> {
                     subtitle: Row(
                       children: [
                         PurchaseStatusChip(status: p.status),
-                        if (p.priceInRupeesPaid != null) ...[
-                          const SizedBox(width: 8),
-                          Text('Rs. ${p.priceInRupeesPaid}'),
-                        ],
+                        const SizedBox(width: 8),
+                        Text('Rs. ${p.priceInRupeesPaid.toStringAsFixed(2)}'),
                       ],
                     ),
-                    onTap: p.status == PurchaseStatus.completed
-                        ? () => context.push('/courses/${p.productId}')
-                        : () => context.push('/purchases/${p.id}'),
+                    // Route to the product, not a course — a purchase can
+                    // bundle multiple courses (CourseProductTable), so
+                    // there's no single course id to jump straight into.
+                    onTap: () => context.push('/products/${p.productId}'),
                   ),
                 );
               },
