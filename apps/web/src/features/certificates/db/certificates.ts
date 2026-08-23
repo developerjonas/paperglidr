@@ -1,4 +1,4 @@
-import { db } from "@/drizzle/db"
+import { db } from "@/drizzle/db";
 import {
   CertificateTable,
   CourseTable,
@@ -6,55 +6,62 @@ import {
   LessonTable,
   UserLessonCompleteTable,
   UserTable,
-} from "@/drizzle/schema"
-import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections"
-import { wherePublicLessons } from "@/features/lessons/permissions/lessons"
-import { and, count, eq } from "drizzle-orm"
-import { revalidateCertificateCache } from "./cache/certificates"
+} from "@/drizzle/schema";
+import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections";
+import { wherePublicLessons } from "@/features/lessons/permissions/lessons";
+import { and, count, eq, desc } from "drizzle-orm";
+import { revalidateCertificateCache } from "./cache/certificates";
 
 function generateCertificateCode() {
-  const random = crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()
-  return `CERT-${random}`
+  const random = crypto
+    .randomUUID()
+    .replace(/-/g, "")
+    .slice(0, 10)
+    .toUpperCase();
+  return `CERT-${random}`;
 }
 
 export async function getCertificateByUserAndCourse({
   userId,
   courseId,
 }: {
-  userId: string
-  courseId: string
+  userId: string;
+  courseId: string;
 }) {
   return db.query.CertificateTable.findFirst({
-    where: and(eq(CertificateTable.userId, userId), eq(CertificateTable.courseId, courseId)),
-  })
+    where: and(
+      eq(CertificateTable.userId, userId),
+      eq(CertificateTable.courseId, courseId),
+    ),
+  });
 }
 
 export async function getCertificate(id: string) {
   return db.query.CertificateTable.findFirst({
     where: eq(CertificateTable.id, id),
-  })
+  });
 }
 
 // Public lookup for the verification page — keyed by the code embedded in the QR, not the DB id
 export async function getCertificateByCode(certificateCode: string) {
   return db.query.CertificateTable.findFirst({
     where: eq(CertificateTable.certificateCode, certificateCode),
-  })
+  });
 }
 
 export async function getUserCertificates(userId: string) {
   return db.query.CertificateTable.findMany({
     where: eq(CertificateTable.userId, userId),
     orderBy: (certificates, { desc }) => desc(certificates.issuedAt),
-  })
+  });
 }
 
 async function getCourseCompletionCounts({
   userId,
   courseId,
 }: {
-  userId: string
-  courseId: string
+  userId: string;
+  courseId: string;
 }) {
   const [totalResult] = await db
     .select({ count: count() })
@@ -64,40 +71,46 @@ async function getCourseCompletionCounts({
       and(
         eq(CourseSectionTable.id, LessonTable.sectionId),
         eq(CourseSectionTable.courseId, courseId),
-        wherePublicCourseSections
-      )
+        wherePublicCourseSections,
+      ),
     )
-    .where(wherePublicLessons)
+    .where(wherePublicLessons);
 
   const [completedResult] = await db
     .select({ count: count() })
     .from(UserLessonCompleteTable)
-    .innerJoin(LessonTable, eq(LessonTable.id, UserLessonCompleteTable.lessonId))
+    .innerJoin(
+      LessonTable,
+      eq(LessonTable.id, UserLessonCompleteTable.lessonId),
+    )
     .innerJoin(
       CourseSectionTable,
       and(
         eq(CourseSectionTable.id, LessonTable.sectionId),
         eq(CourseSectionTable.courseId, courseId),
-        wherePublicCourseSections
-      )
+        wherePublicCourseSections,
+      ),
     )
-    .where(and(eq(UserLessonCompleteTable.userId, userId), wherePublicLessons))
+    .where(and(eq(UserLessonCompleteTable.userId, userId), wherePublicLessons));
 
   return {
     total: totalResult?.count ?? 0,
     completed: completedResult?.count ?? 0,
-  }
+  };
 }
 
 export async function isCourseCompleteForUser({
   userId,
   courseId,
 }: {
-  userId: string
-  courseId: string
+  userId: string;
+  courseId: string;
 }) {
-  const { total, completed } = await getCourseCompletionCounts({ userId, courseId })
-  return total > 0 && completed >= total
+  const { total, completed } = await getCourseCompletionCounts({
+    userId,
+    courseId,
+  });
+  return total > 0 && completed >= total;
 }
 
 /**
@@ -107,14 +120,14 @@ export async function issueCertificateIfEligible({
   userId,
   courseId,
 }: {
-  userId: string
-  courseId: string
+  userId: string;
+  courseId: string;
 }) {
-  const existing = await getCertificateByUserAndCourse({ userId, courseId })
-  if (existing != null) return existing
+  const existing = await getCertificateByUserAndCourse({ userId, courseId });
+  if (existing != null) return existing;
 
-  const isComplete = await isCourseCompleteForUser({ userId, courseId })
-  if (!isComplete) return null
+  const isComplete = await isCourseCompleteForUser({ userId, courseId });
+  if (!isComplete) return null;
 
   const [course, user] = await Promise.all([
     db.query.CourseTable.findFirst({
@@ -124,8 +137,8 @@ export async function issueCertificateIfEligible({
     db.query.UserTable.findFirst({
       where: eq(UserTable.id, userId),
     }),
-  ])
-  if (course == null || user == null) return null
+  ]);
+  if (course == null || user == null) return null;
 
   const [certificate] = await db
     .insert(CertificateTable)
@@ -139,27 +152,59 @@ export async function issueCertificateIfEligible({
       courseDurationMinutesSnapshot: 0, // TODO — see "duration tracking" note below
     })
     .onConflictDoNothing()
-    .returning()
+    .returning();
 
   if (certificate == null) {
-    return getCertificateByUserAndCourse({ userId, courseId })
+    return getCertificateByUserAndCourse({ userId, courseId });
   }
 
-  revalidateCertificateCache({ id: certificate.id, userId, courseId })
-  return certificate
+  revalidateCertificateCache({ id: certificate.id, userId, courseId });
+  return certificate;
 }
 
-export async function revokeCertificate({ id, reason }: { id: string; reason: string }) {
+export async function revokeCertificate({
+  id,
+  reason,
+}: {
+  id: string;
+  reason: string;
+}) {
   const [certificate] = await db
     .update(CertificateTable)
     .set({ revokedAt: new Date(), revokedReason: reason })
     .where(eq(CertificateTable.id, id))
-    .returning()
-  if (certificate == null) throw new Error("Certificate not found")
+    .returning();
+  if (certificate == null) throw new Error("Certificate not found");
   revalidateCertificateCache({
     id: certificate.id,
     userId: certificate.userId,
     courseId: certificate.courseId,
-  })
-  return certificate
+  });
+  return certificate;
+}
+/**
+ * All certificates for a user, newest first. Revoked certs are included
+ * (not filtered out) — the user should still see their history; the
+ * route/UI just needs to flag revoked ones clearly rather than hide them.
+ */
+export async function getCertificatesForUser(
+  userId: string,
+  trx: Omit<typeof db, "$client"> = db,
+) {
+  return trx.query.CertificateTable.findMany({
+    where: eq(CertificateTable.userId, userId),
+    orderBy: desc(CertificateTable.issuedAt),
+  });
+}
+
+export async function getCertificateForUser(
+  { certificateId, userId }: { certificateId: string; userId: string },
+  trx: Omit<typeof db, "$client"> = db,
+) {
+  return trx.query.CertificateTable.findFirst({
+    where: and(
+      eq(CertificateTable.id, certificateId),
+      eq(CertificateTable.userId, userId), // ownership check — don't leak other users' certs
+    ),
+  });
 }

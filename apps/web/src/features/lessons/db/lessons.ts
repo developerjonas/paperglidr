@@ -1,5 +1,5 @@
 import { db } from "@/drizzle/db"
-import { CourseSectionTable, LessonTable } from "@/drizzle/schema"
+import { CourseSectionTable, LessonAssetTable, LessonTable } from "@/drizzle/schema"
 import { eq } from "drizzle-orm"
 import { revalidateLessonCache } from "./cache/lessons"
 
@@ -155,4 +155,33 @@ export async function getLessonCourseId(lessonId: string) {
     where: eq(CourseSectionTable.id, lesson.sectionId),
   })
   return section?.courseId ?? null
+}
+
+export async function getLessonForViewer(lessonId: string) {
+  const lesson = await db.query.LessonTable.findFirst({
+    where: eq(LessonTable.id, lessonId),
+  })
+  if (!lesson) return null
+
+  const assets = await db
+    .select({
+      id: LessonAssetTable.id,
+      type: LessonAssetTable.type,
+      provider: LessonAssetTable.provider,
+      role: LessonAssetTable.role,
+      externalId: LessonAssetTable.externalId,
+      fileName: LessonAssetTable.fileName,
+      mimeType: LessonAssetTable.mimeType,
+      fileSizeBytes: LessonAssetTable.fileSizeBytes,
+      downloadable: LessonAssetTable.downloadable,
+      durationSeconds: LessonAssetTable.durationSeconds,
+      order: LessonAssetTable.order,
+    })
+    .from(LessonAssetTable)
+    .where(eq(LessonAssetTable.lessonId, lessonId))
+    .orderBy(LessonAssetTable.order)
+  // storageKey deliberately excluded — it's how the deliver endpoint
+  // resolves a signed URL server-side; the client never needs it directly.
+
+  return { ...lesson, assets }
 }

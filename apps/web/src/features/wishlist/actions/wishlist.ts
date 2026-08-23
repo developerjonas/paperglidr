@@ -1,5 +1,4 @@
-// Destination: apps/web/src/features/wishlist/actions/wishlist.ts
-
+// apps/web/src/features/wishlist/actions/wishlist.ts
 "use server";
 
 import { getCurrentUser } from "@/services/auth";
@@ -23,7 +22,7 @@ export async function toggleWishlist(productId: string) {
   const alreadySaved = await isProductWishlisted(currentUser.userId, productId);
 
   if (alreadySaved) {
-    await removeFromWishlist(currentUser.userId, productId);
+    await removeFromWishlist({ userId: currentUser.userId, productId });
     return {
       error: false,
       message: "Removed from wishlist",
@@ -31,6 +30,6 @@ export async function toggleWishlist(productId: string) {
     };
   }
 
-  await addToWishlist(currentUser.userId, productId);
+  await addToWishlist({ userId: currentUser.userId, productId });
   return { error: false, message: "Added to wishlist", isWishlisted: true };
 }

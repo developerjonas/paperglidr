@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike } from "drizzle-orm";
+import { and, asc, avg, count, eq, ilike } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { getProductGlobalTag, revalidateProductCache } from "./cache";
 import {
@@ -7,6 +7,8 @@ import {
   ProductTagTable,
   CategoryTable,
   PurchaseTable,
+  CourseReviewTable,
+  CourseTable,
 } from "@/drizzle/schema";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { wherePublicProducts } from "../permissions/products";
@@ -178,4 +180,43 @@ export async function deleteProduct(id: string) {
     .returning();
 
   return deletedProduct;
+}
+
+export async function getPublicProductListings({ limit }: { limit?: number } = {}) {
+  const query = db
+    .select({
+      id: ProductTable.id,
+      name: ProductTable.name,
+      description: ProductTable.description,
+      imageUrl: ProductTable.imageUrl,
+      priceInRupees: ProductTable.priceInRupees,
+      avgRating: avg(CourseReviewTable.rating),
+      reviewCount: count(CourseReviewTable.id),
+    })
+    .from(ProductTable)
+    .leftJoin(CourseReviewTable, eq(CourseReviewTable.courseId, ProductTable.id))
+    .where(eq(ProductTable.status, "public"))
+    .groupBy(ProductTable.id)
+
+  const rows = limit ? await query.limit(limit) : await query
+
+  return rows.map(r => ({ ...r, avgRating: r.avgRating ? Number(r.avgRating) : null }))
+}
+
+export async function getPublicProductDetail(productId: string) {
+  const product = await db.query.ProductTable.findFirst({
+    where: eq(ProductTable.id, productId),
+  })
+  if (!product) return null
+
+  const courses = await db
+    .select({
+      courseId: CourseTable.id,
+      courseName: CourseTable.name,
+    })
+    .from(CourseProductTable)
+    .innerJoin(CourseTable, eq(CourseTable.id, CourseProductTable.courseId))
+    .where(eq(CourseProductTable.productId, productId))
+
+  return { ...product, courses }
 }

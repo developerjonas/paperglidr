@@ -5,9 +5,14 @@ import { nextCookies } from "better-auth/next-js";
 import { bearer } from "better-auth/plugins";
 import { db } from "@/drizzle/db";
 import * as schema from "@/drizzle/schema";
+import z from "zod";
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL!,
+  emailAndPassword: {
+    enabled: true,
+    // requireEmailVerification: true,  // optional — your schema has emailVerified, so this is available if you want it
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: schema,
@@ -35,6 +40,17 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+  },
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        input: false,
+        validator: {
+          input: z.enum(["user", "admin"]),
+        },
+      },
     },
   },
   rateLimit: {

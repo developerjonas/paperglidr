@@ -2,6 +2,7 @@ import { db } from "@/drizzle/db";
 import { PurchaseTable } from "@/drizzle/schema";
 import { revalidatePurchaseCache } from "./cache";
 import { and, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm"
 
 export async function insertPurchase(
   data: typeof PurchaseTable.$inferInsert,
@@ -119,4 +120,18 @@ export async function markPurchaseCompleted(
   // treat as "nothing to do," not an error
   if (updatedPurchase != null) revalidatePurchaseCache(updatedPurchase);
   return updatedPurchase;
+}
+
+/**
+ * All purchases for the signed-in user, newest first — powers the
+ * mobile "My Purchases" list. Read-only; checkout stays web-only for now.
+ */
+export async function getPurchasesForUser(
+  userId: string,
+  trx: Omit<typeof db, "$client"> = db,
+) {
+  return trx.query.PurchaseTable.findMany({
+    where: eq(PurchaseTable.userId, userId), // TODO: verify column name
+    orderBy: desc(PurchaseTable.createdAt),
+  })
 }

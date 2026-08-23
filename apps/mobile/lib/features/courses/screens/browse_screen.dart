@@ -1,13 +1,15 @@
 // lib/features/courses/screens/browse_screen.dart
 import 'package:flutter/material.dart';
-import '../data/course.dart';
-import '../data/courses_api.dart';
-import '../widgets/course_card.dart';
+import '../../products/data/product.dart';
+import '../../products/data/products_api.dart';
+import '../../products/widgets/product_card.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 
 /// Mirrors apps/web/src/app/(consumer)/browse/page.tsx
-/// Public — hits /api/v1/courses, no bearer token attached.
+/// Public — hits /api/v1/products, no bearer token attached.
+/// Shows the purchasable product catalog (course bundles), not the
+/// user's owned courses — that's HomeScreen.
 class BrowseScreen extends StatefulWidget {
   const BrowseScreen({super.key});
 
@@ -16,16 +18,16 @@ class BrowseScreen extends StatefulWidget {
 }
 
 class _BrowseScreenState extends State<BrowseScreen> {
-  late Future<List<Course>> _future;
+  late Future<List<Product>> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = CoursesApi.fetchPublicCourses();
+    _future = ProductsApi.fetchPublicProducts();
   }
 
   Future<void> _refresh() async {
-    final next = CoursesApi.fetchPublicCourses();
+    final next = ProductsApi.fetchPublicProducts();
     setState(() => _future = next);
     await next;
   }
@@ -36,7 +38,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
       appBar: AppBar(title: const Text('Browse')),
       body: RefreshIndicator(
         onRefresh: _refresh,
-        child: FutureBuilder<List<Course>>(
+        child: FutureBuilder<List<Product>>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -48,17 +50,17 @@ class _BrowseScreenState extends State<BrowseScreen> {
                   const SizedBox(height: 80),
                   EmptyState(
                     icon: Icons.error_outline,
-                    message: 'Could not load courses.\n${snapshot.error}',
+                    message: 'Could not load products.\n${snapshot.error}',
                   ),
                 ],
               );
             }
-            final courses = snapshot.data ?? [];
-            if (courses.isEmpty) {
+            final products = snapshot.data ?? [];
+            if (products.isEmpty) {
               return ListView(
                 children: const [
                   SizedBox(height: 80),
-                  EmptyState(message: 'No courses published yet.'),
+                  EmptyState(message: 'No products published yet.'),
                 ],
               );
             }
@@ -70,8 +72,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 crossAxisSpacing: 12,
                 childAspectRatio: 0.72,
               ),
-              itemCount: courses.length,
-              itemBuilder: (context, i) => CourseCard(course: courses[i]),
+              itemCount: products.length,
+              itemBuilder: (context, i) => ProductCard(product: products[i]),
             );
           },
         ),

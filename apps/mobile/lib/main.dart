@@ -6,6 +6,7 @@ import 'core/api_client.dart';
 import 'core/auth/auth_state.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'features/wishlist/data/wishlist_state.dart';
 
 void main() {
   runApp(const PaperglidrApp());
@@ -20,12 +21,16 @@ class PaperglidrApp extends StatefulWidget {
 
 class _PaperglidrAppState extends State<PaperglidrApp> {
   final _authState = AuthState();
+  final _wishlistState = WishlistState();
   late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
-    ApiClient.instance.onUnauthorized = _authState.signOut;
+    ApiClient.instance.onUnauthorized = () async {
+      await _authState.signOut();
+      _wishlistState.clear();
+    };
     _router = buildRouter(_authState);
     _bootstrap();
   }
@@ -33,6 +38,9 @@ class _PaperglidrAppState extends State<PaperglidrApp> {
   Future<void> _bootstrap() async {
     try {
       await _authState.bootstrap();
+      if (_authState.status == AuthStatus.authenticated) {
+        await _wishlistState.load();
+      }
     } catch (e, st) {
       // Restoring a saved session failed (corrupt token, etc). Fail safe
       // into "signed out" rather than leaving the app stuck loading.
@@ -44,13 +52,17 @@ class _PaperglidrAppState extends State<PaperglidrApp> {
   @override
   void dispose() {
     _authState.dispose();
+    _wishlistState.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _authState,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _authState),
+        ChangeNotifierProvider.value(value: _wishlistState),
+      ],
       child: MaterialApp.router(
         title: 'paperglidr',
         theme: AppTheme.light(),
