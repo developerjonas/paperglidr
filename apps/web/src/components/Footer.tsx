@@ -19,14 +19,11 @@ import {
   BookOpen,
   Wallet,
 } from "lucide-react";
-import { env as clientEnv } from "@/data/env/client";
 
 type FooterProps = {
   isAdminPage?: boolean;
 };
 
-// Legal/marketing pages live on the landing app's domain, not this app.
-const LANDING_URL = clientEnv.NEXT_PUBLIC_LANDING_URL;
 
 export async function Footer({ isAdminPage = false }: FooterProps) {
   const currentYear = new Date().getFullYear();
@@ -168,7 +165,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
               )}
               <li>
                 <a
-                  href={`${LANDING_URL}/blog`}
+                  href="/blog"
                   className="transition-colors hover:text-foreground"
                 >
                   Instructor Blog
@@ -185,7 +182,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
             <ul className="space-y-2 text-sm font-medium text-muted-foreground">
               <li>
                 <a
-                  href={`${LANDING_URL}/legal`}
+                  href="/legal"
                   className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
                 >
                   <Scale className="h-3.5 w-3.5" />
@@ -194,7 +191,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
               </li>
               <li>
                 <a
-                  href={`${LANDING_URL}/privacy`}
+                  href="/privacy"
                   className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
                 >
                   <ShieldCheck className="h-3.5 w-3.5" />
@@ -203,7 +200,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
               </li>
               <li>
                 <a
-                  href={`${LANDING_URL}/refund-policy`}
+                  href="/refund-policy"
                   className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
@@ -212,7 +209,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
               </li>
               <li>
                 <a
-                  href={`${LANDING_URL}/tos`}
+                  href="/tos"
                   className="transition-colors hover:text-foreground"
                 >
                   Terms of Service
@@ -220,7 +217,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
               </li>
               <li>
                 <a
-                  href={`${LANDING_URL}/dmca`}
+                  href="/dmca"
                   className="transition-colors hover:text-foreground"
                 >
                   DMCA Policy
@@ -228,7 +225,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
               </li>
               <li>
                 <a
-                  href={`${LANDING_URL}/content`}
+                  href="/content"
                   className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
                 >
                   <HelpCircle className="h-3.5 w-3.5" />
@@ -237,7 +234,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
               </li>
               <li>
                 <a
-                  href={`${LANDING_URL}/contact`}
+                  href="/contact"
                   className="inline-flex items-center gap-1.5 font-semibold text-foreground/90 transition-colors hover:text-primary"
                 >
                   <MessageSquareWarning className="h-3.5 w-3.5" />

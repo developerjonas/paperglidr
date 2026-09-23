@@ -10,8 +10,6 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_URL: z.string().url(),
     // Better Auth endpoint the browser talks to — normally the same as NEXT_PUBLIC_APP_URL
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),
-    // Marketing/legal site, e.g. https://paperglidr.com
-    NEXT_PUBLIC_LANDING_URL: z.string().url(),
     // Extra next/image hosts for creator-supplied product/instructor images,
     // comma-separated hostnames. Consumed by src/lib/imageHosts.ts (which
     // reads process.env directly so next.config.ts can use it); declared
@@ -34,7 +32,6 @@ export const env = createEnv({
   experimental__runtimeEnv: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-    NEXT_PUBLIC_LANDING_URL: process.env.NEXT_PUBLIC_LANDING_URL,
     NEXT_PUBLIC_IMAGE_HOSTS: process.env.NEXT_PUBLIC_IMAGE_HOSTS,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

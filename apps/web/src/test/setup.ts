@@ -17,7 +17,6 @@ const placeholders: Record<string, string> = {
   GOOGLE_CLIENT_SECRET: "test-placeholder",
   NEXT_PUBLIC_APP_URL: "http://localhost:3000",
   NEXT_PUBLIC_BETTER_AUTH_URL: "http://localhost:3000",
-  NEXT_PUBLIC_LANDING_URL: "http://localhost:3001",
   R2_ACCOUNT_ID: "test-placeholder",
   R2_ACCESS_KEY_ID: "test-placeholder",
   R2_SECRET_ACCESS_KEY: "test-placeholder",
