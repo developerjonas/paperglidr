@@ -89,3 +89,25 @@ Production starts empty; there's no data to carry over from the dev DB.
   - `discount_codes_code_unique`
   - `categories_slug_unique` (used by the seed's conflict target)
   - the wishlist and review uniques
+
+## Security smoke test
+
+`apps/web/scripts/security-smoke-test.mjs` (`pnpm test:security-smoke`) calls the running app over HTTP the way a browser or an attacker would, then checks the **database**:
+- **`/admin` access:** 404s for non-admins, and role changes apply on the next request.
+- **Admin-only and owner-only server actions:** calls that should be rejected change nothing in the database.
+- **Discount scoping:** storewide codes only apply to the creator's own products.
+- **Transactions:** including a forced mid-transaction failure in `revokeAccess` that must roll back fully.
+
+It **writes test data** and temporarily installs a trigger, so run it only against a throwaway database:
+
+```sh
+cd apps/web
+# 1. empty Postgres → migrate + seed (see "Local development")
+pnpm db:migrate && pnpm db:seed
+# 2. build and start the app against that DB (full env from .env.example)
+pnpm build && pnpm start &
+# 3. run — same DB_* and BETTER_AUTH_SECRET as the app
+SMOKE_TEST_DB_IS_THROWAWAY=1 BASE_URL=http://localhost:3000 pnpm test:security-smoke
+```
+
+It exits 0 when every check passes. Run it after dependency upgrades (drizzle, Better Auth, Next) and after any change to authorization or purchase code.
