@@ -66,9 +66,18 @@ export async function getInstructorPublishedCourses(instructorUserId: string) {
   return rows
 }
 
+// Public catalogue (GET /api/v1/instructors/[handle], no auth): the public
+// profile only — never the phone number or the user id.
 export async function getPublicInstructorByHandle(handle: string) {
   const [instructor] = await db
-    .select()
+    .select({
+      userId: InstructorTable.userId,
+      handle: InstructorTable.handle,
+      name: InstructorTable.name,
+      bio: InstructorTable.bio,
+      profileImageUrl: InstructorTable.profileImageUrl,
+      isVerified: InstructorTable.isVerified,
+    })
     .from(InstructorTable)
     .where(eq(InstructorTable.handle, handle))
 
@@ -83,10 +92,18 @@ export async function getPublicInstructorByHandle(handle: string) {
     .from(ProductTable)
     .where(
       and(
-        eq(ProductTable.authorId, instructor.id),
+        // Products are authored by the user, not the instructor row.
+        eq(ProductTable.authorId, instructor.userId),
         eq(ProductTable.status, "public")
       )
     )
 
-  return { ...instructor, courses }
+  return {
+    handle: instructor.handle,
+    name: instructor.name,
+    bio: instructor.bio,
+    profileImageUrl: instructor.profileImageUrl,
+    isVerified: instructor.isVerified,
+    courses,
+  }
 }

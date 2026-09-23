@@ -50,6 +50,15 @@ export const env = createEnv({
       .url()
       .refine(url => !url.endsWith("/"), "No trailing slash"),
 
+    // --- Mobile API ---
+    // The user-specific /api/v1 routes (for the mobile app, not launching
+    // yet) answer 404 unless this is "true". Public catalogue routes are
+    // always on.
+    MOBILE_API_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform(value => value === "true"),
+
     // --- Bunny Stream (not used at launch) ---
     BUNNY_STREAM_LIBRARY_ID: z.string().min(1).optional(),
     BUNNY_STREAM_TOKEN_AUTH_KEY: z.string().min(1).optional(),

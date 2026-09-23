@@ -4,8 +4,12 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { getTicketsForUser, createTicket } from "@/features/support/db/supportTickets"
 import { supportTicketCategories } from "@/drizzle/schema"
+import { mobileApiDisabled } from "@/lib/mobileApi"
 
 export async function GET() {
+  const disabled = mobileApiDisabled()
+  if (disabled) return disabled
+
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
@@ -15,6 +19,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const disabled = mobileApiDisabled()
+  if (disabled) return disabled
+
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })

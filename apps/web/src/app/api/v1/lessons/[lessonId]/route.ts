@@ -5,11 +5,15 @@ import { auth } from "@/lib/auth"
 import { toTypedSession } from "@/lib/session-types"
 import { getLessonForViewer } from "@/features/lessons/db/lessons"
 import { canViewLesson } from "@/features/lessons/permissions/lessons"
+import { mobileApiDisabled } from "@/lib/mobileApi"
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ lessonId: string }> },
 ) {
+  const disabled = mobileApiDisabled()
+  if (disabled) return disabled
+
   const rawSession = await auth.api.getSession({ headers: await headers() })
   if (!rawSession) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })

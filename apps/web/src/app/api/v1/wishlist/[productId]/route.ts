@@ -3,11 +3,15 @@ import { NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { removeFromWishlist } from "@/features/wishlist/db/wishlist"
+import { mobileApiDisabled } from "@/lib/mobileApi"
 
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ productId: string }> },
 ) {
+  const disabled = mobileApiDisabled()
+  if (disabled) return disabled
+
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })

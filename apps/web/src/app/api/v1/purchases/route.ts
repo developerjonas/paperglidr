@@ -3,8 +3,12 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getPurchasesForUser } from "@/features/purchases/db/purchases";
+import { mobileApiDisabled } from "@/lib/mobileApi"
 
 export async function GET() {
+  const disabled = mobileApiDisabled()
+  if (disabled) return disabled
+
   // auth.api.getSession reads both the cookie (web) and the Authorization
   // bearer header (mobile) — same check either client uses.
   const session = await auth.api.getSession({ headers: await headers() });

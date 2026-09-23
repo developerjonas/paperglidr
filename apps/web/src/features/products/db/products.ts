@@ -207,9 +207,19 @@ export async function getPublicProductListings({ limit }: { limit?: number } = {
   return rows.map(r => ({ ...r, avgRating: r.avgRating ? Number(r.avgRating) : null }))
 }
 
+// Public catalogue (GET /api/v1/products/[id], no auth): public products
+// only, and only fields the product page shows.
 export async function getPublicProductDetail(productId: string) {
   const product = await db.query.ProductTable.findFirst({
-    where: eq(ProductTable.id, productId),
+    columns: {
+      id: true,
+      name: true,
+      description: true,
+      imageUrl: true,
+      priceInRupees: true,
+      categoryId: true,
+    },
+    where: and(eq(ProductTable.id, productId), wherePublicProducts),
   })
   if (!product) return null
 

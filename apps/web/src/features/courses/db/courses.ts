@@ -71,14 +71,29 @@ export async function getPublicCourseListings({
   }));
 }
 
-// apps/web/src/features/courses/db/courses.ts — replace getPublicCourseDetail
-import { CourseSectionTable, LessonTable } from "@/drizzle/schema";
+import { CourseProductTable, CourseSectionTable, LessonTable } from "@/drizzle/schema";
 import { asc } from "drizzle-orm";
+import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections";
+import { wherePublicLessons } from "@/features/lessons/permissions/lessons";
 
+// Public catalogue (GET /api/v1/courses/[id], no auth): only a course that
+// is in at least one public product, only its public sections and its
+// public/preview lessons, and only fields the product page shows.
 export async function getPublicCourseDetail(courseId: string) {
-  const course = await db.query.CourseTable.findFirst({
-    where: eq(CourseTable.id, courseId),
-  });
+  const [course] = await db
+    .select({
+      id: CourseTable.id,
+      name: CourseTable.name,
+      description: CourseTable.description,
+    })
+    .from(CourseTable)
+    .innerJoin(CourseProductTable, eq(CourseProductTable.courseId, CourseTable.id))
+    .innerJoin(
+      ProductTable,
+      and(eq(ProductTable.id, CourseProductTable.productId), eq(ProductTable.status, "public")),
+    )
+    .where(eq(CourseTable.id, courseId))
+    .limit(1);
   if (!course) return null;
 
   const sections = await db
@@ -88,25 +103,31 @@ export async function getPublicCourseDetail(courseId: string) {
       order: CourseSectionTable.order,
     })
     .from(CourseSectionTable)
-    .where(eq(CourseSectionTable.courseId, courseId)) // TODO: verify column name
+    .where(and(eq(CourseSectionTable.courseId, courseId), wherePublicCourseSections))
     .orderBy(asc(CourseSectionTable.order));
 
-  const lessons = await db
-    .select({
-      id: LessonTable.id,
-      sectionId: LessonTable.sectionId,
-      name: LessonTable.name,
-      order: LessonTable.order,
-      status: LessonTable.status,
-    })
-    .from(LessonTable)
-    .where(
-      inArray(
-        LessonTable.sectionId,
-        sections.map((s) => s.id),
-      ),
-    )
-    .orderBy(asc(LessonTable.order));
+  const lessons =
+    sections.length === 0
+      ? []
+      : await db
+          .select({
+            id: LessonTable.id,
+            sectionId: LessonTable.sectionId,
+            name: LessonTable.name,
+            order: LessonTable.order,
+            status: LessonTable.status,
+          })
+          .from(LessonTable)
+          .where(
+            and(
+              inArray(
+                LessonTable.sectionId,
+                sections.map((s) => s.id),
+              ),
+              wherePublicLessons,
+            ),
+          )
+          .orderBy(asc(LessonTable.order));
 
   return {
     ...course,

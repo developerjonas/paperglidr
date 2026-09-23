@@ -42,6 +42,7 @@
         "R2_BUCKET_NAME",
         "R2_PUBLIC_BUCKET_NAME",
         "R2_PUBLIC_BASE_URL",
+        "MOBILE_API_ENABLED",
         "BUNNY_STREAM_LIBRARY_ID",
         "BUNNY_STREAM_TOKEN_AUTH_KEY",
         "RESEND_API_KEY",
