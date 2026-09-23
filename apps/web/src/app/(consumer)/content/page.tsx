@@ -1,4 +1,12 @@
+import type { Metadata } from "next"
 import { LegalPage } from "@/components/LegalPage"
+import { pageMetadata } from "@/lib/site"
+
+export const metadata: Metadata = pageMetadata({
+  title: "Content Policy",
+  description: "What creators may and may not publish on PaperGlidr.",
+  path: "/content",
+})
 
 const SUPPORT_EMAIL = "[email protected]"
 const LAST_UPDATED = "[DATE]"

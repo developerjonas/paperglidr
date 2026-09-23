@@ -44,6 +44,34 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ productId: string }>;
+}): Promise<Metadata> {
+  const { productId } = await params;
+  const product = await getPublicProduct(productId);
+  if (product == null) {
+    return { title: "Course not found", robots: { index: false } };
+  }
+  const description =
+    product.description.length > 160
+      ? `${product.description.slice(0, 157).trimEnd()}…`
+      : product.description;
+  const base = pageMetadata({
+    title: product.name,
+    description,
+    path: `/products/${product.id}`,
+  });
+  return {
+    ...base,
+    openGraph: { ...base.openGraph, images: [{ url: product.imageUrl, alt: product.name }] },
+    twitter: { card: "summary_large_image", title: product.name, description, images: [product.imageUrl] },
+  };
+}
 
 export default async function ProductPage({
   params,

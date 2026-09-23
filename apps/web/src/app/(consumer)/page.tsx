@@ -12,6 +12,18 @@ import {
 import { ProductCard } from "@/features/products/components/ProductCard";
 import { getPublicProducts } from "@/features/products/db/products";
 import { getPublicCategories } from "@/features/categories/db/categories";
+import { SITE_DESCRIPTION, SITE_NAME, pageMetadata } from "@/lib/site";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  ...pageMetadata({
+    title: `${SITE_NAME} — Learn from Nepali instructors, pay in NPR`,
+    description: SITE_DESCRIPTION,
+    path: "/",
+  }),
+  // The home title stands alone (no "· PaperGlidr" suffix).
+  title: { absolute: `${SITE_NAME} — Learn from Nepali instructors, pay in NPR` },
+};
 
 // Marketing home (formerly the separate landing app) + featured courses
 // from the catalogue. /browse remains the full catalogue.

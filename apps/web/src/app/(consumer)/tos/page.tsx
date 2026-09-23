@@ -1,4 +1,12 @@
+import type { Metadata } from "next"
 import { LegalPage } from "@/components/LegalPage"
+import { pageMetadata } from "@/lib/site"
+
+export const metadata: Metadata = pageMetadata({
+  title: "Terms of Service",
+  description: "The terms that govern using PaperGlidr as a student or a creator.",
+  path: "/tos",
+})
 
 // PLACEHOLDER FIELDS — fill in before launch:
 const COMPANY_LEGAL_NAME = "Paperglidr Technology Pvt. Ltd."

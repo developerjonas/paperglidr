@@ -8,6 +8,15 @@ import { Suspense } from "react";
 import { db } from "@/drizzle/db";
 import { CategoryTable } from "@/drizzle/schema";
 import { asc } from "drizzle-orm";
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Browse courses",
+  description:
+    "Browse every course on PaperGlidr — Loksewa, entrance prep, languages, programming, accounting and more, from Nepali instructors, priced in NPR.",
+  path: "/browse",
+});
 
 export default async function BrowsePage({
   searchParams,

@@ -1,4 +1,12 @@
+import type { Metadata } from "next"
 import { LegalPage } from "@/components/LegalPage"
+import { pageMetadata } from "@/lib/site"
+
+export const metadata: Metadata = pageMetadata({
+  title: "DMCA & Takedown Policy",
+  description: "How to report content that infringes your copyright, and how PaperGlidr responds.",
+  path: "/dmca",
+})
 
 const DMCA_AGENT_EMAIL = "[email protected]"
 const COMPANY_LEGAL_NAME = "Paperglidr Technology Pvt. Ltd."
