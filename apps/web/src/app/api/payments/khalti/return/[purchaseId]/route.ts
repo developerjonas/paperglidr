@@ -4,9 +4,11 @@ import { db } from "@/drizzle/db";
 import { PurchaseTable } from "@/drizzle/schema";
 import { verifyAndFulfil } from "@/features/purchases/lib/verifyAndFulfil";
 import { purchaseIdSchema, redirectForOutcome } from "@/features/purchases/lib/returnRedirect";
+import { safeErrorMessage } from "@/lib/safeError";
+import { env as clientEnv } from "@/data/env/client";
 
 // Khalti return_url: /api/payments/khalti/return/<purchaseId>?pidx=...&status=...
-export async function GET(
+async function handle(
   request: NextRequest,
   { params }: { params: Promise<{ purchaseId: string }> },
 ) {
@@ -30,4 +32,18 @@ export async function GET(
   }
 
   return redirectForOutcome(await verifyAndFulfil(purchaseId, "return"));
+}
+
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ purchaseId: string }> },
+) {
+  try {
+    return await handle(request, context);
+  } catch (error) {
+    // Unexpected: log in full, send the buyer somewhere useful. The cron
+    // will still settle the purchase with the gateway.
+    safeErrorMessage(error, "payments: khalti return");
+    return NextResponse.redirect(`${clientEnv.NEXT_PUBLIC_APP_URL}/products/purchase-failure`, 303);
+  }
 }

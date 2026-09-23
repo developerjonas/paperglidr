@@ -4,10 +4,12 @@ import { db } from "@/drizzle/db";
 import { PurchaseTable } from "@/drizzle/schema";
 import { verifyAndFulfil } from "@/features/purchases/lib/verifyAndFulfil";
 import { purchaseIdSchema, redirectForOutcome } from "@/features/purchases/lib/returnRedirect";
+import { safeErrorMessage } from "@/lib/safeError";
+import { env as clientEnv } from "@/data/env/client";
 
 // eSewa failure_url. The buyer cancelled or eSewa refused — but still ask
 // the status API: the gateway, not the redirect, decides the outcome.
-export async function GET(
+async function handle(
   _request: Request,
   { params }: { params: Promise<{ purchaseId: string }> },
 ) {
@@ -31,4 +33,18 @@ export async function GET(
       ? { ...result, outcome: "skipped" }
       : result,
   );
+}
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ purchaseId: string }> },
+) {
+  try {
+    return await handle(request, context);
+  } catch (error) {
+    // Unexpected: log in full, send the buyer somewhere useful. The cron
+    // will still settle the purchase with the gateway.
+    safeErrorMessage(error, "payments: esewa failure");
+    return NextResponse.redirect(`${clientEnv.NEXT_PUBLIC_APP_URL}/products/purchase-failure`, 303);
+  }
 }

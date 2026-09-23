@@ -1,5 +1,6 @@
 "use server";
 
+import { actionError } from "@/lib/safeError";
 import { requireAdmin } from "@/services/auth";
 import { verifyAndFulfil } from "../lib/verifyAndFulfil";
 
@@ -17,9 +18,13 @@ const OUTCOME_MESSAGES = {
 /** Admin "Re-check payment": asks the gateway now, exactly like the cron. */
 export async function recheckPurchasePayment(purchaseId: string) {
   await requireAdmin();
-  const { outcome } = await verifyAndFulfil(purchaseId, "admin");
-  return {
-    error: outcome === "error" || outcome === "not_found",
-    message: OUTCOME_MESSAGES[outcome],
-  };
+  try {
+    const { outcome } = await verifyAndFulfil(purchaseId, "admin");
+    return {
+      error: outcome === "error" || outcome === "not_found",
+      message: OUTCOME_MESSAGES[outcome],
+    };
+  } catch (error) {
+    return actionError(error, "recheckPurchasePayment");
+  }
 }

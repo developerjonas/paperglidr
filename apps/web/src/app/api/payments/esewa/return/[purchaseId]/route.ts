@@ -6,9 +6,11 @@ import { getPaymentConfig } from "@/services/payments/config";
 import { decodeEsewaResponse } from "@/services/payments/esewa/esewaServer";
 import { verifyAndFulfil } from "@/features/purchases/lib/verifyAndFulfil";
 import { purchaseIdSchema, redirectForOutcome } from "@/features/purchases/lib/returnRedirect";
+import { safeErrorMessage } from "@/lib/safeError";
+import { env as clientEnv } from "@/data/env/client";
 
 // eSewa success_url: /api/payments/esewa/return/<purchaseId>?data=<base64>
-export async function GET(
+async function handle(
   request: NextRequest,
   { params }: { params: Promise<{ purchaseId: string }> },
 ) {
@@ -38,4 +40,18 @@ export async function GET(
   }
 
   return redirectForOutcome(await verifyAndFulfil(purchaseId, "return"));
+}
+
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ purchaseId: string }> },
+) {
+  try {
+    return await handle(request, context);
+  } catch (error) {
+    // Unexpected: log in full, send the buyer somewhere useful. The cron
+    // will still settle the purchase with the gateway.
+    safeErrorMessage(error, "payments: esewa return");
+    return NextResponse.redirect(`${clientEnv.NEXT_PUBLIC_APP_URL}/products/purchase-failure`, 303);
+  }
 }

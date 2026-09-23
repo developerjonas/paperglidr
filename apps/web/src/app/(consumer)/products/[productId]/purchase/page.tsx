@@ -14,6 +14,7 @@ import { getProductIdTag } from "@/features/products/db/cache"
 import { userOwnsProduct } from "@/features/products/db/products"
 import { wherePublicProducts } from "@/features/products/permissions/products"
 import { enrollFree } from "@/features/purchases/lib/freeEnrollment"
+import { safeErrorMessage } from "@/lib/safeError"
 import { PurchaseCheckoutCard } from "@/features/purchases/components/PurchaseCheckoutCard"
 import { getEnabledGateways, getPaymentConfig } from "@/services/payments/config"
 import { getCurrentUser } from "@/services/auth"
@@ -126,11 +127,16 @@ async function enrollInFreeProduct(productId: string) {
   // skip the gateway.
   if (product == null || product.priceInRupees !== 0) notFound()
 
-  await enrollFree({
-    userId: user.id,
-    product,
-    idempotencyKey: crypto.randomUUID(),
-  })
+  try {
+    await enrollFree({
+      userId: user.id,
+      product,
+      idempotencyKey: crypto.randomUUID(),
+    })
+  } catch (error) {
+    safeErrorMessage(error, "enrollInFreeProduct")
+    redirect("/products/purchase-failure")
+  }
 
   redirect("/courses")
 }

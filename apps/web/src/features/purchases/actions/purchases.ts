@@ -24,8 +24,23 @@ import { reverseLedgerEntriesForPurchase } from "@/features/ledger/db/ledger";
 import { revalidateProductCache } from "@/features/products/db/cache";
 import { validateDiscountCode } from "@/features/discounts/lib/validateDiscountCode";
 import { getCurrentUser, requireAdmin } from "@/services/auth";
+import { actionError, safeErrorMessage } from "@/lib/safeError";
 
-export async function initiatePurchase({
+/**
+ * Starts a checkout. Every unexpected error is logged server-side and
+ * returned as a generic message (safeError) — never the raw error.
+ */
+export async function initiatePurchase(input: InitiatePurchaseInput) {
+  try {
+    return await startCheckout(input);
+  } catch (error) {
+    return actionError(error, "initiatePurchase");
+  }
+}
+
+type InitiatePurchaseInput = Parameters<typeof startCheckout>[0];
+
+async function startCheckout({
   productId,
   gateway,
   idempotencyKey,
@@ -154,7 +169,11 @@ export async function initiatePurchase({
     });
   } catch (error) {
     // The gateway refused or was unreachable: this attempt is over.
-    console.error(`[payments] initiate failed for ${purchase.id}`, error);
+    const message = safeErrorMessage(
+      error,
+      `initiatePurchase: ${gateway} initiate failed for ${purchase.id}`,
+      "The payment provider couldn't be reached. Please try again.",
+    );
     await markPurchaseFailed({ id: purchase.id });
     await recordPaymentEvent({
       purchaseId: purchase.id,
@@ -163,7 +182,7 @@ export async function initiatePurchase({
       outcome: "error",
       detail: { reason: "initiate failed" },
     });
-    return fail("The payment provider couldn't be reached. Please try again.");
+    return fail(message);
   }
 
   const stored: StoredInitiation["initiation"] =
@@ -244,6 +263,15 @@ function initiationResponse(
  * "use server" module, so it is not callable from the client.
  */
 export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
+  try {
+    return await confirmOwnPurchase(purchaseId);
+  } catch (error) {
+    safeErrorMessage(error, "confirmPurchase");
+    return { error: true, status: "pending" as const, message: "Payment is still being confirmed" };
+  }
+}
+
+async function confirmOwnPurchase(purchaseId: string) {
   const { userId } = await getCurrentUser();
   const purchase = await db.query.PurchaseTable.findFirst({
     where: eq(PurchaseTable.id, purchaseId),
@@ -274,6 +302,14 @@ export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
 // returned manually in the gateway's merchant dashboard.
 export async function revokeAccess({ purchaseId }: { purchaseId: string }) {
   await requireAdmin();
+  try {
+    return await revokePurchase(purchaseId);
+  } catch (error) {
+    return actionError(error, "revokeAccess");
+  }
+}
+
+async function revokePurchase(purchaseId: string) {
 
   const purchase = await db.query.PurchaseTable.findFirst({
     where: eq(PurchaseTable.id, purchaseId),

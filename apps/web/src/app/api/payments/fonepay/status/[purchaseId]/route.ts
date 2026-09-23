@@ -5,10 +5,11 @@ import { PurchaseTable } from "@/drizzle/schema";
 import { getCurrentUser } from "@/services/auth";
 import { verifyAndFulfil } from "@/features/purchases/lib/verifyAndFulfil";
 import { purchaseIdSchema } from "@/features/purchases/lib/returnRedirect";
+import { routeError } from "@/lib/safeError";
 
 // Polled by the Fonepay QR checkout (owner only). Returns the purchase
 // status after asking Fonepay.
-export async function GET(
+async function handle(
   _request: Request,
   { params }: { params: Promise<{ purchaseId: string }> },
 ) {
@@ -33,4 +34,15 @@ export async function GET(
         ? "pending"
         : "failed";
   return NextResponse.json({ status });
+}
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ purchaseId: string }> },
+) {
+  try {
+    return await handle(request, context);
+  } catch (error) {
+    return routeError(error, "payments: fonepay status");
+  }
 }

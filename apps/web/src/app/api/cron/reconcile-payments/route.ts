@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { env } from "@/data/env/server";
 import { reconcilePayments } from "@/features/purchases/lib/reconcilePayments";
+import { routeError } from "@/lib/safeError";
 
 // Batch of up to 50 gateway checks at concurrency 5.
 export const maxDuration = 60;
@@ -32,8 +33,7 @@ async function handle(request: Request) {
     console.info("[payments] cron reconcile", summary);
     return NextResponse.json(summary);
   } catch (error) {
-    console.error("[payments] cron reconcile failed", error);
-    return NextResponse.json({ error: "Reconciliation failed" }, { status: 500 });
+    return routeError(error, "payments: cron reconcile", 500, "Reconciliation failed");
   }
 }
 
