@@ -37,6 +37,9 @@ for (const name of ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME", "BETTER_AUTH
   }
 }
 
+// Must render for signed-out visitors (marketing site + catalogue + legal).
+const PUBLIC_ROUTES = ["/", "/browse", "/tos", "/dmca", "/content"]
+
 const BASE_URL = (process.env.BASE_URL ?? "http://localhost:3000").replace(/\/+$/, "")
 const SECRET = process.env.BETTER_AUTH_SECRET
 const manifest = JSON.parse(
@@ -204,6 +207,13 @@ async function main() {
   if (category == null) throw new Error("No categories — run pnpm db:seed first")
 
   const call = (name, args, token) => callAction(actionByName(name), args, token, productB.id)
+
+  // ---------------------------------------------------------------- public routes
+  console.log("== public routes (signed out)")
+  for (const route of PUBLIC_ROUTES.concat([`/products/${productB.id}`])) {
+    const status = await getStatus(route)
+    check(`signed-out ${route} -> 200`, status === 200, `http ${status}`)
+  }
 
   // ---------------------------------------------------------------- admin routes
   console.log("== /admin routes")

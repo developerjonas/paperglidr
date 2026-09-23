@@ -2,6 +2,10 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { getSessionCookie } from "better-auth/cookies"
 
+// Everything NOT listed here is reachable signed out — including the
+// marketing home (/), /browse, product pages, and the legal pages. Keep it
+// that way (the security smoke test checks those routes signed out).
+//
 // /admin is deliberately absent: redirecting signed-out visitors to
 // sign-in would reveal the route exists. requireAdmin() in the admin layout,
 // pages and actions returns a 404 for everyone who isn't an admin.
