@@ -1,152 +1,148 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { LegalPage } from "@/components/LegalPage"
+import { COMPANY, LEGAL_LAST_UPDATED } from "@/config/company"
+import { POLICY_TERMS } from "@/config/policyTerms"
 import { pageMetadata } from "@/lib/site"
 
 export const metadata: Metadata = pageMetadata({
   title: "Content Policy",
-  description: "What creators may and may not publish on PaperGlidr.",
+  description: "What creators may and may not publish on PaperGlidr, and what students may do with courses they buy.",
   path: "/content",
 })
 
-const SUPPORT_EMAIL = "[email protected]"
-const LAST_UPDATED = "[DATE]"
-
 export default function ContentPolicyPage() {
   return (
-    <LegalPage title="Content Policy" lastUpdated={LAST_UPDATED}>
+    <LegalPage title="Content Policy" lastUpdated={LEGAL_LAST_UPDATED}>
+      <p>
+        This policy sets the rules for what instructors may publish on{" "}
+        {COMPANY.brandName} and what students may do with courses they buy.
+        It forms part of our <Link href="/tos">Terms of Service</Link> and{" "}
+        <Link href="/creator-terms">Creator Terms</Link>.
+      </p>
 
-        <p>
-          This Content Policy sets the rules for what Instructors may
-          publish on PaperGlidr, and what buyers may do with content they
-          purchase. It works alongside our{" "}
-          <a href="/tos">Terms of Service</a>.
-        </p>
+      <h2>1. What you may publish</h2>
+      <ul>
+        <li>
+          Educational content you created yourself — video lessons, PDFs,
+          slides, worksheets, source files.
+        </li>
+        <li>
+          Material you have written permission to sell commercially, if it is
+          not wholly your own.
+        </li>
+        <li>
+          Titles, descriptions, thumbnails and previews that accurately show
+          what a student will get.
+        </li>
+      </ul>
 
-        <h2>1. What You May Publish</h2>
-        <ul>
-          <li>
-            Original educational content you created yourself (video
-            lessons, PDFs, slides, worksheets, source files).
-          </li>
-          <li>
-            Content you have explicit, documented permission to distribute
-            commercially, if not fully original.
-          </li>
-          <li>
-            Content that accurately represents what a buyer will receive —
-            course titles, descriptions, and thumbnails must not be
-            misleading.
-          </li>
-        </ul>
+      <h2>2. What you may not publish</h2>
+      <ul>
+        <li>
+          <strong>Pirated or unlicensed material</strong> — content copied
+          from other paid courses, coaching-centre classes, textbooks or other
+          platforms without permission, or carrying someone else&apos;s
+          watermark or branding.
+        </li>
+        <li>
+          <strong>Repackaged free content</strong> — freely available material
+          (public videos, open documentation) sold as a paid course without
+          substantial original work of your own.
+        </li>
+        <li>
+          <strong>Material that infringes others&apos; rights</strong> —
+          copyrighted text, images, music or footage used without a licence,
+          including leaked or confidential exam papers.
+        </li>
+        <li>
+          <strong>Misleading courses</strong> — courses that don&apos;t deliver
+          what their title or description promises, guaranteed exam results
+          or job placements you cannot back up, content padded to look
+          longer, or courses that are substantially incomplete.
+        </li>
+        <li>
+          <strong>Unlawful or harmful content</strong> — anything illegal
+          under the laws of Nepal, hate speech, harassment or content that
+          targets individuals, sexual content, or content that exploits
+          minors in any way.
+        </li>
+        <li>
+          <strong>Malicious files</strong> — downloads must be safe. Uploading
+          malware or files designed to harm a student&apos;s device leads to
+          immediate account closure.
+        </li>
+        <li>
+          <strong>Payment or data grabs</strong> — asking students to pay you
+          outside the Platform, or to hand over passwords or payment details.
+        </li>
+      </ul>
 
-        <h2>2. What You May Not Publish</h2>
-        <ul>
-          <li>
-            <strong>Pirated or unlicensed material</strong> — including
-            content copied from other paid courses, textbooks, or platforms
-            without permission, and content bearing another creator&apos;s
-            watermark or branding.
-          </li>
-          <li>
-            <strong>Reselling of others&apos; free content</strong> — repackaging
-            freely available material (e.g., public YouTube tutorials,
-            open-source documentation) as a paid course without meaningful
-            original contribution.
-          </li>
-          <li>
-            <strong>Content that infringes intellectual property</strong> —
-            copyrighted text, images, music, or footage used without a
-            license or valid fair-use basis.
-          </li>
-          <li>
-            <strong>Deceptive or low-effort content</strong> — courses that
-            don&apos;t deliver on their stated title/description, filler content
-            padded to appear longer than it is, or content that is
-            substantially incomplete at publish time.
-          </li>
-          <li>
-            <strong>Unlawful, harmful, or exploitative content</strong> —
-            anything illegal under Nepali law, content that harasses or
-            targets individuals, or content involving minors in violation
-            of applicable child protection law.
-          </li>
-          <li>
-            <strong>Malware or harmful files</strong> — any downloadable
-            attachment must be safe; uploading executables or files designed
-            to harm a buyer&apos;s device is grounds for immediate termination.
-          </li>
-        </ul>
+      <h2>3. Before a course can go on sale</h2>
+      <p>The Platform checks that each product you publish has:</p>
+      <ul>
+        <li>a thumbnail image and a price;</li>
+        <li>
+          a description of at least {POLICY_TERMS.minDescriptionLength}{" "}
+          characters;
+        </li>
+        <li>at least one course in it; and</li>
+        <li>
+          at least one lesson marked as a free <strong>preview</strong> with a
+          video (YouTube or an uploaded file), so students can see what they
+          are buying.
+        </li>
+      </ul>
+      <p>
+        There is also a limit on how many products you can have on sale at
+        once, which rises when you verify your phone number. Meeting these
+        checks does not mean we have reviewed or approved a course; you
+        remain responsible for it.
+      </p>
 
-        <h2>3. Publishing Requirements</h2>
-        <p>Before a course can go live, it must include:</p>
-        <ul>
-          <li>A thumbnail image representing the course</li>
-          <li>A description sufficient to explain what the course covers</li>
-          <li>At least one category/tag</li>
-          <li>
-            At minimum one piece of published lesson content (video, PDF,
-            or other supported asset)
-          </li>
-        </ul>
-        <p>
-          Courses that don&apos;t meet these requirements will not be visible to
-          buyers until completed.
-        </p>
+      <h2>4. What students may do with a course they bought</h2>
+      <ul>
+        <li>Watch and use it for their own, non-commercial learning.</li>
+        <li>
+          Download attachments the instructor has marked as downloadable, for
+          personal use only.
+        </li>
+      </ul>
 
-        <h2>4. What Buyers May Do With Purchased Content</h2>
-        <ul>
-          <li>
-            Access purchased Course content for personal, non-commercial
-            learning use.
-          </li>
-          <li>
-            Download attachments explicitly marked as downloadable by the
-            Instructor, for personal use only.
-          </li>
-        </ul>
+      <h2>5. What students may not do</h2>
+      <ul>
+        <li>
+          Share, resell, upload elsewhere or publicly post a course or any
+          part of it, including downloaded files.
+        </li>
+        <li>Share their account so others can watch.</li>
+        <li>Circumvent access restrictions or download protections.</li>
+      </ul>
+      <p>
+        Breaking these rules can lead to losing access without a refund,
+        account closure and, where appropriate, legal action by the
+        instructor or by us.
+      </p>
 
-        <h2>5. What Buyers May Not Do</h2>
-        <ul>
-          <li>
-            Share, resell, redistribute, or publicly post purchased content,
-            in whole or in part, including downloadable PDFs and
-            attachments.
-          </li>
-          <li>
-            Attempt to circumvent access restrictions, download protections,
-            or watermarking on purchased content.
-          </li>
-        </ul>
-        <p>
-          Downloadable files may be traceable to the purchasing account.
-          Violation of this section may result in account termination and,
-          where applicable, legal action.
-        </p>
+      <h2>6. Reporting a problem</h2>
+      <p>
+        To report a course that breaks this policy, open a{" "}
+        <Link href="/support/new">support ticket</Link> or email{" "}
+        <a href={`mailto:${COMPANY.supportEmail}`}>{COMPANY.supportEmail}</a>{" "}
+        with a link to the course and what is wrong. Copyright complaints
+        follow our <Link href="/dmca">DMCA &amp; Takedown Policy</Link> and go
+        to{" "}
+        <a href={`mailto:${COMPANY.legalEmail}`}>{COMPANY.legalEmail}</a>. We
+        review every report and may unpublish content while we investigate.
+      </p>
 
-        <h2>6. Reporting a Violation</h2>
-        <p>
-          Any user can report a Course that appears to violate this policy
-          using the report/flag option on the course page, or by emailing{" "}
-          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. Reports
-          are reviewed by our team; we may remove content, suspend accounts,
-          or take other action as appropriate while a report is
-          investigated.
-        </p>
-
-        <h2>7. Copyright Claims</h2>
-        <p>
-          If you believe content on PaperGlidr infringes your copyright, see
-          our <a href="/dmca">DMCA &amp; Takedown Policy</a> for how
-          to submit a claim.
-        </p>
-
-        <h2>8. Enforcement</h2>
-        <p>
-          Violations of this Content Policy may result in content removal,
-          account suspension, forfeiture of pending payouts related to the
-          violating content, or permanent termination, depending on
-          severity and whether the violation is repeated.
-        </p>
+      <h2>7. Enforcement</h2>
+      <p>
+        Depending on how serious the breach is and whether it has happened
+        before, we may remove content, suspend or close accounts, refund
+        affected students, and hold or refuse payouts connected to the
+        content, as described in the Creator Terms.
+      </p>
     </LegalPage>
   )
 }

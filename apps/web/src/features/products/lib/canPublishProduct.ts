@@ -9,7 +9,7 @@ import {
 } from "@/drizzle/schema"
 import { eq, and, inArray, ne, count } from "drizzle-orm"
 
-const MIN_DESCRIPTION_LENGTH = 100 // ADJUST to your real minimum
+export const MIN_DESCRIPTION_LENGTH = 100
 
 // Trust tiers for concurrent live-product caps. Currently phone-verified
 // vs not, only. Space left to layer in account age or sales history later

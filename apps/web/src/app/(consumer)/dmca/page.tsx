@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { LegalPage } from "@/components/LegalPage"
+import { COMPANY, LEGAL_LAST_UPDATED } from "@/config/company"
 import { pageMetadata } from "@/lib/site"
 
 export const metadata: Metadata = pageMetadata({
@@ -8,125 +10,118 @@ export const metadata: Metadata = pageMetadata({
   path: "/dmca",
 })
 
-const DMCA_AGENT_EMAIL = "[email protected]"
-const COMPANY_LEGAL_NAME = "Paperglidr Technology Pvt. Ltd."
-const COMPANY_ADDRESS = "[Registered Office Address, Lalitpur, Nepal]"
-const LAST_UPDATED = "[DATE]"
-
 export default function DmcaPolicyPage() {
+  const legalEmail = (
+    <a href={`mailto:${COMPANY.legalEmail}`}>{COMPANY.legalEmail}</a>
+  )
   return (
-    <LegalPage title="DMCA & Takedown Policy" lastUpdated={LAST_UPDATED}>
+    <LegalPage title="DMCA & Takedown Policy" lastUpdated={LEGAL_LAST_UPDATED}>
+      <p>
+        {COMPANY.legalName} respects the intellectual property rights of
+        others and expects everyone who uses {COMPANY.brandName} to do the
+        same. This policy explains how to tell us about content you believe
+        infringes your copyright, and what we do about it.
+      </p>
+      <p>
+        {COMPANY.brandName} operates in Nepal, where copyright is governed by
+        the Copyright Act, 2059 (2002), and electronic records by the
+        Electronic Transactions Act, 2063 (2008). We follow a
+        notice-and-takedown process modelled on the widely used &quot;DMCA&quot;
+        approach because it is familiar to rights-holders; we do not suggest
+        that United States law applies.
+      </p>
 
-        <p>
-          {COMPANY_LEGAL_NAME} respects the intellectual property rights of
-          others and expects users of PaperGlidr to do the same. This policy
-          explains how to report content you believe infringes your
-          copyright, and how we respond to such reports.
-        </p>
-        <p>
-          <em>
-            Note: PaperGlidr operates in Nepal. We follow a DMCA-style
-            notice-and-takedown process as an industry-standard practice,
-            without asserting that U.S. DMCA jurisdiction formally applies.
-            Nepali copyright law (Copyright Act, 2059) and the Electronic
-            Transaction Act also govern content on this platform.
-          </em>
-        </p>
+      <h2>1. Reporting infringing content</h2>
+      <p>Email {legalEmail} with:</p>
+      <ol>
+        <li>your name, postal address, phone number and email address;</li>
+        <li>
+          the copyrighted work you say is being infringed (or, for several
+          works, a representative list);
+        </li>
+        <li>
+          where it appears on {COMPANY.brandName} — the course or lesson link,
+          or its name and instructor — in enough detail for us to find it;
+        </li>
+        <li>
+          a statement that you believe in good faith that the use is not
+          authorised by the copyright owner, its agent or the law;
+        </li>
+        <li>
+          a statement that the information in your notice is accurate and
+          that you own the copyright or are authorised to act for the owner;
+          and
+        </li>
+        <li>your physical or electronic signature.</li>
+      </ol>
 
-        <h2>1. How to Submit a Takedown Request</h2>
-        <p>
-          If you believe content published on PaperGlidr infringes your
-          copyright, send a written notice to{" "}
-          <a href={`mailto:${DMCA_AGENT_EMAIL}`}>{DMCA_AGENT_EMAIL}</a>{" "}
-          including:
-        </p>
-        <ul>
-          <li>
-            Identification of the copyrighted work you claim has been
-            infringed
-          </li>
-          <li>
-            The specific URL or course/lesson name on PaperGlidr where the
-            infringing content appears
-          </li>
-          <li>Your contact information (name, email, and address)</li>
-          <li>
-            A statement that you have a good-faith belief the use is not
-            authorized by the copyright owner, its agent, or the law
-          </li>
-          <li>
-            A statement, under penalty of perjury, that the information in
-            the notice is accurate and that you are the copyright owner or
-            authorized to act on their behalf
-          </li>
-          <li>Your physical or electronic signature</li>
-        </ul>
+      <h2>2. What happens next</h2>
+      <ul>
+        <li>
+          We review each complete notice. Where it appears valid, we remove
+          or disable access to the content promptly.
+        </li>
+        <li>
+          We tell the instructor who published it and pass on the substance
+          of the notice, including your contact details so they can respond.
+        </li>
+        <li>
+          If a notice is incomplete, we will ask you for what is missing.
+        </li>
+      </ul>
 
-        <h2>2. What Happens Next</h2>
-        <ul>
-          <li>
-            We review valid takedown requests and, where appropriate,
-            remove or disable access to the reported content.
-          </li>
-          <li>
-            We notify the Instructor who published the content and provide
-            them the substance of the complaint.
-          </li>
-          <li>
-            The Instructor may submit a counter-notice if they believe the
-            content was removed in error (see Section 3).
-          </li>
-          <li>
-            Accounts found to repeatedly infringe copyright will be
-            terminated.
-          </li>
-        </ul>
+      <h2>3. Counter-notices</h2>
+      <p>
+        If your content was removed and you believe that was a mistake or a
+        misidentification, email {legalEmail} with:
+      </p>
+      <ol>
+        <li>your name, postal address, phone number and email address;</li>
+        <li>which content was removed and where it appeared;</li>
+        <li>
+          a statement that you believe in good faith the content was removed
+          by mistake or misidentification, and that the information you give
+          is accurate; and
+        </li>
+        <li>your physical or electronic signature.</li>
+      </ol>
+      <p>
+        We send the counter-notice to the person who reported the content.
+        Unless they tell us within 10 working days that they have started
+        legal proceedings, we may restore the content.
+      </p>
 
-        <h2>3. Counter-Notices</h2>
-        <p>
-          If your content was removed and you believe this was a mistake or
-          misidentification, you may submit a counter-notice to{" "}
-          <a href={`mailto:${DMCA_AGENT_EMAIL}`}>{DMCA_AGENT_EMAIL}</a>{" "}
-          including:
-        </p>
-        <ul>
-          <li>Identification of the content that was removed</li>
-          <li>
-            A statement, under penalty of perjury, that you have a
-            good-faith belief the content was removed as a result of
-            mistake or misidentification
-          </li>
-          <li>Your contact information</li>
-          <li>Your physical or electronic signature</li>
-        </ul>
-        <p>
-          We may reinstate the content if we do not receive notice of legal
-          action from the original complainant within a reasonable period
-          after the counter-notice.
-        </p>
+      <h2>4. Repeat infringers</h2>
+      <p>
+        We close the accounts of instructors who repeatedly infringe other
+        people&apos;s intellectual property. See our{" "}
+        <Link href="/creator-terms">Creator Terms</Link>.
+      </p>
 
-        <h2>4. Repeat Infringers</h2>
-        <p>
-          PaperGlidr will terminate, in appropriate circumstances, the
-          accounts of Instructors who are repeat infringers of intellectual
-          property rights.
-        </p>
+      <h2>5. False or abusive notices</h2>
+      <p>
+        Sending a notice or counter-notice you know to be false, or using
+        this process to harm a competitor, may make you legally responsible
+        for the damage it causes. We may ignore notices we believe are made
+        in bad faith.
+      </p>
 
-        <h2>5. False Claims</h2>
-        <p>
-          Submitting a false or bad-faith takedown request may expose you to
-          liability. Please ensure your claim is accurate before submitting
-          it.
-        </p>
+      <h2>6. Other problems with content</h2>
+      <p>
+        For content that is misleading, harmful or otherwise breaks our{" "}
+        <Link href="/content">Content Policy</Link> — but is not a copyright
+        issue — contact{" "}
+        <a href={`mailto:${COMPANY.supportEmail}`}>{COMPANY.supportEmail}</a>.
+      </p>
 
-        <h2>6. Designated Contact</h2>
-        <p>
-          {COMPANY_LEGAL_NAME}
-          <br />
-          {COMPANY_ADDRESS}
-          <br />
-          Email: <a href={`mailto:${DMCA_AGENT_EMAIL}`}>{DMCA_AGENT_EMAIL}</a>
-        </p>
+      <h2>7. Where to send notices</h2>
+      <p>
+        {COMPANY.legalName}
+        <br />
+        {COMPANY.registeredAddress}
+        <br />
+        Email: {legalEmail}
+      </p>
     </LegalPage>
   )
 }

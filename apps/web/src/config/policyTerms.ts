@@ -1,4 +1,5 @@
 import { MINIMUM_PAYOUT_PAISA } from "@/features/payouts/db/payouts"
+import { MIN_DESCRIPTION_LENGTH } from "@/features/products/lib/canPublishProduct"
 import {
   REFUND_COMPLETION_THRESHOLD_PERCENT,
   REFUND_WINDOW_MS,
@@ -27,4 +28,5 @@ export const POLICY_TERMS = {
     platform: 100 - PLATFORM_FEE_RATE_BPS.platform / 100,
   },
   referralWindowDays: REF_COOKIE_MAX_AGE_SECONDS / (24 * 60 * 60),
+  minDescriptionLength: MIN_DESCRIPTION_LENGTH,
 } as const
