@@ -19,6 +19,9 @@ export default {
   		}
   	},
   	extend: {
+  		fontFamily: {
+  			display: ['var(--font-fraunces)', 'Georgia', 'serif']
+  		},
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
