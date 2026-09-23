@@ -85,6 +85,8 @@ async function SuspenseBoundary({
       ? false
       : await getIsLessonComplete({ lessonId: lesson.id, userId });
   const canView = await canViewLesson({ role, userId }, lesson);
+  // A draft lesson doesn't exist for anyone who can't open it.
+  if (lesson.status === "private" && !canView) notFound();
   const canUpdateCompletionStatus = await canUpdateUserLessonCompleteStatus(
     { userId },
     lesson.id,
@@ -413,7 +415,9 @@ async function getLesson(id: string) {
       sectionId: true,
       order: true,
     },
-    where: and(eq(LessonTable.id, id), wherePublicLessons),
+    // Every status: private (draft) lessons are loaded too, and hidden in
+    // SuspenseBoundary from everyone but the course author and admins.
+    where: eq(LessonTable.id, id),
   });
 }
 

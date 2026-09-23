@@ -81,6 +81,54 @@ export async function canDeleteLessons(
   return lesson?.section?.course?.authorId === userId
 }
 
+/**
+ * Whether this user may load a lesson's content (video, PDF, attachments).
+ * The single rule behind both the lesson page and the delivery route:
+ * - admins, and the course's own author: every lesson of that course
+ * - "preview" lessons: everyone, including signed-out visitors
+ * - "private" lessons: nobody else
+ * - "public" lessons: users with access to the course, in a published
+ *   (public) section
+ * Uncached: every delivery decision reads current access.
+ */
+export async function canAccessLessonContent(
+  { userId, role }: { userId: string | undefined; role: UserRole | undefined },
+  lessonId: string,
+): Promise<
+  | { allowed: true; lesson: { id: string; courseId: string } }
+  | { allowed: false; reason: "not_found" | "sign_in_required" | "forbidden" }
+> {
+  const lesson = await db.query.LessonTable.findFirst({
+    where: eq(LessonTable.id, lessonId),
+    columns: { id: true, status: true },
+    with: {
+      section: {
+        columns: { status: true },
+        with: { course: { columns: { id: true, authorId: true } } },
+      },
+    },
+  })
+  if (lesson == null) return { allowed: false, reason: "not_found" }
+  const ok = { allowed: true as const, lesson: { id: lesson.id, courseId: lesson.section.course.id } }
+
+  if (role === "admin") return ok
+  if (userId != null && lesson.section.course.authorId === userId) return ok
+  if (lesson.status === "preview") return ok
+  if (lesson.status === "private" || lesson.section.status !== "public") {
+    return { allowed: false, reason: userId == null ? "sign_in_required" : "forbidden" }
+  }
+  if (userId == null) return { allowed: false, reason: "sign_in_required" }
+
+  const access = await db.query.UserCourseAccessTable.findFirst({
+    where: and(
+      eq(UserCourseAccessTable.userId, userId),
+      eq(UserCourseAccessTable.courseId, lesson.section.course.id),
+    ),
+    columns: { userId: true },
+  })
+  return access != null ? ok : { allowed: false, reason: "forbidden" }
+}
+
 export async function canViewLesson(
   {
     role,
@@ -93,7 +141,20 @@ export async function canViewLesson(
 ) {
   "use cache"
   if (role === "admin" || lesson.status === "preview") return true
-  if (userId == null || lesson.status === "private") return false
+  if (userId == null) return false
+
+  // The course's author can view every lesson of their own course.
+  cacheTag(getLessonIdTag(lesson.id))
+  const [authored] = await db
+    .select({ id: CourseTable.id })
+    .from(LessonTable)
+    .innerJoin(CourseSectionTable, eq(CourseSectionTable.id, LessonTable.sectionId))
+    .innerJoin(CourseTable, eq(CourseTable.id, CourseSectionTable.courseId))
+    .where(and(eq(LessonTable.id, lesson.id), eq(CourseTable.authorId, userId)))
+    .limit(1)
+  if (authored != null) return true
+
+  if (lesson.status === "private") return false
 
   cacheTag(getUserCourseAccessUserTag(userId), getLessonIdTag(lesson.id))
 
