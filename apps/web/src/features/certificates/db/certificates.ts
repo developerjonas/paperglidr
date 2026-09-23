@@ -49,6 +49,27 @@ export async function getCertificateByCode(certificateCode: string) {
   });
 }
 
+/**
+ * For the public /verify page: exactly what it displays. No internal ids,
+ * no userId/courseId, and no revocation reason (only whether it's revoked).
+ */
+export async function getCertificateVerificationByCode(certificateCode: string) {
+  const certificate = await db.query.CertificateTable.findFirst({
+    columns: {
+      certificateCode: true,
+      userNameSnapshot: true,
+      courseTitleSnapshot: true,
+      instructorNameSnapshot: true,
+      issuedAt: true,
+      revokedAt: true,
+    },
+    where: eq(CertificateTable.certificateCode, certificateCode),
+  });
+  if (certificate == null) return null;
+  const { revokedAt, ...shown } = certificate;
+  return { ...shown, isRevoked: revokedAt != null };
+}
+
 export async function getUserCertificates(userId: string) {
   return db.query.CertificateTable.findMany({
     where: eq(CertificateTable.userId, userId),

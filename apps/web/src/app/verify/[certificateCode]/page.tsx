@@ -43,7 +43,7 @@ export default async function VerifyCertificatePage({
     );
   }
 
-  const isRevoked = certificate.revokedAt != null;
+  const isRevoked = certificate.isRevoked;
 
   return (
     <div className="flex flex-col min-h-screen">

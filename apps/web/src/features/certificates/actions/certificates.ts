@@ -3,7 +3,7 @@ import { getCurrentUser, requireAdmin } from "@/services/auth"
 import { canViewCertificate } from "../permissions/certificates"
 import {
   getCertificate,
-  getCertificateByCode,
+  getCertificateVerificationByCode,
   revokeCertificate as revokeCertificateDb,
 } from "../db/certificates"
 import { revokeCertificateSchema } from "../schemas/certificates"
@@ -23,7 +23,7 @@ export async function getCertificateForViewing(certificateId: string) {
 // Public — no auth check. This is the whole point: an employer with no account
 // can hit this and get a straight answer.
 export async function getCertificateForVerification(certificateCode: string) {
-  const certificate = await getCertificateByCode(certificateCode)
+  const certificate = await getCertificateVerificationByCode(certificateCode)
   if (certificate == null) {
     return { error: true, message: "No certificate found with this code", certificate: null }
   }
