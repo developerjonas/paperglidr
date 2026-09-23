@@ -51,15 +51,15 @@ These are sent per request. Register or whitelist them where the gateway's dashb
 
 | Gateway | URL |
 |---|---|
-| eSewa success | `https://<app domain>/api/payments/esewa/return/*` |
-| eSewa failure | `https://<app domain>/api/payments/esewa/failure/*` |
-| Khalti `return_url` | `https://<app domain>/api/payments/khalti/return/*` (`website_url` is `NEXT_PUBLIC_APP_URL`) |
+| eSewa success | `https://paperglidr.com/api/payments/esewa/return/*` |
+| eSewa failure | `https://paperglidr.com/api/payments/esewa/failure/*` |
+| Khalti `return_url` | `https://paperglidr.com/api/payments/khalti/return/*` (`website_url`: `https://paperglidr.com`) |
 | Fonepay | none: QR plus status polling. Ask Fonepay whether they whitelist server IPs. |
 
 ### Cron
 
 - `apps/web/vercel.json` runs `/api/cron/reconcile-payments` every 5 minutes. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
-- Any scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://<app>/api/cron/reconcile-payments`.
+- Any scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://paperglidr.com/api/cron/reconcile-payments`.
 - Without `CRON_SECRET` the endpoint refuses every request. It returns a summary such as `{"checked": 3, "outcomes": {"completed": 1, "pending": 2}}`.
 
 ## Tests
