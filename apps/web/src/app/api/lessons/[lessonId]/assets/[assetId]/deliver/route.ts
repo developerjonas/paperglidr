@@ -41,7 +41,8 @@ async function handle(
   }
 
   const asset = await getLessonAsset(assetId);
-  if (!asset || asset.lessonId !== lessonId) {
+  // Pending = an upload that hasn't been confirmed yet (task 12).
+  if (!asset || asset.lessonId !== lessonId || asset.status !== "ready") {
     return json({ error: "Asset not found" }, 404);
   }
 

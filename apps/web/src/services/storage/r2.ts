@@ -2,6 +2,8 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
@@ -39,17 +41,47 @@ export function buildStorageKey(opts: {
 export async function getUploadUrl(opts: {
   storageKey: string;
   mimeType: string;
+  // Signed into the URL: R2 rejects an upload whose Content-Length differs,
+  // so the browser can only send the file size it declared.
+  contentLength: number;
   expirySeconds?: number;
 }) {
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: opts.storageKey,
     ContentType: opts.mimeType,
+    ContentLength: opts.contentLength,
   });
 
   return getSignedUrl(r2, command, {
     expiresIn: opts.expirySeconds ?? 300, // 5 min to start the upload
+    signableHeaders: new Set(["content-type", "content-length"]),
   });
+}
+
+/** Size and type as stored, or null if the object doesn't exist. */
+export async function headObject(storageKey: string) {
+  try {
+    const head = await r2.send(new HeadObjectCommand({ Bucket: BUCKET, Key: storageKey }));
+    return { contentLength: head.ContentLength ?? null, contentType: head.ContentType ?? null };
+  } catch (error) {
+    const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
+    if (status === 404) return null;
+    throw error;
+  }
+}
+
+/** The first `length` bytes of an object — for file-signature checks. */
+export async function readObjectPrefix(storageKey: string, length = 16) {
+  const result = await r2.send(
+    new GetObjectCommand({ Bucket: BUCKET, Key: storageKey, Range: `bytes=0-${length - 1}` }),
+  );
+  const bytes = await result.Body?.transformToByteArray();
+  return bytes ? Buffer.from(bytes) : Buffer.alloc(0);
+}
+
+export async function deleteObject(storageKey: string) {
+  await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: storageKey }));
 }
 
 /**

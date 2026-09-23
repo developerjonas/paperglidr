@@ -1,6 +1,6 @@
 import { db } from "@/drizzle/db";
 import { LessonAssetTable } from "@/drizzle/schema/lessonAsset";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import {
   getLessonAssetLessonIdTag,
   revalidateLessonAssetCache,
@@ -49,8 +49,10 @@ export async function getPrimaryLessonAsset(lessonId: string) {
   return db.query.LessonAssetTable.findFirst({
     where: and(
       eq(LessonAssetTable.lessonId, lessonId),
-      eq(LessonAssetTable.role, "primary")
+      eq(LessonAssetTable.role, "primary"),
+      eq(LessonAssetTable.status, "ready")
     ),
+    orderBy: desc(LessonAssetTable.createdAt),
   });
 }
 
@@ -65,7 +67,8 @@ export async function getAttachmentLessonAssets(lessonId: string) {
   return db.query.LessonAssetTable.findMany({
     where: and(
       eq(LessonAssetTable.lessonId, lessonId),
-      eq(LessonAssetTable.role, "attachment")
+      eq(LessonAssetTable.role, "attachment"),
+      eq(LessonAssetTable.status, "ready")
     ),
     orderBy: (assets, { asc }) => [asc(assets.order)],
   });
@@ -81,4 +84,37 @@ export async function deleteLessonAsset(id: string) {
     revalidateLessonAssetCache({ id: deleted.id, lessonId: deleted.lessonId });
   }
   return deleted;
+}
+
+/**
+ * A confirmed upload goes live. A lesson shows one primary asset, so a new
+ * ready primary replaces the previous ones (rows only — see removeLessonAsset
+ * for why R2 objects aren't deleted in-request).
+ */
+export async function markLessonAssetReady(id: string) {
+  const ready = await db.transaction(async (tx) => {
+    const [asset] = await tx
+      .update(LessonAssetTable)
+      .set({ status: "ready" })
+      .where(and(eq(LessonAssetTable.id, id), eq(LessonAssetTable.status, "pending")))
+      .returning();
+    if (asset == null) return null;
+
+    if (asset.role === "primary") {
+      await tx
+        .delete(LessonAssetTable)
+        .where(
+          and(
+            eq(LessonAssetTable.lessonId, asset.lessonId),
+            eq(LessonAssetTable.role, "primary"),
+            eq(LessonAssetTable.status, "ready"),
+            ne(LessonAssetTable.id, asset.id)
+          )
+        );
+    }
+    return asset;
+  });
+
+  if (ready) revalidateLessonAssetCache({ id: ready.id, lessonId: ready.lessonId });
+  return ready;
 }

@@ -1,6 +1,6 @@
 import { db } from "@/drizzle/db"
 import { CourseSectionTable, LessonAssetTable, LessonTable } from "@/drizzle/schema"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { revalidateLessonCache } from "./cache/lessons"
 
 export async function getNextCourseLessonOrder(sectionId: string) {
@@ -178,7 +178,12 @@ export async function getLessonForViewer(lessonId: string) {
       order: LessonAssetTable.order,
     })
     .from(LessonAssetTable)
-    .where(eq(LessonAssetTable.lessonId, lessonId))
+    .where(
+      and(
+        eq(LessonAssetTable.lessonId, lessonId),
+        eq(LessonAssetTable.status, "ready"),
+      ),
+    )
     .orderBy(LessonAssetTable.order)
   // storageKey deliberately excluded — it's how the deliver endpoint
   // resolves a signed URL server-side; the client never needs it directly.

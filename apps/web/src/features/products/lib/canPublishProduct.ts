@@ -128,6 +128,7 @@ async function productHasPreviewVideo(courseIds: string[]): Promise<boolean> {
       and(
         inArray(LessonAssetTable.lessonId, previewLessons.map((l) => l.id)),
         eq(LessonAssetTable.role, "primary"),
+        eq(LessonAssetTable.status, "ready"),
         inArray(LessonAssetTable.type, ["youtube", "video_file"]),
       ),
     )

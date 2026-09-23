@@ -32,6 +32,13 @@ export const assetRoles = ["primary", "attachment"] as const;
 export type AssetRole = (typeof assetRoles)[number];
 export const assetRoleEnum = pgEnum("asset_role", assetRoles);
 
+// pending = row created, file not yet confirmed in storage; ready = size
+// and type checked (confirmLessonAssetUpload). Only ready assets are shown
+// or delivered.
+export const assetStatuses = ["pending", "ready"] as const;
+export type AssetStatus = (typeof assetStatuses)[number];
+export const assetStatusEnum = pgEnum("asset_status", assetStatuses);
+
 export const LessonAssetTable = pgTable("lesson_assets", {
   id: id(),
   lessonId: uuid()
@@ -40,6 +47,7 @@ export const LessonAssetTable = pgTable("lesson_assets", {
   type: assetTypeEnum().notNull(),
   provider: assetProviderEnum().notNull(),
   role: assetRoleEnum().notNull().default("primary"),
+  status: assetStatusEnum().notNull().default("pending"),
 
   // one of these two depending on provider
   externalId: text(), // youtube video id
