@@ -159,7 +159,7 @@ export default async function HomePage() {
             {categories.map((category) => (
               <Link
                 key={category.id}
-                href={`/browse?category=${category.id}`}
+                href={`/browse?category=${category.slug}`}
                 className="inline-flex shrink-0 items-center rounded-full border border-[#14213D]/15 px-4 py-1.5 text-xs font-medium text-[#14213D]/70 transition-colors hover:bg-[#14213D]/5 hover:text-[#14213D] dark:border-[#F5F3EE]/15 dark:text-[#F5F3EE]/60 dark:hover:bg-[#F5F3EE]/10 dark:hover:text-[#F5F3EE]"
               >
                 {category.name}
