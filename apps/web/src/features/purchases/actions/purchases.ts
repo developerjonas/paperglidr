@@ -5,10 +5,9 @@ import {
   CourseProductTable,
   ProductTable,
   PurchaseTable,
-  UserCourseAccessTable,
   UserTable,
 } from "@/drizzle/schema";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   insertPurchase,
   getPurchaseByIdempotencyKey,
@@ -21,13 +20,20 @@ import { khaltiGateway } from "@/services/payments/khalti/khaltiServer";
 import { fonepayGateway } from "@/services/payments/fonepay/fonepayServer";
 import { auth } from "@/lib/auth"; // ASSUMPTION: however you currently get the logged-in user server-side
 import { headers } from "next/headers";
-import { addUserCourseAccess } from "@/features/courses/db/userCourseAccess";
-import { createLedgerEntry } from "@/features/ledger/db/ledger";
+import {
+  addUserCourseAccess,
+  revokeUserCourseAccess,
+} from "@/features/courses/db/userCourseAccess";
+import {
+  createLedgerEntry,
+  reverseLedgerEntriesForPurchase,
+} from "@/features/ledger/db/ledger";
 import { createInvoiceForPurchase } from "@/features/invoices/db/invoices";
 import { revalidateProductCache } from "@/features/products/db/cache";
 import { generateAndSendInvoice } from "@/features/invoices/actions/generateAndSendInvoice";
 import { validateDiscountCode } from "@/features/discounts/lib/validateDiscountCode";
 import { recordDiscountRedemption } from "@/features/discounts/db/discounts";
+import { getCurrentUser, requireAdmin } from "@/services/auth";
 
 const gateways = {
   esewa: esewaGateway,
@@ -187,10 +193,14 @@ export async function initiatePurchase({
 }
 
 export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
+  const { userId } = await getCurrentUser();
   const purchase = await db.query.PurchaseTable.findFirst({
     where: eq(PurchaseTable.id, purchaseId),
   });
-  if (purchase == null) return { error: true, message: "Purchase not found" };
+  // Owner-only. Same response for "not yours" and "doesn't exist" so this
+  // can't be used to probe other users' purchase ids.
+  if (purchase == null || userId == null || purchase.userId !== userId)
+    return { error: true, message: "Purchase not found" };
   if (purchase.status === "completed")
     return { error: false, message: "Already confirmed" };
 
@@ -299,9 +309,12 @@ export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
   return { error: false, message: "Purchase confirmed" };
 }
 
+// Admin-only refund bookkeeping: removes course access, writes the negative
+// ledger mirror of every sale entry (so instructor earnings net out), and
+// marks the purchase refunded — all in one transaction. The money itself is
+// returned manually in the gateway's merchant dashboard.
 export async function revokeAccess({ purchaseId }: { purchaseId: string }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (session?.user == null) return { error: true, message: "Not signed in" };
+  await requireAdmin();
 
   const purchase = await db.query.PurchaseTable.findFirst({
     where: eq(PurchaseTable.id, purchaseId),
@@ -311,28 +324,22 @@ export async function revokeAccess({ purchaseId }: { purchaseId: string }) {
     return { error: true, message: "Purchase not found" };
   }
 
-  const courseProducts = await db.query.CourseProductTable.findMany({
-    where: eq(CourseProductTable.productId, purchase.productId),
-  });
-
-  const courseIds = courseProducts.map((cp) => cp.courseId);
-
   await db.transaction(async (trx) => {
-    if (courseIds.length > 0) {
-      await trx
-        .delete(UserCourseAccessTable)
-        .where(
-          and(
-            eq(UserCourseAccessTable.userId, purchase.userId),
-            inArray(UserCourseAccessTable.courseId, courseIds),
-          ),
-        );
-    }
-
+    // Mark refunded first: revokeUserCourseAccess keeps access to any course
+    // the buyer still owns through another non-refunded purchase, so this
+    // purchase must no longer count as one.
+    const now = new Date();
     await trx
       .update(PurchaseTable)
-      .set({ status: "refunded", updatedAt: new Date() })
+      .set({ status: "refunded", refundedAt: now, updatedAt: now })
       .where(eq(PurchaseTable.id, purchaseId));
+
+    await revokeUserCourseAccess(
+      { userId: purchase.userId, productId: purchase.productId },
+      trx,
+    );
+
+    await reverseLedgerEntriesForPurchase(purchaseId, trx);
   });
 
   revalidateProductCache(purchase.productId);

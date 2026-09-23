@@ -1,4 +1,3 @@
-import { ActionButton } from "@/components/ActionButton";
 import {
   SkeletonArray,
   SkeletonButton,
@@ -15,8 +14,9 @@ import {
 } from "@/components/ui/table";
 import { formatDate, formatPlural, formatPrice } from "@/lib/formatters";
 import Image from "next/image";
-import { revokeAccess } from "../actions/purchases";
 
+// Read-only sales list for instructors. Refunds/access revocation are an
+// admin action (revokeAccess) and are deliberately not exposed here.
 export function PurchaseTable({
   purchases,
 }: {
@@ -47,7 +47,6 @@ export function PurchaseTable({
           </TableHead>
           <TableHead>Customer Name</TableHead>
           <TableHead>Amount</TableHead>
-          <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -78,17 +77,6 @@ export function PurchaseTable({
                 <Badge variant="outline">Refunded</Badge>
               ) : (
                 formatPrice(purchase.pricePaidInPaisa / 100)
-              )}
-            </TableCell>
-            <TableCell>
-              {purchase.refundedAt == null && purchase.pricePaidInPaisa > 0 && (
-                <ActionButton
-                  action={revokeAccess.bind(null, { purchaseId: purchase.id })}
-                  variant="destructiveOutline"
-                  requireAreYouSure
-                >
-                  Refund
-                </ActionButton>
               )}
             </TableCell>
           </TableRow>

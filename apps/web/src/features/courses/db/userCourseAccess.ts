@@ -41,6 +41,7 @@ export async function revokeUserCourseAccess(
   const validPurchases = await trx.query.PurchaseTable.findMany({
     where: and(
       eq(PurchaseTable.userId, userId),
+      eq(PurchaseTable.status, "completed"),
       isNull(PurchaseTable.refundedAt)
     ),
     with: {
