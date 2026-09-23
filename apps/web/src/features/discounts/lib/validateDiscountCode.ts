@@ -1,3 +1,6 @@
+import { eq } from "drizzle-orm";
+import { db } from "@/drizzle/db";
+import { ProductTable } from "@/drizzle/schema";
 import { getDiscountCodeByCode, getUserRedemptionCount } from "../db/discounts";
 
 export type DiscountValidationResult =
@@ -38,10 +41,19 @@ export async function validateDiscountCode(params: {
   if (discountCode.scopeType === "product" && discountCode.productId !== productId) {
     return { valid: false, reason: "wrong_product" };
   }
-  // ADJUST: for scopeType "storewide" we don't re-verify that productId
-  // actually belongs to discountCode.creatorId — this trusts the caller to
-  // pass in a productId resolved server-side. Tighten this if productId
-  // could ever come straight from client input.
+
+  // A storewide code covers only the code creator's own products — never
+  // another creator's. productId can come from client input (the checkout
+  // preview), so the owner is always looked up here, server-side.
+  if (discountCode.scopeType === "storewide") {
+    const product = await db.query.ProductTable.findFirst({
+      where: eq(ProductTable.id, productId),
+      columns: { authorId: true },
+    });
+    if (product == null || product.authorId !== discountCode.creatorId) {
+      return { valid: false, reason: "wrong_product" };
+    }
+  }
 
   if (
     discountCode.maxRedemptions != null &&

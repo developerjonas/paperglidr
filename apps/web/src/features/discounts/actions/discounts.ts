@@ -4,7 +4,7 @@ import { z } from "zod";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/drizzle/db";
-import { CourseProductTable, UserTable } from "@/drizzle/schema";
+import { UserTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import {
   insertDiscountCode,
@@ -15,6 +15,7 @@ import {
   canCreateDiscountCodes,
   canUpdateDiscountCodes,
   canDeleteDiscountCodes,
+  canScopeDiscountToProduct,
 } from "../permissions/discounts";
 import { discountCodeSchema } from "../schemas/discounts";
 import { validateDiscountCode } from "../lib/validateDiscountCode";
@@ -38,22 +39,12 @@ export async function createDiscountCode(
     return { error: true, message: "There was an error creating your discount code" };
   }
 
-  // Ownership check via courses, not ProductTable.authorId — that column
-  // doesn't exist. Strictest interpretation: every course in the product
-  // must belong to this user, or the check fails. ADJUST if bundles can
-  // legitimately span multiple authors and any-one-course should qualify.
-  if (data.scopeType === "product" && data.productId) {
-    const productCourses = await db.query.CourseProductTable.findMany({
-      where: eq(CourseProductTable.productId, data.productId),
-      with: { course: { columns: { authorId: true } } },
-    });
-    const ownsProduct =
-      productCourses.length > 0 &&
-      productCourses.every((pc) => pc.course.authorId === user.userId);
-
-    if (!ownsProduct) {
-      return { error: true, message: "You can only create codes for your own products" };
-    }
+  if (
+    data.scopeType === "product" &&
+    data.productId &&
+    !(await canScopeDiscountToProduct(user, data.productId))
+  ) {
+    return { error: true, message: "You can only create codes for your own products" };
   }
 
   let inserted;
@@ -88,6 +79,14 @@ export async function updateDiscountCodeAction(
 
   if (!success || !(await canUpdateDiscountCodes(user, id))) {
     return { error: true, message: "There was an error updating your discount code" };
+  }
+
+  if (
+    data.scopeType === "product" &&
+    data.productId &&
+    !(await canScopeDiscountToProduct(user, data.productId))
+  ) {
+    return { error: true, message: "You can only create codes for your own products" };
   }
 
   await updateDiscountCodeDb(id, data);

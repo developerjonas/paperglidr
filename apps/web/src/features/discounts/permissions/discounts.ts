@@ -1,5 +1,6 @@
 import { db } from "@/drizzle/db"
 import { DiscountCodeTable } from "@/drizzle/schema/discountCode"
+import { ProductTable } from "@/drizzle/schema/product"
 import { eq } from "drizzle-orm"
 
 type UserContext = { userId: string | undefined; role: string | undefined }
@@ -28,3 +29,19 @@ export async function canUpdateDiscountCodes(
 }
 
 export const canDeleteDiscountCodes = canUpdateDiscountCodes
+
+// A product-scoped code may only target a product the user authored
+// (admins: any product). Checked on create AND update, so an existing code
+// can't be re-pointed at another creator's product either.
+export async function canScopeDiscountToProduct(
+  user: UserContext,
+  productId: string
+) {
+  if (!user.userId) return false
+  if (user.role === "admin") return true
+  const product = await db.query.ProductTable.findFirst({
+    where: eq(ProductTable.id, productId),
+    columns: { authorId: true },
+  })
+  return product?.authorId === user.userId
+}
