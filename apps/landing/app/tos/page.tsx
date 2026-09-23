@@ -17,9 +17,9 @@ export default function TermsOfServicePage() {
         <p className="text-muted-foreground">Last updated: {LAST_UPDATED}</p>
 
         <p>
-          These Terms of Service ("Terms") govern your access to and use of
+          These Terms of Service (&quot;Terms&quot;) govern your access to and use of
           PaperGlidr (paperglidr.com), a platform operated by{" "}
-          {COMPANY_LEGAL_NAME} ("PaperGlidr", "we", "us"), registered at{" "}
+          {COMPANY_LEGAL_NAME} (&quot;PaperGlidr&quot;, &quot;we&quot;, &quot;us&quot;), registered at{" "}
           {COMPANY_ADDRESS} under registration number{" "}
           {COMPANY_REGISTRATION}. By creating an account, purchasing a
           course, or publishing content as an instructor, you agree to these
@@ -29,8 +29,8 @@ export default function TermsOfServicePage() {
         <h2>1. What PaperGlidr Is</h2>
         <p>
           PaperGlidr is a self-serve marketplace that lets independent
-          creators ("Instructors") publish and sell educational content
-          ("Courses") — including video lessons, PDFs, and other digital
+          creators (&quot;Instructors&quot;) publish and sell educational content
+          (&quot;Courses&quot;) — including video lessons, PDFs, and other digital
           materials — to students in Nepal and elsewhere, priced in Nepalese
           Rupees (NPR) and paid for via eSewa, Khalti, or Fonepay. PaperGlidr
           is a platform, not the creator of Course content; Instructors are
@@ -82,7 +82,7 @@ export default function TermsOfServicePage() {
           <li>
             By publishing a Course, you confirm you own the rights to the
             content or have permission to distribute it, and that it does
-            not infringe on any third party's copyright, trademark, or
+            not infringe on any third party&apos;s copyright, trademark, or
             other rights.
           </li>
           <li>
@@ -113,7 +113,7 @@ export default function TermsOfServicePage() {
           </li>
           <li>
             Upload content that is unlawful, fraudulent, defamatory, or that
-            infringes another party's intellectual property
+            infringes another party&apos;s intellectual property
           </li>
           <li>
             Use automated means (bots, scrapers) to access the platform
@@ -140,7 +140,7 @@ export default function TermsOfServicePage() {
 
         <h2>8. Limitation of Liability</h2>
         <p>
-          PaperGlidr is provided "as is." To the maximum extent permitted by
+          PaperGlidr is provided &quot;as is.&quot; To the maximum extent permitted by
           applicable law, PaperGlidr is not liable for indirect,
           incidental, or consequential damages arising from your use of the
           platform, including but not limited to Course content quality,

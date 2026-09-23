@@ -29,7 +29,6 @@ import {
   BookOpenIcon,
   DollarSignIcon,
   FolderIcon,
-  LayersIcon,
   LifeBuoyIcon,
   PackageIcon,
   StarIcon,

@@ -1,6 +1,13 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+// Created on first send, not at module load — `next build` imports this
+// module while collecting page data, and must not require RESEND_API_KEY.
+let resend: Resend | null = null;
+
+function getResend() {
+  resend ??= new Resend(process.env.RESEND_API_KEY!);
+  return resend;
+}
 
 export type EmailAttachment = {
   filename: string;
@@ -20,7 +27,7 @@ export async function sendEmail({
   attachments?: EmailAttachment[];
   from: string; // caller-specified — invoices and notifications will want different sender identities (billing@ vs notifications@)
 }) {
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from,
     to,
     subject,

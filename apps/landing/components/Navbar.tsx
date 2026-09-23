@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 import { useTheme } from "next-themes"
 import { Sun, Moon } from "lucide-react"
 
@@ -40,13 +40,19 @@ export function Navbar() {
   )
 }
 
+function subscribeNoop() {
+  return () => {}
+}
+
 function ThemeToggle() {
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  // false during SSR and hydration, true after — avoids a theme-icon
+  // hydration mismatch without setting state inside an effect
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false,
+  )
 
   if (!mounted) {
     return <div className="h-9 w-9 rounded-full" />

@@ -39,11 +39,11 @@ export default function ContentPolicyPage() {
           <li>
             <strong>Pirated or unlicensed material</strong> — including
             content copied from other paid courses, textbooks, or platforms
-            without permission, and content bearing another creator's
+            without permission, and content bearing another creator&apos;s
             watermark or branding.
           </li>
           <li>
-            <strong>Reselling of others' free content</strong> — repackaging
+            <strong>Reselling of others&apos; free content</strong> — repackaging
             freely available material (e.g., public YouTube tutorials,
             open-source documentation) as a paid course without meaningful
             original contribution.
@@ -55,7 +55,7 @@ export default function ContentPolicyPage() {
           </li>
           <li>
             <strong>Deceptive or low-effort content</strong> — courses that
-            don't deliver on their stated title/description, filler content
+            don&apos;t deliver on their stated title/description, filler content
             padded to appear longer than it is, or content that is
             substantially incomplete at publish time.
           </li>
@@ -68,7 +68,7 @@ export default function ContentPolicyPage() {
           <li>
             <strong>Malware or harmful files</strong> — any downloadable
             attachment must be safe; uploading executables or files designed
-            to harm a buyer's device is grounds for immediate termination.
+            to harm a buyer&apos;s device is grounds for immediate termination.
           </li>
         </ul>
 
@@ -84,7 +84,7 @@ export default function ContentPolicyPage() {
           </li>
         </ul>
         <p>
-          Courses that don't meet these requirements will not be visible to
+          Courses that don&apos;t meet these requirements will not be visible to
           buyers until completed.
         </p>
 

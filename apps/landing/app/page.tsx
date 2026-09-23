@@ -7,7 +7,6 @@ import {
   Smartphone,
   ArrowRight,
   GraduationCap,
-  BookOpen,
   Award,
 } from "lucide-react";
 
@@ -335,7 +334,7 @@ export default function Home() {
             href={`${APP_URL}/sign-up`}
             className="inline-flex items-center justify-center rounded-full bg-[#C9A227] px-8 py-3 text-sm font-medium text-[#14213D] transition-colors hover:bg-[#dab236]"
           >
-            Start Creating — It's Free
+            Start Creating — It&apos;s Free
           </Link>
         </div>
       </section>
