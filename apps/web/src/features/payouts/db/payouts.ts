@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { getInstructorTotalEarnings } from "@/features/ledger/db/ledger"
 
 // NPR 1,000 per the roadmap — confirmed
-const MINIMUM_PAYOUT_PAISA = 100_000
+export const MINIMUM_PAYOUT_PAISA = 100_000
 
 async function getInstructorPaidOutTotal(instructorId: string) {
   const paid = await db.query.PayoutTable.findMany({

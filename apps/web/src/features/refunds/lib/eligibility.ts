@@ -7,10 +7,10 @@ import { and, eq, count } from "drizzle-orm";
 
 // Exactly 7 * 24 * 60 * 60 * 1000ms. Deliberately NOT "start of day" or
 // calendar-day math — 1ms past this and the request is outside the window.
-const REFUND_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+export const REFUND_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Strictly under 20%, not "20% or less".
-const REFUND_COMPLETION_THRESHOLD_PERCENT = 20;
+export const REFUND_COMPLETION_THRESHOLD_PERCENT = 20;
 
 export type RefundEligibility = {
   eligible: boolean;

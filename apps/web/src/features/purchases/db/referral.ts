@@ -3,8 +3,8 @@ import { cookies } from "next/headers"
 import { db } from "@/drizzle/db"
 import { InstructorTable } from "@/drizzle/schema"
 import { eq } from "drizzle-orm"
+import { REF_COOKIE } from "@/lib/referral"
 
-const REF_COOKIE = "pg_ref"
 
 export async function getReferringInstructorId(): Promise<string | null> {
   const handle = (await cookies()).get(REF_COOKIE)?.value

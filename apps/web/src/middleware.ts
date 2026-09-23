@@ -1,6 +1,7 @@
 // src/middleware.ts
 import { NextResponse, type NextRequest } from "next/server"
 import { getSessionCookie } from "better-auth/cookies"
+import { REF_COOKIE, REF_COOKIE_MAX_AGE_SECONDS } from "@/lib/referral"
 
 // Everything NOT listed here is reachable signed out — including the
 // marketing home (/), /browse, product pages, and the legal pages. Keep it
@@ -11,8 +12,6 @@ import { getSessionCookie } from "better-auth/cookies"
 // pages and actions returns a 404 for everyone who isn't an admin.
 const protectedPrefixes = ["/account", "/certificates", "/purchases", "/teach"]
 
-const REF_COOKIE = "pg_ref"
-const REF_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30 // 30 days
 
 function captureReferral(request: NextRequest, response: NextResponse) {
   const ref = request.nextUrl.searchParams.get("ref")
