@@ -17,6 +17,25 @@ export const env = createEnv({
     // GitHub sign-in is registered only when both are set
     GITHUB_CLIENT_ID: z.string().min(1).optional(),
     GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
+    // Extra origins allowed to call the auth API, comma-separated, e.g.
+    // "https://paperglidr.com,https://www.paperglidr.com,paperglidr://".
+    // BETTER_AUTH_URL's own origin is always trusted. Parsed in lib/auth.ts.
+    BETTER_AUTH_TRUSTED_ORIGINS: z
+      .string()
+      .optional()
+      .refine(
+        value =>
+          value == null ||
+          value
+            .split(",")
+            .map(origin => origin.trim())
+            .filter(Boolean)
+            .every(origin => /^[a-z][a-z0-9+.-]*:\/\//i.test(origin)),
+        "Each origin must start with a scheme, e.g. https:// or paperglidr://",
+      ),
+    // Parent domain for a cookie shared across subdomains, e.g.
+    // ".paperglidr.com". Unset = host-only cookie (no cross-subdomain sharing).
+    AUTH_COOKIE_DOMAIN: z.string().min(1).optional(),
 
     // --- R2 (object storage) ---
     R2_ACCESS_KEY_ID: z.string().min(1),

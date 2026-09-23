@@ -8,6 +8,11 @@ import * as schema from "@/drizzle/schema";
 import z from "zod";
 import { env } from "@/data/env/server";
 
+const trustedOrigins = (env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
+  .split(",")
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
@@ -23,17 +28,18 @@ export const auth = betterAuth({
     database: {
       generateId: "uuid",
     },
-    crossSubDomainCookies: {
-      enabled: process.env.NODE_ENV === "production",
-      domain: ".paperglidr.com",
-    },
+    // Only share the session cookie across subdomains when a parent domain
+    // is configured; otherwise the cookie stays host-only.
+    ...(env.AUTH_COOKIE_DOMAIN
+      ? {
+          crossSubDomainCookies: {
+            enabled: true,
+            domain: env.AUTH_COOKIE_DOMAIN,
+          },
+        }
+      : {}),
   },
-  trustedOrigins: [
-    "paperglidr://",
-    "https://paperglidr.com",
-    "https://www.paperglidr.com",
-    "https://app.paperglidr.com",
-  ],
+  trustedOrigins,
   socialProviders: {
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
