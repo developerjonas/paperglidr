@@ -2,7 +2,10 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { getSessionCookie } from "better-auth/cookies"
 
-const protectedPrefixes = ["/account", "/certificates", "/purchases", "/teach", "/admin"]
+// /admin is deliberately absent: redirecting signed-out visitors to
+// sign-in would reveal the route exists. requireAdmin() in the admin layout,
+// pages and actions returns a 404 for everyone who isn't an admin.
+const protectedPrefixes = ["/account", "/certificates", "/purchases", "/teach"]
 
 const REF_COOKIE = "pg_ref"
 const REF_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30 // 30 days
