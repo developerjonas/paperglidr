@@ -89,12 +89,14 @@ export default async function InstructorOnboardingPage() {
                       variant="secondary"
                       className="rounded-[4px] px-1.5 py-0 text-[9px]"
                     >
-                      Required
+                      Optional
                     </Badge>
                   )}
                 </div>
                 <CardDescription>
-                  Required before you can publish courses or receive payouts.
+                  Optional. Verifying your phone raises how many products you
+                  can have on sale at once. You can publish and receive
+                  payouts without it.
                 </CardDescription>
               </CardHeader>
               <CardContent>

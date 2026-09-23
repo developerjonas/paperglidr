@@ -50,7 +50,7 @@ export default async function HomePage() {
             <p className="max-w-md text-lg leading-8 text-[#14213D]/70 dark:text-[#F5F3EE]/70">
               PaperGlidr lets you publish a course in minutes, price it in
               rupees, and sell to students who pay with eSewa, Khalti, or
-              Fonepay. No approval queue. No waiting on anyone.
+              Fonepay.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Link
@@ -210,8 +210,8 @@ export default async function HomePage() {
           {[
             {
               icon: Rocket,
-              title: "No gatekeeping",
-              body: "Sign up and publish immediately. There's no application, no waitlist, no reviewer deciding if your course is good enough.",
+              title: "Publish on your schedule",
+              body: "Sign up and publish when your course is ready. There's no application and no waitlist.",
             },
             {
               icon: Wallet,
@@ -246,7 +246,7 @@ export default async function HomePage() {
               n: "01",
               icon: Upload,
               title: "Upload your course",
-              body: "Add your videos, structure your lessons, write a description. No format to fight, no reviewer in the loop.",
+              body: "Add your videos, structure your lessons, write a description. No format to fight.",
             },
             {
               n: "02",

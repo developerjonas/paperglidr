@@ -26,12 +26,10 @@ import { count, countDistinct, isNotNull, sql, sum } from "drizzle-orm";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import Link from "next/link";
 import {
-  BookOpenIcon,
   CreditCardIcon,
   DollarSignIcon,
   FolderIcon,
   LifeBuoyIcon,
-  PackageIcon,
   StarIcon,
   WalletIcon,
 } from "lucide-react";
@@ -45,18 +43,8 @@ const MANAGEMENT_LINKS = [
     href: "/admin/categories",
     icon: FolderIcon,
   },
-  {
-    title: "Products",
-    description: "Manage digital products and pricing",
-    href: "/admin/products",
-    icon: PackageIcon,
-  },
-  {
-    title: "Courses",
-    description: "Manage courses, sections, and lessons",
-    href: "/admin/courses",
-    icon: BookOpenIcon,
-  },
+  // Products and Courses admin pages come with GTM task 18; no links until
+  // those pages exist.
   {
     title: "Purchases",
     description: "Pending, failed and disputed payments; re-check with the gateway",

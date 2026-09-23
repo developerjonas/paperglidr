@@ -208,9 +208,6 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
           <p className="text-xs text-muted-foreground">
             &copy; {currentYear} {COMPANY.legalName}. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>Powered by Jonas</span>
-          </div>
         </div>
       </div>
     </footer>

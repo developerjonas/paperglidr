@@ -46,7 +46,7 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
 - **Assumed:** a new liability cap: "the amount you paid us in the six months before the claim". Confirm or change.
 - **Decide:** the suspension and termination wording, including closing accounts without notice for serious breaches.
 - **Changed: product-page access claim.** The product page used to promise "Full lifetime access". It now says "Access for as long as PaperGlidr operates", because accounts can be closed, courses removed for policy breaches, or the platform shut down. That was the only place the phrase appeared. **Confirm** the new wording, and that "Certificate of completion" (also on that page) is acceptable.
-- **Decide: marketing claims.** The home page says "No approval queue… no reviewer deciding if your course is good enough". That is true today, but the policies reserve the right to remove content. Confirm this is acceptable, especially if moderation before publishing is added (task 18).
+- **Changed: marketing claims.** The home page used to say "No approval queue… no reviewer deciding if your course is good enough" and "no reviewer in the loop". Those lines are removed, because the policies reserve the right to remove content and task 18 may add review before publishing. The home page now says only that there is no application or waitlist to sign up.
 
 ### Privacy Policy (`/privacy`)
 - **Assumed:** every data category and processor listed matches the current code.
@@ -90,7 +90,7 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
 - **Decide:** payout timing. None is promised. Add a service level, for example within 7 working days of a request?
 - **Decide:** whether earnings from a sale should be held until its refund window closes. Today they can be withdrawn immediately and clawed back later; task 17 plans a hold.
 - **Decide:** notice period for fee changes. The draft says "before the change takes effect" without a number.
-- **Note:** the onboarding page says phone verification is "required before you can publish courses or receive payouts". The code only uses it to raise publishing limits and doesn't require it for payouts. The terms follow the code; the onboarding copy should be aligned.
+- **Aligned:** the onboarding page used to say phone verification is "required before you can publish courses or receive payouts". It now matches the code and the terms: verification is optional and only raises the limit on how many products can be on sale at once.
 
 ### Content Policy (`/content`)
 - The publishing requirements now match the code: a thumbnail and price, a description of at least 100 characters, at least one course, and a preview lesson with a video.
