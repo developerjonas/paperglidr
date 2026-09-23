@@ -45,7 +45,7 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
 - **Assumed:** acceptance is clickwrap. It also assumes that access continues if a creator stops selling a course; the code does keep access.
 - **Assumed:** a new liability cap: "the amount you paid us in the six months before the claim". Confirm or change.
 - **Decide:** the suspension and termination wording, including closing accounts without notice for serious breaches.
-- **Decide: product-page claims.** The product page promises "Full lifetime access" and "Certificate of completion". Is "lifetime" acceptable given accounts can be closed, courses removed for policy breaches, or the platform shut down? Consider "for as long as PaperGlidr offers the course".
+- **Changed: product-page access claim.** The product page used to promise "Full lifetime access". It now says "Access for as long as PaperGlidr operates", because accounts can be closed, courses removed for policy breaches, or the platform shut down. That was the only place the phrase appeared. **Confirm** the new wording, and that "Certificate of completion" (also on that page) is acceptable.
 - **Decide: marketing claims.** The home page says "No approval queue… no reviewer deciding if your course is good enough". That is true today, but the policies reserve the right to remove content. Confirm this is acceptable, especially if moderation before publishing is added (task 18).
 
 ### Privacy Policy (`/privacy`)

@@ -16,12 +16,17 @@ import {
 import { db } from "@/drizzle/db";
 import {
   CourseSectionTable,
+  InstructorTable,
   LessonTable,
   ProductTable,
+  UserTable,
 } from "@/drizzle/schema";
 import { getCourseIdTag } from "@/features/courses/db/cache/courses";
 import { getCourseSectionCourseTag } from "@/features/courseSections/db/cache";
 import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections";
+import { getInstructorUserTag } from "@/features/instructors/db/cache/instructors";
+import { getUserIdTag } from "@/features/users/db/cache";
+import { isAllowedImageUrl } from "@/lib/imageHosts";
 import { getLessonCourseTag } from "@/features/lessons/db/cache/lessons";
 import { wherePublicLessons } from "@/features/lessons/permissions/lessons";
 import { getProductIdTag } from "@/features/products/db/cache";
@@ -120,21 +125,7 @@ export default async function ProductPage({
               </span>
             </div>
 
-            {/* Instructor block — placeholder until real instructor profiles exist */}
-            <Link
-              href="/instructors/jonas"
-              className="group mt-2 flex w-fit items-center gap-3 rounded-[5px] border border-white/30 bg-white/40 px-4 py-3 backdrop-blur-md transition-colors hover:bg-white/60 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.07]"
-            >
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-sm font-bold text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
-                TJ
-              </div>
-              <div className="leading-tight">
-                <p className="text-xs text-muted-foreground">Created by</p>
-                <p className="font-semibold group-hover:underline underline-offset-4">
-                  Tutor Jonas
-                </p>
-              </div>
-            </Link>
+            <InstructorBlock author={product.author} />
           </div>
         </div>
       </section>
@@ -237,15 +228,7 @@ export default async function ProductPage({
                 />
               </div>
               <div className="flex flex-col gap-4 p-6">
-                <Suspense
-                  fallback={
-                    <div className="text-2xl font-bold">
-                      {formatPrice(product.priceInRupees)}
-                    </div>
-                  }
-                >
-                  <Price price={product.priceInRupees} />
-                </Suspense>
+                <Price price={product.priceInRupees} />
 
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
@@ -265,7 +248,7 @@ export default async function ProductPage({
                 <ul className="flex flex-col gap-2 border-t border-white/20 pt-4 text-sm text-muted-foreground dark:border-white/10">
                   <li className="flex items-center gap-2">
                     <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
-                    Full lifetime access
+                    Access for as long as PaperGlidr operates
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
@@ -320,24 +303,72 @@ async function WishlistToggle({ productId }: { productId: string }) {
   );
 }
 
-async function Price({ price }: { price: number }) {
-  if (price === 0) {
-    return (
-      <div className="text-2xl font-bold tracking-tight">
-        {formatPrice(price)}
-      </div>
-    );
-  }
-
+function Price({ price }: { price: number }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <div className="text-base text-muted-foreground line-through">
-        {formatPrice(price)}
-      </div>
-      <div className="text-2xl font-bold tracking-tight">
-        {formatPrice(price)}
-      </div>
+    <div className="text-2xl font-bold tracking-tight">
+      {formatPrice(price)}
     </div>
+  );
+}
+
+type ProductAuthor = {
+  name: string;
+  instructor: { name: string; handle: string; profileImageUrl: string | null } | null;
+};
+
+function InstructorBlock({ author }: { author: ProductAuthor }) {
+  const name = author.instructor?.name ?? author.name;
+  const initials =
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word.charAt(0).toUpperCase())
+      .join("") || "?";
+  const imageUrl =
+    author.instructor?.profileImageUrl &&
+    isAllowedImageUrl(author.instructor.profileImageUrl)
+      ? author.instructor.profileImageUrl
+      : null;
+
+  const content = (
+    <>
+      {imageUrl ? (
+        <Image
+          src={imageUrl}
+          alt=""
+          width={44}
+          height={44}
+          className="h-11 w-11 rounded-full object-cover"
+        />
+      ) : (
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-sm font-bold text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
+          {initials}
+        </div>
+      )}
+      <div className="leading-tight">
+        <p className="text-xs text-muted-foreground">Created by</p>
+        <p className="font-semibold group-hover:underline underline-offset-4">
+          {name}
+        </p>
+      </div>
+    </>
+  );
+  const className =
+    "group mt-2 flex w-fit items-center gap-3 rounded-[5px] border border-white/30 bg-white/40 px-4 py-3 backdrop-blur-md transition-colors dark:border-white/10 dark:bg-white/[0.03]";
+
+  // Products authored by an account without an instructor profile (e.g. an
+  // admin) have no public profile page to link to.
+  if (author.instructor == null) {
+    return <div className={className}>{content}</div>;
+  }
+  return (
+    <Link
+      href={`/instructors/${author.instructor.handle}`}
+      className={`${className} hover:bg-white/60 dark:hover:bg-white/[0.07]`}
+    >
+      {content}
+    </Link>
   );
 }
 
@@ -352,6 +383,7 @@ async function getPublicProduct(id: string) {
       description: true,
       priceInRupees: true,
       imageUrl: true,
+      authorId: true,
     },
     where: and(eq(ProductTable.id, id), wherePublicProducts),
     with: {
@@ -382,6 +414,20 @@ async function getPublicProduct(id: string) {
 
   if (product == null) return product;
 
+  // The author's public profile (name, handle, photo) — never email or phone.
+  const [authorRow] = await db
+    .select({
+      name: UserTable.name,
+      instructorName: InstructorTable.name,
+      handle: InstructorTable.handle,
+      profileImageUrl: InstructorTable.profileImageUrl,
+    })
+    .from(UserTable)
+    .leftJoin(InstructorTable, eq(InstructorTable.userId, UserTable.id))
+    .where(eq(UserTable.id, product.authorId))
+    .limit(1);
+  cacheTag(getInstructorUserTag(product.authorId), getUserIdTag(product.authorId));
+
   cacheTag(
     ...product.courseProducts.flatMap((cp) => [
       getLessonCourseTag(cp.course.id),
@@ -393,7 +439,22 @@ async function getPublicProduct(id: string) {
   const { courseProducts, ...other } = product;
 
   return {
-    ...other,
+    id: other.id,
+    name: other.name,
+    description: other.description,
+    priceInRupees: other.priceInRupees,
+    imageUrl: other.imageUrl,
+    author: {
+      name: authorRow?.name ?? "PaperGlidr instructor",
+      instructor:
+        authorRow?.handle != null && authorRow.instructorName != null
+          ? {
+              name: authorRow.instructorName,
+              handle: authorRow.handle,
+              profileImageUrl: authorRow.profileImageUrl,
+            }
+          : null,
+    },
     courses: courseProducts.map((cp) => cp.course),
   };
 }
