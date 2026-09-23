@@ -61,18 +61,24 @@ export const defaultFulfilDeps: FulfilDeps = {
 };
 
 const UNIQUE_VIOLATION = "23505";
+// The (gateway, gatewayTransactionId) unique index on purchases. Only THIS
+// conflict means "this payment already paid for another purchase"; any
+// other unique conflict is an ordinary error, never a dispute.
+const GATEWAY_TRANSACTION_UNIQUE_INDEX = "gateway_transaction_unique_idx";
 
 // A gateway may not know about a payment the instant the buyer leaves its
 // page. "No record" only becomes a failure after this long.
 export const NOT_FOUND_GRACE_MS = 30 * 60 * 1000;
 
-function isUniqueViolation(error: unknown) {
+function isReusedGatewayTransaction(error: unknown) {
   const cause = error instanceof DrizzleQueryError ? error.cause : error;
   return (
     typeof cause === "object" &&
     cause != null &&
     "code" in cause &&
-    cause.code === UNIQUE_VIOLATION
+    cause.code === UNIQUE_VIOLATION &&
+    "constraint" in cause &&
+    cause.constraint === GATEWAY_TRANSACTION_UNIQUE_INDEX
   );
 }
 
@@ -201,7 +207,7 @@ export async function verifyAndFulfil(
   try {
     fulfilled = await fulfil(purchase.id, verification);
   } catch (error) {
-    if (isUniqueViolation(error)) {
+    if (isReusedGatewayTransaction(error)) {
       // The gateway's transaction reference is already attached to another
       // purchase: one payment can't pay for two purchases.
       console.error(
