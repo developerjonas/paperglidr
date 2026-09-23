@@ -5,15 +5,14 @@ import { canAccessAdminPages } from "@/permissions/general";
 import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
+import { COMPANY, companyRegistrationDisplay } from "@/config/company";
+import { LEGAL_PAGES } from "@/config/legalPages";
 import {
   GraduationCap,
   Shield,
   User,
   FileText,
-  HelpCircle,
-  ShieldCheck,
   Scale,
-  RotateCcw,
   MessageSquareWarning,
   Presentation,
   BookOpen,
@@ -64,10 +63,13 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
               Empowering lifelong learning and course creation. High-quality
               structured content for students and tutors across Nepal.
             </p>
-            <div className="flex items-center gap-1.5 pt-1 text-[11px] font-medium text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-              Registered e-commerce business in Nepal
-            </div>
+            <address className="pt-1 text-[11px] not-italic leading-relaxed text-muted-foreground">
+              {COMPANY.legalName}
+              <br />
+              {COMPANY.registeredAddress}
+              <br />
+              Company registration: {companyRegistrationDisplay}
+            </address>
           </div>
 
           {/* ---------------- Learning ---------------- */}
@@ -163,83 +165,39 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
                   </Link>
                 </li>
               )}
-              <li>
-                <a
-                  href="/blog"
-                  className="transition-colors hover:text-foreground"
-                >
-                  Instructor Blog
-                </a>
-              </li>
             </ul>
           </div>
 
-          {/* ---------------- Legal & Support (E-Commerce Act required) ---------------- */}
+          {/* ---------------- Legal & Support ---------------- */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
               Legal & Support
             </h4>
             <ul className="space-y-2 text-sm font-medium text-muted-foreground">
+              {LEGAL_PAGES.map(page => (
+                <li key={page.href}>
+                  <Link href={page.href} className="transition-colors hover:text-foreground">
+                    {page.title}
+                  </Link>
+                </li>
+              ))}
               <li>
-                <a
+                <Link
                   href="/legal"
                   className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
                 >
                   <Scale className="h-3.5 w-3.5" />
-                  Business & Registration Info
-                </a>
+                  All policies
+                </Link>
               </li>
               <li>
-                <a
-                  href="/privacy"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/refund-policy"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Refund Policy
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/tos"
-                  className="transition-colors hover:text-foreground"
-                >
-                  Terms of Service
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/dmca"
-                  className="transition-colors hover:text-foreground"
-                >
-                  DMCA Policy
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/content"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                >
-                  <HelpCircle className="h-3.5 w-3.5" />
-                  Help & Content Guidelines
-                </a>
-              </li>
-              <li>
-                <a
+                <Link
                   href="/contact"
                   className="inline-flex items-center gap-1.5 font-semibold text-foreground/90 transition-colors hover:text-primary"
                 >
                   <MessageSquareWarning className="h-3.5 w-3.5" />
-                  File a Complaint / Contact Us
-                </a>
+                  Contact Us
+                </Link>
               </li>
             </ul>
           </div>
@@ -248,8 +206,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
         {/* ---------------- Bottom Bar ---------------- */}
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-center sm:flex-row sm:text-left dark:border-white/5">
           <p className="text-xs text-muted-foreground">
-            &copy; {currentYear} PaperGlidr. All rights reserved. A registered
-            e-commerce company in Nepal.
+            &copy; {currentYear} {COMPANY.legalName}. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span>Powered by Jonas</span>
