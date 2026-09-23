@@ -1,5 +1,6 @@
 "use server"
 import { revalidatePath } from "next/cache"
+import { DrizzleQueryError } from "drizzle-orm/errors"
 import { getCurrentUser, requireAdmin } from "@/services/auth"
 import { canRequestPayout } from "../permissions/payouts"
 import {
@@ -28,6 +29,14 @@ export async function requestPayout(unsafeData: { amountInRupees: number; bankDe
     revalidatePath("/teach/payouts")
     return { error: false, message: "Payout requested" }
   } catch (err) {
+    // drizzle-orm >= 0.44 wraps DB failures in DrizzleQueryError, whose
+    // message contains the SQL and its params (here: bank details) — log
+    // it, never return it. Validation errors thrown by requestPayoutDb
+    // (balance, minimum) are still shown as-is.
+    if (err instanceof DrizzleQueryError) {
+      console.error("requestPayout failed", err)
+      return { error: true, message: "Failed to request payout" }
+    }
     return { error: true, message: err instanceof Error ? err.message : "Failed to request payout" }
   }
 }

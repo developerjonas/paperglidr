@@ -62,14 +62,16 @@ async function promoteAdmin(): Promise<boolean> {
 }
 
 async function main() {
-  await seedCategories()
-  const adminOk = await promoteAdmin()
-  // Exit explicitly: the shared pg pool in @/drizzle/db would otherwise
-  // keep the process alive.
-  process.exit(adminOk ? 0 : 1)
+  try {
+    await seedCategories()
+    if (!(await promoteAdmin())) process.exitCode = 1
+  } finally {
+    // Close the shared pg pool so the process can exit on its own.
+    await db.$client.end()
+  }
 }
 
 main().catch(error => {
   console.error(error)
-  process.exit(1)
+  process.exitCode = 1
 })
