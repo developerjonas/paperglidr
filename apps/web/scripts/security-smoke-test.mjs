@@ -129,6 +129,13 @@ function check(label, ok, detail = "") {
   console.log(`${ok ? "PASS" : "FAIL"} ${label}${detail ? `  (${detail})` : ""}`)
 }
 const message = body => body.match(/"message":"([^"]*)"/)?.[1]
+const decoded = text => {
+  try {
+    return decodeURIComponent(text)
+  } catch {
+    return text
+  }
+}
 
 async function createUser(label, run) {
   const user = await one(
@@ -238,6 +245,185 @@ async function main() {
     const status = await getStatus(href)
     check(`link ${href} resolves when signed out`, status < 400, `http ${status}`)
   }
+
+  // ---------------------------------------------------------------- lesson delivery (task 11/12)
+  console.log("== lesson delivery")
+  const liveSection = await one(
+    `insert into course_sections(name, "order", "courseId", status) values ('B live', 1, $1, 'public') returning id`,
+    [courseB.id],
+  )
+  const addLesson = async (name, status) =>
+    one(`insert into lessons(name, "order", status, "sectionId") values ($1, 0, $2, $3) returning id`, [
+      name,
+      status,
+      liveSection.id,
+    ])
+  const addAsset = async (lessonId, status = "ready") =>
+    one(
+      `insert into lesson_assets("lessonId", type, provider, role, "storageKey", "fileName", "mimeType", status)
+       values ($1, 'video_file', 'r2', 'primary', $2, 'v.mp4', 'video/mp4', $3) returning id`,
+      [lessonId, `courses/${courseB.id}/lessons/${lessonId}/smoke-${run}.mp4`, status],
+    )
+  const previewLesson = await addLesson("B preview", "preview")
+  const lockedLesson = await addLesson("B locked", "public")
+  const privateLesson = await addLesson("B private", "private")
+  const previewAsset = await addAsset(previewLesson.id)
+  const pendingAsset = await addAsset(previewLesson.id, "pending")
+  const lockedAsset = await addAsset(lockedLesson.id)
+  const privateAsset = await addAsset(privateLesson.id)
+
+  const deliver = async (lessonId, assetId, token) => {
+    const response = await fetch(`${BASE_URL}/api/lessons/${lessonId}/assets/${assetId}/deliver`, {
+      redirect: "manual",
+      headers: token ? { Cookie: sessionCookie(token) } : {},
+    })
+    const body = await response.json().catch(() => ({}))
+    return { status: response.status, body, cacheControl: response.headers.get("cache-control") ?? "" }
+  }
+
+  let d = await deliver(previewLesson.id, previewAsset.id)
+  check("preview lesson plays signed out", d.status === 200 && typeof d.body.url === "string", `http ${d.status}`)
+  check("deliver responses are private, no-store", d.cacheControl.includes("no-store") && d.cacheControl.includes("private"), d.cacheControl)
+  const expires = Number(new URL(d.body.url ?? "http://x/?X-Amz-Expires=0").searchParams.get("X-Amz-Expires"))
+  check("signed video URL is short-lived (<= 3 h)", expires > 0 && expires <= 3 * 60 * 60, `X-Amz-Expires=${expires}`)
+  d = await deliver(previewLesson.id, pendingAsset.id)
+  check("pending (unconfirmed) upload is not served", d.status === 404, `http ${d.status}`)
+  d = await deliver(lockedLesson.id, lockedAsset.id)
+  check("locked lesson signed out -> 401", d.status === 401, `http ${d.status}`)
+  d = await deliver(lockedLesson.id, lockedAsset.id, attacker.token)
+  check("locked lesson, signed in without access -> 403", d.status === 403, `http ${d.status}`)
+  d = await deliver(lockedLesson.id, lockedAsset.id, creatorB.token)
+  check("author plays their own locked lesson", d.status === 200 && typeof d.body.url === "string", `http ${d.status}`)
+  d = await deliver(privateLesson.id, privateAsset.id, creatorB.token)
+  check("author plays their own private lesson", d.status === 200, `http ${d.status}`)
+  d = await deliver(privateLesson.id, privateAsset.id, admin.token)
+  check("admin plays any lesson", d.status === 200, `http ${d.status}`)
+  d = await deliver(privateLesson.id, privateAsset.id, creatorA.token)
+  check("private lesson, buyer who isn't the author -> 403", d.status === 403, `http ${d.status}`)
+  d = await deliver(lockedLesson.id, lockedAsset.id, creatorA.token)
+  check("buyer plays a purchased lesson", d.status === 200, `http ${d.status}`)
+  d = await deliver(lockedLesson.id, previewAsset.id, creatorB.token)
+  check("asset from another lesson -> 404", d.status === 404, `http ${d.status}`)
+
+  // ---------------------------------------------------------------- uploads (task 12 + images)
+  console.log("== upload requests")
+  let up
+  const assetCount = async () => (await one(`select count(*)::int n from lesson_assets where "lessonId" = $1`, [lockedLesson.id])).n
+  const assetsBefore = await assetCount()
+  const uploadInput = over => [{
+    lessonId: lockedLesson.id, fileName: "v.mp4", mimeType: "video/mp4", fileSizeBytes: 1000,
+    role: "primary", downloadable: false, durationSeconds: 60, ...over,
+  }]
+  up = await call("requestLessonAssetUploadUrl", uploadInput({ mimeType: "video/quicktime", fileName: "v.mov" }), creatorB.token)
+  check("lesson upload: non-MP4 video rejected", message(up.body)?.includes("MP4") && (await assetCount()) === assetsBefore, message(up.body))
+  up = await call("requestLessonAssetUploadUrl", uploadInput({ fileSizeBytes: 2 * 1024 ** 3 + 1 }), creatorB.token)
+  check("lesson upload: MP4 over 2 GB rejected", message(up.body)?.includes("2 GB") && (await assetCount()) === assetsBefore, message(up.body))
+  up = await call("requestLessonAssetUploadUrl", uploadInput({}), attacker.token)
+  check("lesson upload: non-author can't request an upload URL", (await assetCount()) === assetsBefore, `http ${up.status}`)
+  up = await call("requestLessonAssetUploadUrl", uploadInput({}), creatorB.token)
+  const newAsset = await one(`select status from lesson_assets where "lessonId" = $1 order by "createdAt" desc limit 1`, [lockedLesson.id])
+  check("lesson upload: valid MP4 starts as pending", (await assetCount()) === assetsBefore + 1 && newAsset?.status === "pending", newAsset?.status)
+  check("lesson upload: presigned PUT signs content-length", /X-Amz-SignedHeaders=[^&]*content-length/.test(decoded(up.body)), "")
+
+  up = await call("requestImageUploadUrl", [{ purpose: "product", mimeType: "image/gif", fileSizeBytes: 1000 }], creatorB.token)
+  check("image upload: GIF rejected", message(up.body)?.includes("JPEG, PNG or WebP"), message(up.body))
+  up = await call("requestImageUploadUrl", [{ purpose: "product", mimeType: "image/png", fileSizeBytes: 5 * 1024 ** 2 + 1 }], creatorB.token)
+  check("image upload: over 5 MB rejected", message(up.body)?.includes("5 MB"), message(up.body))
+  up = await call("requestImageUploadUrl", [{ purpose: "product", mimeType: "image/png", fileSizeBytes: 1000 }])
+  check("image upload: signed out rejected", message(up.body)?.includes("Sign in"), message(up.body))
+  up = await call("requestImageUploadUrl", [{ purpose: "instructor", mimeType: "image/webp", fileSizeBytes: 1000 }], creatorB.token)
+  check("image upload: staged in the private bucket under the caller's id", decoded(up.body).includes(`image-uploads/instructor/${creatorB.id}/`), "")
+  up = await call("confirmImageUpload", [{ purpose: "instructor", stagingKey: `image-uploads/instructor/${creatorB.id}/00000000-0000-0000-0000-000000000000.png` }], attacker.token)
+  check("image upload: can't confirm another user's upload", message(up.body) === "Upload not found.", message(up.body))
+
+  // ---------------------------------------------------------------- post-login redirect (task 14)
+  console.log("== redirectTo")
+  const signUpLink = async (redirectTo) => {
+    const html = await (await fetch(`${BASE_URL}/sign-in?redirectTo=${encodeURIComponent(redirectTo)}`)).text()
+    return html.match(/href="(\/sign-up[^"]*)"/)?.[1]?.replaceAll("&amp;", "&")
+  }
+  check("redirectTo keeps a relative path", (await signUpLink("/courses")) === `/sign-up?redirectTo=${encodeURIComponent("/courses")}`, await signUpLink("/courses"))
+  for (const external of ["https://evil.example", "//evil.example", "/\\evil.example", "javascript:alert(1)"]) {
+    const link = await signUpLink(external)
+    check(`redirectTo rejects ${external}`, link === "/sign-up", link)
+  }
+  for (const [callbackURL, expectOk] of [["https://evil.example/steal", false], ["/courses", true]]) {
+    const response = await fetch(`${BASE_URL}/api/auth/sign-in/social`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: BASE_URL },
+      body: JSON.stringify({ provider: "google", callbackURL, disableRedirect: true }),
+    })
+    check(
+      `Better Auth ${expectOk ? "accepts" : "rejects"} callbackURL ${callbackURL}`,
+      expectOk ? response.ok : response.status === 403,
+      `http ${response.status}`,
+    )
+  }
+
+  // ---------------------------------------------------------------- /api/v1 (mobile flag off)
+  console.log("== /api/v1 with MOBILE_API_ENABLED off")
+  const v1 = async (method, pathname, token, body) => {
+    const response = await fetch(`${BASE_URL}/api/v1${pathname}`, {
+      method,
+      headers: {
+        ...(token ? { Cookie: sessionCookie(token) } : {}),
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    return { status: response.status, text: await response.text() }
+  }
+  for (const [method, pathname, body] of [
+    ["GET", "/me/courses"],
+    ["GET", "/purchases"],
+    ["GET", "/certificates"],
+    ["GET", `/certificates/${certificate.id}`],
+    ["GET", `/lessons/${lockedLesson.id}`],
+    ["POST", `/lessons/${lockedLesson.id}/complete`],
+    ["GET", "/support"],
+    ["POST", "/support", { subject: "s", message: "m", category: "other" }],
+    ["GET", `/support/${ticket.id}`],
+    ["POST", `/support/${ticket.id}/messages`, { body: "m" }],
+    ["GET", "/wishlist"],
+    ["POST", "/wishlist", { productId: productB.id }],
+    ["DELETE", `/wishlist/${productB.id}`],
+  ]) {
+    const res = await v1(method, pathname, creatorA.token, body)
+    check(`${method} /api/v1${pathname} -> 404 (signed in)`, res.status === 404, `http ${res.status}`)
+  }
+  let res = await v1("GET", "/products")
+  check("public GET /api/v1/products still works", res.status === 200, `http ${res.status}`)
+  const hiddenProduct = await one(
+    `insert into products(name, description, "imageUrl", "priceInRupees", status, author_id)
+     values ('B hidden', 'd', '/h.png', 100, 'private', $1) returning id`,
+    [creatorB.id],
+  )
+  res = await v1("GET", `/products/${hiddenProduct.id}`)
+  check("public GET /api/v1/products/<private product> -> 404", res.status === 404, `http ${res.status}`)
+  res = await v1("GET", `/courses/${courseA.id}`)
+  check("public GET /api/v1/courses/<course in no public product> -> 404", res.status === 404, `http ${res.status}`)
+  const phone = `98${String(Date.now()).slice(-8)}`
+  await q(
+    `insert into instructors("userId", handle, name, bio, "profileImageUrl", phone_number) values ($1, $2, 'B', 'bio', '/b.png', $3)`,
+    [creatorB.id, `smoke_${run}`, phone],
+  )
+  res = await v1("GET", `/instructors/smoke_${run}`)
+  check(
+    "public instructor profile has no phone number or user id",
+    res.status === 200 && !res.text.includes(phone) && !res.text.includes(creatorB.id) && res.text.includes("B product"),
+    `http ${res.status}`,
+  )
+
+  // ---------------------------------------------------------------- certificate verification
+  const verifyHtml = await (await fetch(`${BASE_URL}/verify/CERT-SMOKE-${run}`)).text()
+  check(
+    "/verify shows the certificate without internal ids",
+    verifyHtml.includes(`CERT-SMOKE-${run}`) && !verifyHtml.includes(certificate.id) && !verifyHtml.includes(creatorA.id) && !verifyHtml.includes(courseB.id),
+  )
+
+  // ---------------------------------------------------------------- support ticket page (moved)
+  check("support ticket page at /support/<id>", (await getStatus(`/support/${ticket.id}`, creatorA.token)) === 200)
+  check("old /support/support/<id> is gone", (await getStatus(`/support/support/${ticket.id}`, creatorA.token)) === 404)
 
   // ---------------------------------------------------------------- admin routes
   console.log("== /admin routes")
