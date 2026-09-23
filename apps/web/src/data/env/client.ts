@@ -12,12 +12,30 @@ export const env = createEnv({
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),
     // Marketing/legal site, e.g. https://paperglidr.com
     NEXT_PUBLIC_LANDING_URL: z.string().url(),
+    // Extra next/image hosts for creator-supplied product/instructor images,
+    // comma-separated hostnames. Consumed by src/lib/imageHosts.ts (which
+    // reads process.env directly so next.config.ts can use it); declared
+    // here so a malformed value fails validation.
+    NEXT_PUBLIC_IMAGE_HOSTS: z
+      .string()
+      .optional()
+      .refine(
+        value =>
+          value == null ||
+          value
+            .split(",")
+            .map(host => host.trim())
+            .filter(Boolean)
+            .every(host => /^[a-z0-9.-]+$/i.test(host)),
+        "Comma-separated hostnames only, e.g. images.paperglidr.com,res.cloudinary.com",
+      ),
   },
   // Next.js only inlines NEXT_PUBLIC_* when referenced literally
   experimental__runtimeEnv: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
     NEXT_PUBLIC_LANDING_URL: process.env.NEXT_PUBLIC_LANDING_URL,
+    NEXT_PUBLIC_IMAGE_HOSTS: process.env.NEXT_PUBLIC_IMAGE_HOSTS,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 })
