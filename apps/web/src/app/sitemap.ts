@@ -3,6 +3,7 @@ import { desc, eq } from "drizzle-orm"
 import { db } from "@/drizzle/db"
 import { ProductTable } from "@/drizzle/schema"
 import { SITE_URL } from "@/lib/site"
+import { LEGAL_PAGES } from "@/config/legalPages"
 
 // Built per request (it reads the catalogue), so the build never needs a DB.
 export const dynamic = "force-dynamic"
@@ -11,9 +12,9 @@ export const dynamic = "force-dynamic"
 const STATIC_PATHS: { path: string; priority: number; changeFrequency: "daily" | "weekly" | "monthly" }[] = [
   { path: "/", priority: 1, changeFrequency: "daily" },
   { path: "/browse", priority: 0.9, changeFrequency: "daily" },
-  { path: "/tos", priority: 0.3, changeFrequency: "monthly" },
-  { path: "/dmca", priority: 0.3, changeFrequency: "monthly" },
-  { path: "/content", priority: 0.3, changeFrequency: "monthly" },
+  { path: "/contact", priority: 0.4, changeFrequency: "monthly" },
+  { path: "/legal", priority: 0.3, changeFrequency: "monthly" },
+  ...LEGAL_PAGES.map(page => ({ path: page.href, priority: 0.3, changeFrequency: "monthly" as const })),
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

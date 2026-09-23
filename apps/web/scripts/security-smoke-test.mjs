@@ -38,7 +38,20 @@ for (const name of ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME", "BETTER_AUTH
 }
 
 // Must render for signed-out visitors (marketing site + catalogue + legal).
-const PUBLIC_ROUTES = ["/", "/browse", "/tos", "/dmca", "/content"]
+const PUBLIC_ROUTES = [
+  "/",
+  "/browse",
+  "/legal",
+  "/tos",
+  "/privacy",
+  "/refund-policy",
+  "/creator-terms",
+  "/content",
+  "/dmca",
+  "/contact",
+  "/sitemap.xml",
+  "/robots.txt",
+]
 
 const BASE_URL = (process.env.BASE_URL ?? "http://localhost:3000").replace(/\/+$/, "")
 const SECRET = process.env.BETTER_AUTH_SECRET
@@ -213,6 +226,17 @@ async function main() {
   for (const route of PUBLIC_ROUTES.concat([`/products/${productB.id}`])) {
     const status = await getStatus(route)
     check(`signed-out ${route} -> 200`, status === 200, `http ${status}`)
+  }
+
+  // Every internal link the signed-out home page renders (header + footer)
+  // must resolve: a page, or a redirect to sign-in — never a 404/500.
+  const homeHtml = await (await fetch(`${BASE_URL}/`)).text()
+  const hrefs = [...new Set([...homeHtml.matchAll(/href="(\/[^"#?]*)"/g)].map(m => m[1]))]
+    .filter(href => !href.startsWith("/_next") && !/\.(ico|png|svg|css|js)$/.test(href))
+  check("home page renders internal links", hrefs.length > 10, `${hrefs.length} links`)
+  for (const href of hrefs) {
+    const status = await getStatus(href)
+    check(`link ${href} resolves when signed out`, status < 400, `http ${status}`)
   }
 
   // ---------------------------------------------------------------- admin routes
