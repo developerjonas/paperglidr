@@ -216,12 +216,15 @@ async function main() {
     "/admin/categories",
     "/admin/categories/new",
     "/admin/reviews",
+    "/admin/purchases",
+    "/admin/purchases?status=disputed",
   ]
   for (const route of adminRoutes) {
     check(`normal user gets 404 on ${route}`, (await getStatus(route, attacker.token)) === 404)
   }
   check("signed-out visitor gets 404 on /admin (no redirect)", (await getStatus("/admin")) === 404)
   check("admin gets 200 on /admin", (await getStatus("/admin", admin.token)) === 200)
+  check("admin gets 200 on /admin/purchases", (await getStatus("/admin/purchases", admin.token)) === 200)
 
   const promoted = await createUser("promoted", run)
   const before = await getStatus("/admin", promoted.token)
@@ -286,6 +289,155 @@ async function main() {
   check("creator A's storewide code rejected on creator B's product", message(r.body) === "That code doesn't apply to this product", message(r.body))
   r = await call("applyDiscountCode", [{ code, productId: productA.id, priceInRupees: 500 }], attacker.token)
   check("same code accepted on creator A's own product", r.body.includes('"valid":true') && r.body.includes('"amountOffInRupees":250'))
+
+  // ---------------------------------------------------------------- payments
+  console.log("== payments")
+  const pendingPurchase = async (gateway, userId = creatorA.id) => {
+    const id = crypto.randomUUID()
+    return one(
+      `insert into purchases(id, "pricePaidInPaisa", "productDetails", "userId", "productId", gateway, status, "gatewayCheckoutId", "idempotencyKey")
+       values ($1, 99900, '{"name":"B product","description":"d","imageUrl":"/x.png"}', $2, $3, $4, 'pending', $5, $6) returning id`,
+      [id, userId, productB.id, gateway, gateway === "esewa" ? id : `pidx-${id}`, `${crypto.randomUUID()}:${gateway}`],
+    )
+  }
+  const accessFor = async userId =>
+    (await q(`select 1 from user_course_access where "userId" = $1 and "courseId" = $2`, [userId, courseB.id])).length
+
+  // Cron endpoint
+  const cronUrl = `${BASE_URL}/api/cron/reconcile-payments`
+  const cronStatus = async headers => (await fetch(cronUrl, { headers })).status
+  check("cron rejects a request with no secret", (await cronStatus({})) === 401)
+  check("cron rejects a wrong secret", (await cronStatus({ Authorization: "Bearer wrong-secret-wrong-secret-wrong-secret" })) === 401)
+  check("cron rejects the secret without 'Bearer'", (await cronStatus({ Authorization: process.env.CRON_SECRET ?? "" })) === 401)
+  if (process.env.CRON_SECRET) {
+    const response = await fetch(cronUrl, { method: "POST", headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } })
+    const body = await response.json().catch(() => null)
+    check("cron accepts the right secret (GET or POST)", response.status === 200 && typeof body?.checked === "number", JSON.stringify(body))
+  } else {
+    console.log("SKIP cron with the right secret (CRON_SECRET not set for this script)")
+  }
+
+  // Return routes
+  const esewaPurchase = await pendingPurchase("esewa", attacker.id)
+  const khaltiPurchase = await pendingPurchase("khalti", attacker.id)
+  const routeStatus = async path => (await fetch(BASE_URL + path, { redirect: "manual" })).status
+  check("esewa return: unknown purchase -> 404", (await routeStatus(`/api/payments/esewa/return/${crypto.randomUUID()}`)) === 404)
+  check("esewa return: non-uuid -> 404", (await routeStatus(`/api/payments/esewa/return/not-a-uuid`)) === 404)
+  check("esewa return: a Khalti purchase -> 404", (await routeStatus(`/api/payments/esewa/return/${khaltiPurchase.id}`)) === 404)
+  check("khalti return: an eSewa purchase -> 404", (await routeStatus(`/api/payments/khalti/return/${esewaPurchase.id}`)) === 404)
+
+  // Forged eSewa success payloads. Even one correctly signed with the
+  // PUBLIC sandbox key (anyone can do that) must not complete a purchase:
+  // the status API decides, and eSewa's sandbox has no such payment.
+  const esewaData = (secret, overrides = {}) => {
+    const fields = {
+      transaction_code: "FORGED",
+      status: "COMPLETE",
+      total_amount: "999.0",
+      transaction_uuid: esewaPurchase.id,
+      product_code: "EPAYTEST",
+      signed_field_names: "transaction_code,status,total_amount,transaction_uuid,product_code,signed_field_names",
+      ...overrides,
+    }
+    const message = fields.signed_field_names.split(",").map(name => `${name}=${fields[name]}`).join(",")
+    const signature = crypto.createHmac("sha256", secret).update(message).digest("base64")
+    return encodeURIComponent(Buffer.from(JSON.stringify({ ...fields, signature })).toString("base64"))
+  }
+  for (const [label, data] of [
+    ["badly signed", esewaData("attacker-key")],
+    ["validly signed with the public sandbox key", esewaData("8gBm/:&EnhH.1/q")],
+  ]) {
+    const response = await fetch(`${BASE_URL}/api/payments/esewa/return/${esewaPurchase.id}?data=${data}`, { redirect: "manual" })
+    const status = (await one(`select status from purchases where id = $1`, [esewaPurchase.id])).status
+    check(
+      `forged eSewa success (${label}) does not complete the purchase`,
+      response.status === 303 && status === "pending" && (await accessFor(attacker.id)) === 0,
+      `http ${response.status} -> ${response.headers.get("location")}, status=${status}`,
+    )
+  }
+  const esewaEvent = await one(
+    `select outcome, "gatewayStatus" from payment_events where "purchaseId" = $1 order by "createdAt" desc limit 1`,
+    [esewaPurchase.id],
+  )
+  check(
+    "the eSewa return route asked the real sandbox status API",
+    esewaEvent?.gatewayStatus === "NOT_FOUND",
+    `last event: ${JSON.stringify(esewaEvent)}`,
+  )
+
+  const failureResponse = await fetch(`${BASE_URL}/api/payments/esewa/failure/${esewaPurchase.id}`, { redirect: "manual" })
+  check(
+    "esewa failure route -> failure page, purchase unchanged",
+    failureResponse.status === 303 &&
+      failureResponse.headers.get("location")?.includes("/products/purchase-failure") &&
+      (await one(`select status from purchases where id = $1`, [esewaPurchase.id])).status === "pending",
+    failureResponse.headers.get("location"),
+  )
+
+  const khaltiResponse = await fetch(
+    `${BASE_URL}/api/payments/khalti/return/${khaltiPurchase.id}?pidx=forged&status=Completed&amount=99900`,
+    { redirect: "manual" },
+  )
+  check(
+    "khalti return with forged query params does not complete the purchase",
+    (await one(`select status from purchases where id = $1`, [khaltiPurchase.id])).status === "pending" && (await accessFor(attacker.id)) === 0,
+    `http ${khaltiResponse.status}`,
+  )
+
+  // Fonepay status: owner only
+  const fonepayPurchase = await pendingPurchase("fonepay", creatorA.id)
+  const fonepayStatus = async token =>
+    (await fetch(`${BASE_URL}/api/payments/fonepay/status/${fonepayPurchase.id}`, { headers: token ? { Cookie: sessionCookie(token) } : {} })).status
+  check("fonepay status: another user gets 404", (await fonepayStatus(attacker.token)) === 404)
+  check("fonepay status: signed-out gets 404", (await fonepayStatus()) === 404)
+  check("fonepay status: owner gets 200", (await fonepayStatus(creatorA.token)) === 200)
+
+  // Admin re-check action
+  r = await call("recheckPurchasePayment", [esewaPurchase.id], attacker.token)
+  check("recheckPurchasePayment rejected for a normal user", r.status === 404, `http ${r.status}`)
+  r = await call("recheckPurchasePayment", [esewaPurchase.id], admin.token)
+  check("recheckPurchasePayment works for an admin", message(r.body) === "Gateway says the payment is still pending.", message(r.body))
+
+  // Checkout page: only enabled gateways, test-mode banner
+  const checkoutHtml = await (await fetch(`${BASE_URL}/products/${productB.id}/purchase`, { headers: { Cookie: sessionCookie(attacker.token) } })).text()
+  check("checkout shows eSewa", checkoutHtml.includes("Pay with eSewa"))
+  check("checkout hides Fonepay (no credentials)", !checkoutHtml.includes("Fonepay"))
+  check(
+    `checkout ${process.env.KHALTI_SECRET_KEY ? "shows" : "hides"} Khalti (${process.env.KHALTI_SECRET_KEY ? "test key set" : "no key"})`,
+    checkoutHtml.includes("Pay with Khalti") === Boolean(process.env.KHALTI_SECRET_KEY),
+  )
+  check("checkout shows the TEST MODE banner in sandbox", checkoutHtml.includes("TEST MODE"))
+
+  // initiatePurchase tampering
+  const privateProduct = await one(
+    `insert into products(name, description, "imageUrl", "priceInRupees", status, author_id)
+     values ('B private', 'd', '/p.png', 500, 'private', $1) returning id`,
+    [creatorB.id],
+  )
+  const initiate = (args, token = attacker.token, productId = productB.id) =>
+    callAction(actionByName("initiatePurchase"), [args], token, productId)
+  const purchaseCount = async () => (await one(`select count(*)::int n from purchases where "userId" = $1`, [attacker.id])).n
+  const purchasesBefore = await purchaseCount()
+  r = await initiate({ productId: privateProduct.id, gateway: "esewa", idempotencyKey: `${crypto.randomUUID()}:esewa` })
+  check("initiatePurchase rejects a private product", r.body.includes('"error":true') && (await purchaseCount()) === purchasesBefore, message(r.body))
+  for (const gateway of ["free", "fonepay", "stub"]) {
+    r = await initiate({ productId: productB.id, gateway, idempotencyKey: `${crypto.randomUUID()}:${gateway}` })
+    check(`initiatePurchase rejects gateway "${gateway}"`, r.body.includes('"error":true') && (await purchaseCount()) === purchasesBefore, message(r.body))
+  }
+  r = await initiate({
+    productId: productB.id,
+    gateway: "esewa",
+    idempotencyKey: `${crypto.randomUUID()}:esewa`,
+    pricePaidInPaisa: 100,
+    amountInPaisa: 100,
+    priceInRupees: 1,
+  })
+  const tampered = await one(`select "pricePaidInPaisa", status from purchases where "userId" = $1 order by "createdAt" desc limit 1`, [attacker.id])
+  check(
+    "initiatePurchase ignores client amount fields (charges the product price)",
+    tampered?.pricePaidInPaisa === 99900 && r.body.includes('"total_amount":"999.00"'),
+    `charged ${tampered?.pricePaidInPaisa} paisa`,
+  )
 
   // ---------------------------------------------------------------- transactions
   console.log("== transactions")

@@ -151,3 +151,26 @@ describe("Invariant 6: the client picks a gateway from the enabled list — noth
     expect(result.error).toBe(true)
   })
 })
+
+describe("ownership means a completed purchase", () => {
+  it("pending, failed, disputed and refunded attempts don't block checking out again", async () => {
+    const { userOwnsProduct } = await import("@/features/products/db/products")
+    const { product } = await createProduct()
+    for (const status of ["pending", "failed", "disputed", "refunded"] as const) {
+      const idempotencyKey = key("esewa")
+      await db.insert(PurchaseTable).values({
+        userId: buyerId,
+        productId: product.id,
+        productDetails: { name: "x", description: "d", imageUrl: "/x.png" },
+        pricePaidInPaisa: 99900,
+        gateway: "esewa",
+        status,
+        gatewayCheckoutId: idempotencyKey,
+        idempotencyKey,
+      })
+      expect(await userOwnsProduct({ userId: buyerId, productId: product.id })).toBe(false)
+    }
+    await db.update(PurchaseTable).set({ status: "completed" }).where(eq(PurchaseTable.userId, buyerId))
+    expect(await userOwnsProduct({ userId: buyerId, productId: product.id })).toBe(true)
+  })
+})

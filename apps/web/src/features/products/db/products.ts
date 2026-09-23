@@ -163,11 +163,15 @@ export async function userOwnsProduct({
 }) {
   if (!userId) return false;
 
+  // Only a COMPLETED purchase is ownership. A pending, failed, disputed or
+  // refunded attempt must not block the buyer from checking out again.
   const existingPurchase = await db.query.PurchaseTable.findFirst({
     where: and(
       eq(PurchaseTable.userId, userId),
       eq(PurchaseTable.productId, productId),
+      eq(PurchaseTable.status, "completed"),
     ),
+    columns: { id: true },
   });
 
   return existingPurchase != null;
