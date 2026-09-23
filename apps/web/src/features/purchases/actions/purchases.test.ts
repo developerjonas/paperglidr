@@ -1,7 +1,13 @@
 import { eq } from "drizzle-orm"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { db } from "@/drizzle/db"
-import { DiscountCodeTable, PurchaseTable } from "@/drizzle/schema"
+import {
+  CourseProductTable,
+  DiscountCodeTable,
+  ProductTable,
+  PurchaseTable,
+  UserCourseAccessTable,
+} from "@/drizzle/schema"
 import { signEsewaFields } from "@/services/payments/esewa/esewaClient"
 import { SANDBOX_DEFAULTS } from "@/services/payments/config"
 import { createProduct, createUser, purchaseState } from "@/test/fixtures"
@@ -172,5 +178,76 @@ describe("ownership means a completed purchase", () => {
     }
     await db.update(PurchaseTable).set({ status: "completed" }).where(eq(PurchaseTable.userId, buyerId))
     expect(await userOwnsProduct({ userId: buyerId, productId: product.id })).toBe(true)
+  })
+})
+
+describe("100%-discount enrollments respect the code's limits under concurrency", () => {
+  async function productsBySameCreator(count: number) {
+    const first = await createProduct({ priceInRupees: 999 })
+    const products = [first.product]
+    for (let i = 1; i < count; i++) {
+      const [product] = await db
+        .insert(ProductTable)
+        .values({ name: `Extra ${crypto.randomUUID()}`, description: "d", imageUrl: "/x.png", priceInRupees: 999, status: "public", authorId: first.creator.id })
+        .returning()
+      await db.insert(CourseProductTable).values({ courseId: first.course.id, productId: product!.id })
+      products.push(product!)
+    }
+    return { creator: first.creator, products }
+  }
+  async function freeCode(creatorId: string, limits: { maxRedemptions?: number; maxRedemptionsPerUser?: number }) {
+    const code = `LIM${crypto.randomUUID().slice(0, 8)}`.toUpperCase()
+    const [row] = await db
+      .insert(DiscountCodeTable)
+      .values({ code, creatorId, scopeType: "storewide", discountType: "percentage", amount: 100, ...limits })
+      .returning()
+    return row!
+  }
+
+  it("maxRedemptionsPerUser = 1: five parallel checkouts by one user -> exactly one free enrollment", async () => {
+    const { creator, products } = await productsBySameCreator(5)
+    const code = await freeCode(creator.id, { maxRedemptionsPerUser: 1 })
+    const results = await Promise.all(
+      products.map(product =>
+        initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa"), discountCode: code.code }),
+      ),
+    )
+    const completed = (await purchasesOf(buyerId)).filter(p => p.status === "completed")
+    expect(completed).toHaveLength(1)
+    // The rest either saw the limit at checkout (full price, pending) or
+    // hit the locked re-check (error) — none got in free.
+    for (const result of results.filter(r => r.error)) {
+      expect(result).toMatchObject({ message: "That code has reached its usage limit." })
+    }
+    const [row] = await db.select().from(DiscountCodeTable).where(eq(DiscountCodeTable.id, code.id))
+    expect(row!.redemptionCount).toBe(1)
+  })
+
+  it("maxRedemptions = 2: five users enrolling in parallel -> exactly two", async () => {
+    const { enrollFree } = await import("../lib/freeEnrollment")
+    const { creator, products } = await productsBySameCreator(1)
+    const code = await freeCode(creator.id, { maxRedemptions: 2 })
+    const users = await Promise.all([1, 2, 3, 4, 5].map(() => createUser("rush")))
+    const outcomes = await Promise.allSettled(
+      users.map(user =>
+        enrollFree({
+          userId: user.id,
+          product: products[0]!,
+          idempotencyKey: key("esewa"),
+          discount: { discountCodeId: code.id, discountAmountPaisa: 99900 },
+        }),
+      ),
+    )
+    expect(outcomes.filter(o => o.status === "fulfilled")).toHaveLength(2)
+    const [row] = await db.select().from(DiscountCodeTable).where(eq(DiscountCodeTable.id, code.id))
+    expect(row!.redemptionCount).toBe(2)
+    // Rolled-back enrollments left no access behind.
+    for (const [i, outcome] of outcomes.entries()) {
+      const access = await db
+        .select()
+        .from(UserCourseAccessTable)
+        .where(eq(UserCourseAccessTable.userId, users[i]!.id))
+      expect(access).toHaveLength(outcome.status === "fulfilled" ? 1 : 0)
+    }
   })
 })

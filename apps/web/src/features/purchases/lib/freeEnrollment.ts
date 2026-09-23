@@ -3,7 +3,10 @@ import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { CourseProductTable } from "@/drizzle/schema";
 import { addUserCourseAccess } from "@/features/courses/db/userCourseAccess";
-import { recordDiscountRedemption } from "@/features/discounts/db/discounts";
+import {
+  lockAndCheckDiscountLimits,
+  recordDiscountRedemption,
+} from "@/features/discounts/db/discounts";
 import { insertPurchase } from "../db/purchases";
 
 /**
@@ -29,6 +32,15 @@ export async function enrollFree({
   discount?: { discountCodeId: string; discountAmountPaisa: number } | null;
 }) {
   return db.transaction(async trx => {
+    // A 100% code is the only thing paying here: re-check its limits under
+    // a row lock, first, so parallel checkouts can't all get in for free.
+    if (discount != null) {
+      await lockAndCheckDiscountLimits(
+        { discountCodeId: discount.discountCodeId, userId },
+        trx,
+      );
+    }
+
     const purchase = await insertPurchase(
       {
         userId,

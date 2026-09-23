@@ -4,6 +4,7 @@ import { DiscountRedemptionTable } from "@/drizzle/schema/discountRedemption";
 import { and, eq, sql } from "drizzle-orm";
 import { DiscountCodeFormValues } from "../schemas/discounts";
 import { revalidateDiscountCodeCache } from "./cache";
+import { UserFacingError } from "@/lib/safeError";
 
 export async function insertDiscountCode(
   data: DiscountCodeFormValues & { creatorId: string },
@@ -78,6 +79,47 @@ export async function getUserRedemptionCount(
  * must commit atomically with purchase completion, or a rolled-back
  * purchase could still burn a use of the code.
  */
+/**
+ * For redemptions that grant access by themselves (a 100%-discount free
+ * enrollment): locks the code row and re-checks its limits inside the
+ * caller's transaction, so concurrent checkouts can't all slip past the
+ * check done at checkout time. Call it FIRST in the transaction — before
+ * inserting anything that references the code — or the FK's key-share lock
+ * taken by that insert deadlocks against this row lock.
+ */
+export async function lockAndCheckDiscountLimits(
+  { discountCodeId, userId }: { discountCodeId: string; userId: string },
+  trx: Omit<typeof db, "$client">,
+) {
+  const [code] = await trx
+    .select({
+      status: DiscountCodeTable.status,
+      redemptionCount: DiscountCodeTable.redemptionCount,
+      maxRedemptions: DiscountCodeTable.maxRedemptions,
+      maxRedemptionsPerUser: DiscountCodeTable.maxRedemptionsPerUser,
+    })
+    .from(DiscountCodeTable)
+    .where(eq(DiscountCodeTable.id, discountCodeId))
+    .for("update");
+  const [userRedemptions] = await trx
+    .select({ count: sql<number>`count(*)`.mapWith(Number) })
+    .from(DiscountRedemptionTable)
+    .where(
+      and(
+        eq(DiscountRedemptionTable.discountCodeId, discountCodeId),
+        eq(DiscountRedemptionTable.userId, userId),
+      ),
+    );
+  if (
+    code == null ||
+    code.status !== "active" ||
+    (code.maxRedemptions != null && code.redemptionCount >= code.maxRedemptions) ||
+    (userRedemptions?.count ?? 0) >= code.maxRedemptionsPerUser
+  ) {
+    throw new UserFacingError("That code has reached its usage limit.");
+  }
+}
+
 export async function recordDiscountRedemption(
   params: {
     discountCodeId: string;
