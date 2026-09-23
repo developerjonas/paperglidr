@@ -1,6 +1,5 @@
 // src/middleware.ts
 import { NextResponse, type NextRequest } from "next/server"
-import { getSessionCookie } from "better-auth/cookies"
 import { REF_COOKIE, REF_COOKIE_MAX_AGE_SECONDS } from "@/lib/referral"
 
 // Everything NOT listed here is reachable signed out — including the
@@ -11,6 +10,23 @@ import { REF_COOKIE, REF_COOKIE_MAX_AGE_SECONDS } from "@/lib/referral"
 // sign-in would reveal the route exists. requireAdmin() in the admin layout,
 // pages and actions returns a 404 for everyone who isn't an admin.
 const protectedPrefixes = ["/account", "/certificates", "/purchases", "/teach"]
+
+// Presence of Better Auth's session cookie — the same names its
+// getSessionCookie checks (default "better-auth" prefix; "__Secure-" on
+// https). Read directly rather than importing better-auth/cookies, which
+// pulls jose's JWE code into the edge bundle and trips Next's Edge Runtime
+// warning (CompressionStream). Keep in sync if lib/auth.ts ever sets
+// advanced.cookiePrefix.
+const SESSION_COOKIE_NAMES = [
+  "__Secure-better-auth.session_token",
+  "better-auth.session_token",
+  "__Secure-better-auth-session_token",
+  "better-auth-session_token",
+]
+
+function hasSessionCookie(request: NextRequest) {
+  return SESSION_COOKIE_NAMES.some(name => Boolean(request.cookies.get(name)?.value))
+}
 
 
 function captureReferral(request: NextRequest, response: NextResponse) {
@@ -39,8 +55,7 @@ export function middleware(request: NextRequest) {
     // permission checks (role, ownership) which still belong in each
     // page/action's own auth logic. This is a fast first gate, not the
     // source of truth.
-    const sessionCookie = getSessionCookie(request)
-    if (sessionCookie == null) {
+    if (!hasSessionCookie(request)) {
       const signInUrl = new URL("/sign-in", request.url)
       signInUrl.searchParams.set("redirectTo", pathname + request.nextUrl.search)
       return captureReferral(request, NextResponse.redirect(signInUrl))
