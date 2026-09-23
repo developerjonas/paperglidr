@@ -13,8 +13,7 @@ import { ProductTable } from "@/drizzle/schema"
 import { getProductIdTag } from "@/features/products/db/cache"
 import { userOwnsProduct } from "@/features/products/db/products"
 import { wherePublicProducts } from "@/features/products/permissions/products"
-import { insertPurchase } from "@/features/purchases/db/purchases"
-import { addUserCourseAccess } from "@/features/courses/db/userCourseAccess"
+import { enrollFree } from "@/features/purchases/lib/freeEnrollment"
 import { PurchaseCheckoutCard } from "@/features/purchases/components/PurchaseCheckoutCard"
 import { getEnabledGateways, getPaymentConfig } from "@/services/payments/config"
 import { getCurrentUser } from "@/services/auth"
@@ -121,38 +120,16 @@ async function enrollInFreeProduct(productId: string) {
 
   const product = await db.query.ProductTable.findFirst({
     where: and(eq(ProductTable.id, productId), wherePublicProducts),
-    with: { courseProducts: { columns: { courseId: true } } },
   })
   // productId arrives via .bind(), which Next does not encrypt — this action
   // can be invoked with any product id. Only genuinely free products may
   // skip the gateway.
   if (product == null || product.priceInRupees !== 0) notFound()
 
-  const idempotencyKey = crypto.randomUUID()
-
-  await db.transaction(async trx => {
-    await insertPurchase(
-      {
-        userId: user.id,
-        productId,
-        gateway: "free",
-        status: "completed",
-        pricePaidInPaisa: 0,
-        idempotencyKey,
-        gatewayCheckoutId: idempotencyKey,
-        productDetails: {
-          name: product.name,
-          description: product.description,
-          imageUrl: product.imageUrl,
-        },
-      },
-      trx
-    )
-
-    await addUserCourseAccess(
-      { userId: user.id, courseIds: product.courseProducts.map(cp => cp.courseId) },
-      trx
-    )
+  await enrollFree({
+    userId: user.id,
+    product,
+    idempotencyKey: crypto.randomUUID(),
   })
 
   redirect("/courses")

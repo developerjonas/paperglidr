@@ -12,6 +12,7 @@ import { recordPaymentEvent } from "../db/paymentEvents";
 import type { InitiatePaymentResult } from "@/services/payments/types";
 import { getReferringInstructorId } from "../db/referral";
 import { verifyAndFulfil } from "../lib/verifyAndFulfil";
+import { enrollFree } from "../lib/freeEnrollment";
 import { getGateway } from "@/services/payments/gateways";
 import { isGatewayEnabled, type GatewayName } from "@/services/payments/config";
 import { getReturnUrls } from "@/services/payments/returnUrls";
@@ -30,7 +31,9 @@ export async function initiatePurchase({
   discountCode,
 }: {
   productId: string;
-  gateway: GatewayName | "free";
+  // Only a gateway name. Whether a purchase is free is decided solely by
+  // the server-computed price below — never by the client.
+  gateway: GatewayName;
   idempotencyKey: string;
   // Raw code string, typed by the user or carried over from
   // PromoCodeInput's preview. Re-validated from scratch here — the
@@ -98,28 +101,21 @@ export async function initiatePurchase({
     imageUrl: product.imageUrl,
   };
 
-  // Free products, AND products fully discounted to zero, skip the gateway.
-  if (gateway === "free" || pricePaidInPaisa === 0) {
-    const purchase = await insertPurchase({
+  // Fully discounted to zero (a 100% code): no money moves, so no gateway.
+  // Enrolled directly, with the redemption recorded atomically.
+  if (pricePaidInPaisa === 0) {
+    await enrollFree({
       userId: session.user.id,
-      productId,
-      productDetails,
-      pricePaidInPaisa: 0,
-      gateway: "free",
-      status: "pending",
-      gatewayCheckoutId: idempotencyKey,
+      product,
       idempotencyKey,
       referredByInstructorId,
-      discountCodeId,
-      discountAmountPaisa,
+      discount:
+        discountCodeId != null ? { discountCodeId, discountAmountPaisa } : null,
     });
-    if (purchase == null)
-      return fail("Could not start free purchase");
-
     return {
       error: false as const,
-      purchaseId: purchase.id,
-      redirect: null,
+      purchaseId: null,
+      redirect: { url: "/courses", method: "GET" as const, formFields: undefined },
       qr: null,
     };
   }

@@ -41,12 +41,16 @@ const categoryLabels: Record<(typeof supportTicketCategories)[number], string> =
     other: "Other",
   };
 
-export function SupportTicketForm() {
+export function SupportTicketForm({
+  defaultValues,
+}: {
+  defaultValues?: z.infer<typeof newTicketSchema>;
+} = {}) {
   const router = useRouter();
   const { toast } = useToast();
   const form = useForm<z.infer<typeof newTicketSchema>>({
     resolver: zodResolver(newTicketSchema),
-    defaultValues: { subject: "", category: "other", message: "" },
+    defaultValues: defaultValues ?? { subject: "", category: "other", message: "" },
   });
 
   async function onSubmit(data: z.infer<typeof newTicketSchema>) {

@@ -1,5 +1,6 @@
 // Destination: apps/web/src/app/(consumer)/support/new/page.tsx
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { getCurrentUser } from "@/services/auth";
 import { SupportTicketForm } from "@/features/support/components/SupportTicketForm";
 import {
@@ -10,9 +11,28 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default async function NewSupportTicketPage() {
+export default async function NewSupportTicketPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ purchaseId?: string; topic?: string }>;
+}) {
   const currentUser = await getCurrentUser();
   if (currentUser.userId == null) redirect("/sign-in");
+
+  // Prefill from the payment-failure page's "I was charged" link. Only a
+  // well-formed purchase id is echoed back into the form.
+  const { purchaseId, topic } = await searchParams;
+  const reference = z.string().uuid().safeParse(purchaseId).success ? purchaseId : null;
+  const defaultValues =
+    reference != null
+      ? {
+          subject: `Charged but no access — purchase ${reference}`,
+          category: "billing" as const,
+          message: `I was charged for purchase ${reference} but didn't get access.\n\nPayment method (eSewa / Khalti / Fonepay):\nTime of payment:\nTransaction ID from the app, if any:\n`,
+        }
+      : topic === "billing"
+        ? { subject: "", category: "billing" as const, message: "" }
+        : undefined;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -39,7 +59,7 @@ export default async function NewSupportTicketPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <SupportTicketForm />
+              <SupportTicketForm defaultValues={defaultValues} />
             </CardContent>
           </Card>
         </div>
