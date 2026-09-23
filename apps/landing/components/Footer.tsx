@@ -1,5 +1,5 @@
 import Link from "next/link"
-const APP_URL = "https://app.paperglidr.com";
+import { APP_URL } from "@/lib/env"
 
 export function Footer() {
   return (

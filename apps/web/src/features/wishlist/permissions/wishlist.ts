@@ -1,8 +1,6 @@
 // Destination: apps/web/src/features/wishlist/permissions/wishlist.ts
 //
-// Mirrors the shape used by canCreateCourseReview etc. — adjust the
-// currentUser type here if getCurrentUser() returns a different shape
-// in your services/clerk.ts (or its Better Auth equivalent).
+// Mirrors the shape used by canCreateCourseReview etc.
 
 export function canManageWishlist(currentUser: {
   userId: string | undefined | null;

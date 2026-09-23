@@ -49,7 +49,6 @@ export async function getCurrentUser({
 export const getUser = (id: string) =>
   unstable_cache(
     async () => {
-      console.log("Called getUser for ID:", id);
       return db.query.UserTable.findFirst({
         where: eq(UserTable.id, id),
       });

@@ -1,11 +1,12 @@
 import { Resend } from "resend";
+import { env } from "@/data/env/server";
 
 // Created on first send, not at module load — `next build` imports this
 // module while collecting page data, and must not require RESEND_API_KEY.
 let resend: Resend | null = null;
 
 function getResend() {
-  resend ??= new Resend(process.env.RESEND_API_KEY!);
+  resend ??= new Resend(env.RESEND_API_KEY);
   return resend;
 }
 

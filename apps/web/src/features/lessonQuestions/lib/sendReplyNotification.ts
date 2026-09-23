@@ -7,6 +7,8 @@ import {
 } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { sendEmail } from "@/services/email/resend";
+import { env as clientEnv } from "@/data/env/client";
+import { env } from "@/data/env/server";
 
 export async function sendReplyNotification({
   lessonId,
@@ -35,10 +37,10 @@ export async function sendReplyNotification({
   ]);
   if (asker == null || lessonContext == null) return;
 
-  const link = `${process.env.NEXT_PUBLIC_APP_URL}/courses/${lessonContext.courseId}/lessons/${lessonId}`;
+  const link = `${clientEnv.NEXT_PUBLIC_APP_URL}/courses/${lessonContext.courseId}/lessons/${lessonId}`;
 
   await sendEmail({
-    from: process.env.NOTIFICATIONS_FROM_EMAIL!,
+    from: env.NOTIFICATIONS_FROM_EMAIL,
     to: asker.email,
     subject: `${replierName} replied to your question on "${lessonContext.lessonName}"`,
     html: `

@@ -19,14 +19,14 @@ import {
   BookOpen,
   Wallet,
 } from "lucide-react";
+import { env as clientEnv } from "@/data/env/client";
 
 type FooterProps = {
   isAdminPage?: boolean;
 };
 
 // Legal/marketing pages live on the landing app's domain, not this app.
-// Set NEXT_PUBLIC_LANDING_URL (e.g. "https://paperglidr.com") in your env.
-const LANDING_URL = process.env.NEXT_PUBLIC_LANDING_URL ?? "";
+const LANDING_URL = clientEnv.NEXT_PUBLIC_LANDING_URL;
 
 export async function Footer({ isAdminPage = false }: FooterProps) {
   const currentYear = new Date().getFullYear();

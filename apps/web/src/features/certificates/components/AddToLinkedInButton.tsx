@@ -1,3 +1,5 @@
+import { env as clientEnv } from "@/data/env/client";
+
 export function AddToLinkedInButton({
   certificateCode,
   courseTitle,
@@ -13,7 +15,7 @@ export function AddToLinkedInButton({
     organizationName: "PaperGlidr",
     issueYear: String(issuedAt.getFullYear()),
     issueMonth: String(issuedAt.getMonth() + 1),
-    certUrl: `${process.env.NEXT_PUBLIC_APP_URL}/verify/${certificateCode}`,
+    certUrl: `${clientEnv.NEXT_PUBLIC_APP_URL}/verify/${certificateCode}`,
     certId: certificateCode,
   });
 

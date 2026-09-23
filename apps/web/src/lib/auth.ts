@@ -6,9 +6,11 @@ import { bearer } from "better-auth/plugins";
 import { db } from "@/drizzle/db";
 import * as schema from "@/drizzle/schema";
 import z from "zod";
+import { env } from "@/data/env/server";
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL!,
+  baseURL: env.BETTER_AUTH_URL,
+  secret: env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,
     // requireEmailVerification: true,  // optional — your schema has emailVerified, so this is available if you want it
@@ -33,14 +35,19 @@ export const auth = betterAuth({
     "https://app.paperglidr.com",
   ],
   socialProviders: {
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
-    },
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
     },
+    // Optional provider — only registered when both credentials are set
+    ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
+      ? {
+          github: {
+            clientId: env.GITHUB_CLIENT_ID,
+            clientSecret: env.GITHUB_CLIENT_SECRET,
+          },
+        }
+      : {}),
   },
   user: {
     additionalFields: {

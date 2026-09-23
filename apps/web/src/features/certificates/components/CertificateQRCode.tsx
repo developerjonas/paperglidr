@@ -1,11 +1,12 @@
 import { generateCertificateQrSvg } from "../lib/qrcode";
+import { env as clientEnv } from "@/data/env/client";
 
 export async function CertificateQRCode({
   certificateCode,
 }: {
   certificateCode: string;
 }) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl = clientEnv.NEXT_PUBLIC_APP_URL;
 
   if (!appUrl) {
     // Fail loudly in dev/build logs rather than silently baking

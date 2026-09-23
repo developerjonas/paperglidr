@@ -9,8 +9,7 @@ import {
   GraduationCap,
   Award,
 } from "lucide-react";
-
-const APP_URL = "https://app.paperglidr.com";
+import { APP_URL } from "@/lib/env";
 
 export default function Home() {
   return (

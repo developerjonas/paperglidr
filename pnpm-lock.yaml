@@ -174,9 +174,6 @@ importers:
       resend:
         specifier: ^6.19.0
         version: 6.19.0
-      svix:
-        specifier: ^1.45.1
-        version: 1.99.1
       tailwind-merge:
         specifier: ^2.6.0
         version: 2.6.1
@@ -4240,9 +4237,6 @@ packages:
     resolution: {integrity: sha512-qsjeeq5YjBZ5eMdFuUa4ZosMLxgr5RZ+F+Y1OrDhuOCEInRMA3x74XdBtggJcj9kOeInz0WE+LgCPDkZFlBYJw==}
     engines: {node: '>=12.0.0'}
 
-  svix@1.99.1:
-    resolution: {integrity: sha512-JfpvbAg5iT5NagDAfOq3e6Ci6NbOMbMm6C3DnfDBB60m2JDK+Z2hXPE9XNAmutb53DCdPoih1V70IbklZnX09A==}
-
   tailwind-merge@2.6.1:
     resolution: {integrity: sha512-Oo6tHdpZsGpkKG88HJ8RR1rg/RdnEkQEfMoEk2x1XRI3F1AxeU+ijRXpiVUF4UbLfcxxRGw6TbUINKYdWVsQTQ==}
 
@@ -7946,7 +7940,7 @@ snapshots:
       postcss: 8.4.31
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
-      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.2.8)
+      styled-jsx: 5.1.6(react@19.2.8)
     optionalDependencies:
       '@next/swc-darwin-arm64': 15.5.22
       '@next/swc-darwin-x64': 15.5.22
@@ -8632,6 +8626,11 @@ snapshots:
     optionalDependencies:
       '@babel/core': 7.29.7
 
+  styled-jsx@5.1.6(react@19.2.8):
+    dependencies:
+      client-only: 0.0.1
+      react: 19.2.8
+
   sucrase@3.35.1:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.13
@@ -8652,10 +8651,6 @@ snapshots:
 
   svg-pathdata@6.0.3:
     optional: true
-
-  svix@1.99.1:
-    dependencies:
-      standardwebhooks: 1.0.0
 
   tailwind-merge@2.6.1: {}
 

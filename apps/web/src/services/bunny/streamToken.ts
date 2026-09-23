@@ -1,7 +1,8 @@
 import crypto from "crypto";
+import { env } from "@/data/env/server";
 
-const LIBRARY_ID = process.env.BUNNY_STREAM_LIBRARY_ID;
-const TOKEN_AUTH_KEY = process.env.BUNNY_STREAM_TOKEN_AUTH_KEY; // Library > Security > Token Authentication Key — NOT your API access key
+const LIBRARY_ID = env.BUNNY_STREAM_LIBRARY_ID;
+const TOKEN_AUTH_KEY = env.BUNNY_STREAM_TOKEN_AUTH_KEY; // Library > Security > Token Authentication Key — NOT your API access key
 
 export function getBunnyEmbedUrl({
   videoId,
