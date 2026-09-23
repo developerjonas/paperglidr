@@ -1,42 +1,23 @@
-// features/purchases/actions/purchases.ts (add back into the file)
 "use server";
 import { db } from "@/drizzle/db";
-import {
-  CourseProductTable,
-  ProductTable,
-  PurchaseTable,
-  UserTable,
-} from "@/drizzle/schema";
+import { ProductTable, PurchaseTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import {
   insertPurchase,
   getPurchaseByIdempotencyKey,
   updatePurchase,
-  markPurchaseCompleted,
 } from "../db/purchases";
 import { getReferringInstructorId } from "../db/referral";
+import { verifyAndFulfil } from "../lib/verifyAndFulfil";
 import { getGateway } from "@/services/payments/gateways";
-import {
-  isGatewayEnabled,
-  isGatewayName,
-  type GatewayName,
-} from "@/services/payments/config";
-import { env as clientEnv } from "@/data/env/client";
-import { auth } from "@/lib/auth"; // ASSUMPTION: however you currently get the logged-in user server-side
+import { isGatewayEnabled, type GatewayName } from "@/services/payments/config";
+import { getReturnUrls } from "@/services/payments/returnUrls";
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import {
-  addUserCourseAccess,
-  revokeUserCourseAccess,
-} from "@/features/courses/db/userCourseAccess";
-import {
-  createLedgerEntry,
-  reverseLedgerEntriesForPurchase,
-} from "@/features/ledger/db/ledger";
-import { createInvoiceForPurchase } from "@/features/invoices/db/invoices";
+import { revokeUserCourseAccess } from "@/features/courses/db/userCourseAccess";
+import { reverseLedgerEntriesForPurchase } from "@/features/ledger/db/ledger";
 import { revalidateProductCache } from "@/features/products/db/cache";
-import { generateAndSendInvoice } from "@/features/invoices/actions/generateAndSendInvoice";
 import { validateDiscountCode } from "@/features/discounts/lib/validateDiscountCode";
-import { recordDiscountRedemption } from "@/features/discounts/db/discounts";
 import { getCurrentUser, requireAdmin } from "@/services/auth";
 
 export async function initiatePurchase({
@@ -154,21 +135,16 @@ export async function initiatePurchase({
   if (purchase == null)
     return { error: true, message: "Could not start purchase" };
 
-  const baseUrl = clientEnv.NEXT_PUBLIC_APP_URL;
-
   const initiation = await wiredGateway.initiate({
     purchaseId: purchase.id,
     amountInPaisa: purchase.pricePaidInPaisa,
     productName: productDetails.name,
-    successUrl: `${baseUrl}/products/${productId}/purchase/success?purchaseId=${purchase.id}`,
-    failureUrl: `${baseUrl}/products/purchase-failure?purchaseId=${purchase.id}`,
+    ...getReturnUrls(gateway, purchase.id),
   });
 
-  if (initiation.gatewayTransactionId != null) {
-    await updatePurchase(purchase.id, {
-      gatewayTransactionId: initiation.gatewayTransactionId,
-    });
-  }
+  // The gateway's reference for this checkout (eSewa uuid / Khalti pidx /
+  // Fonepay PRN) — what verifyAndFulfil asks the gateway about later.
+  await updatePurchase(purchase.id, { gatewayCheckoutId: initiation.checkoutId });
 
   if (initiation.type === "redirect") {
     return {
@@ -191,127 +167,34 @@ export async function initiatePurchase({
   };
 }
 
+/**
+ * Owner-only wrapper around verifyAndFulfil for the success page. The
+ * fulfilment logic itself lives in lib/verifyAndFulfil.ts, outside this
+ * "use server" module, so it is not callable from the client.
+ */
 export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
   const { userId } = await getCurrentUser();
   const purchase = await db.query.PurchaseTable.findFirst({
     where: eq(PurchaseTable.id, purchaseId),
+    columns: { userId: true },
   });
-  // Owner-only. Same response for "not yours" and "doesn't exist" so this
-  // can't be used to probe other users' purchase ids.
+  // Same response for "not yours" and "doesn't exist" so this can't be
+  // used to probe other users' purchase ids.
   if (purchase == null || userId == null || purchase.userId !== userId)
-    return { error: true, message: "Purchase not found" };
-  if (purchase.status === "completed")
-    return { error: false, message: "Already confirmed" };
+    return { error: true, status: "not_found" as const, message: "Purchase not found" };
 
-  const gateway = isGatewayName(purchase.gateway)
-    ? getGateway(purchase.gateway)
-    : null;
-  if (gateway == null)
-    return { error: true, message: "Payment could not be verified" };
-
-  const verification = await gateway.verify({
-    gatewayCheckoutId: purchase.gatewayCheckoutId,
-    gatewayTransactionId: purchase.gatewayTransactionId,
-    amountInPaisa: purchase.pricePaidInPaisa,
-  });
-  if (!verification.verified)
-    return { error: true, message: "Payment could not be verified" };
-
-  const result = await db.transaction(async (trx) => {
-    const completed = await markPurchaseCompleted(
-      {
-        id: purchase.id,
-        gatewayTransactionId:
-          verification.gatewayTransactionId ??
-          purchase.gatewayTransactionId ??
-          "",
-        rawGatewayResponse: verification.raw,
-      },
-      trx,
-    );
-    if (completed == null) return null;
-
-    // Record the redemption atomically with completion — if verification
-    // succeeded but something downstream in this transaction throws, the
-    // whole thing rolls back including this, so the code's usage count
-    // never drifts from reality.
-    if (completed.discountCodeId != null) {
-      await recordDiscountRedemption(
-        {
-          discountCodeId: completed.discountCodeId,
-          userId: completed.userId,
-          purchaseId: completed.id,
-          amountDiscountedInPaisa: completed.discountAmountPaisa ?? 0,
-        },
-        trx,
-      );
-    }
-
-    const courseProducts = await trx.query.CourseProductTable.findMany({
-      where: eq(CourseProductTable.productId, completed.productId),
-      with: { course: { columns: { id: true, authorId: true, name: true } } },
-    });
-    const courseIds = courseProducts.map((cp) => cp.course.id);
-
-    await addUserCourseAccess({ userId: completed.userId, courseIds }, trx);
-
-    const splitAmountPaisa = Math.floor(
-      completed.pricePaidInPaisa / courseProducts.length,
-    );
-    for (const cp of courseProducts) {
-      await createLedgerEntry(
-        {
-          purchaseId: completed.id,
-          courseId: cp.course.id,
-          instructorId: cp.course.authorId,
-          grossAmountPaisa: splitAmountPaisa,
-          referredByInstructorId: completed.referredByInstructorId,
-        },
-        trx,
-      );
-    }
-
-    // Buyer details for the invoice — confirmPurchase never touched
-    // UserTable before this, so this is a new lookup.
-    const buyer = await trx.query.UserTable.findFirst({
-      where: eq(UserTable.id, completed.userId),
-    });
-    if (buyer == null)
-      throw new Error(
-        `Buyer ${completed.userId} not found while creating invoice`,
-      );
-
-    const invoice = await createInvoiceForPurchase(
-      {
-        purchase: completed,
-        buyer: { id: buyer.id, name: buyer.name, email: buyer.email },
-        lineItems: courseProducts.map((cp) => ({
-          description: cp.course.name,
-          amountPaisa: splitAmountPaisa,
-        })),
-      },
-      trx,
-    );
-
-    return { ...completed, invoiceId: invoice.id };
-  });
-
-  if (result == null) return { error: false, message: "Already processed" };
-
-  revalidateProductCache(result.productId);
-
-  // Fire-and-forget, deliberately outside the transaction: PDF rendering
-  // and email delivery are external I/O and must never roll back a
-  // purchase that's already committed. Failure here is logged, not thrown —
-  // invoice.pdfR2Key/emailedAt staying null is the retry signal for later.
-  generateAndSendInvoice(result.invoiceId).catch((err) => {
-    console.error(
-      `Invoice generation/send failed for purchase ${result.id}`,
-      err,
-    );
-  });
-
-  return { error: false, message: "Purchase confirmed" };
+  const { outcome } = await verifyAndFulfil(purchaseId, "success_page");
+  switch (outcome) {
+    case "completed":
+      return { error: false, status: "completed" as const, message: "Purchase confirmed" };
+    case "already_completed":
+      return { error: false, status: "completed" as const, message: "Already confirmed" };
+    case "pending":
+    case "error":
+      return { error: true, status: "pending" as const, message: "Payment is still being confirmed" };
+    default:
+      return { error: true, status: "failed" as const, message: "Payment could not be verified" };
+  }
 }
 
 // Admin-only refund bookkeeping: removes course access, writes the negative

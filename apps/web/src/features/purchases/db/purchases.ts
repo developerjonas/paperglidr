@@ -87,11 +87,12 @@ export async function getPurchaseByGatewayTransaction(
 
 /**
  * Atomically transitions a purchase from pending to completed. The
- * `eq(status, "pending")` in the WHERE clause is the important part — it's
- * what makes a duplicate webhook delivery a no-op instead of a double
- * completion. Two concurrent calls for the same purchase will race on this
- * UPDATE; only the one that still finds status = "pending" affects a row,
- * so course access and ledger entries never get written twice.
+ * status guard in the WHERE clause is the important part — it's what makes
+ * a duplicate return/poll/cron call a no-op instead of a double
+ * completion. Two concurrent calls for the same purchase race on this
+ * UPDATE; Postgres row-locks it, the second re-evaluates the WHERE after
+ * the first commits, finds status = "completed", and affects no row — so
+ * course access and ledger entries are never written twice.
  */
 export async function markPurchaseCompleted(
   {
@@ -100,7 +101,10 @@ export async function markPurchaseCompleted(
     rawGatewayResponse,
   }: {
     id: string;
-    gatewayTransactionId: string;
+    // null when the gateway reports no separate transaction reference —
+    // never "": the (gateway, gatewayTransactionId) unique index would make
+    // two such completions collide.
+    gatewayTransactionId: string | null;
     rawGatewayResponse: unknown;
   },
   trx: Omit<typeof db, "$client"> = db,
@@ -115,10 +119,25 @@ export async function markPurchaseCompleted(
     .where(and(eq(PurchaseTable.id, id), eq(PurchaseTable.status, "pending")))
     .returning();
 
-  // null here means either the purchase doesn't exist, or it was already
-  // completed by a concurrent/duplicate webhook call — both are fine to
-  // treat as "nothing to do," not an error
-  if (updatedPurchase != null) revalidatePurchaseCache(updatedPurchase);
+  // undefined means either the purchase doesn't exist, or it was already
+  // completed by a concurrent/duplicate call — both are "nothing to do".
+  return updatedPurchase;
+}
+
+/**
+ * The gateway confirmed a payment that doesn't match this purchase (wrong
+ * amount, or a transaction reference already used by another purchase).
+ * Terminal for automated flows: an admin decides. Never grants access.
+ */
+export async function markPurchaseDisputed(
+  { id, rawGatewayResponse }: { id: string; rawGatewayResponse: unknown },
+  trx: Omit<typeof db, "$client"> = db,
+) {
+  const [updatedPurchase] = await trx
+    .update(PurchaseTable)
+    .set({ status: "disputed", rawGatewayResponse })
+    .where(and(eq(PurchaseTable.id, id), eq(PurchaseTable.status, "pending")))
+    .returning();
   return updatedPurchase;
 }
 

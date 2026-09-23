@@ -58,7 +58,7 @@ async function SuspendedComponent({
   // one call that makes the headline true instead of assumed.
   const result = await confirmPurchase({ purchaseId })
 
-  if (!result.error) {
+  if (result.status === "completed") {
     return (
       <PurchaseStatusLayout
         product={product}
@@ -70,17 +70,13 @@ async function SuspendedComponent({
     )
   }
 
-  // "Already processed" is the concurrent-webhook-race case from
-  // confirmPurchase — not a real failure, treat it as success since the
-  // purchase genuinely did complete, just via a different request
-  if (result.message === "Already processed" || result.message === "Already confirmed") {
+  if (result.status === "failed" || result.status === "not_found") {
     return (
       <PurchaseStatusLayout
         product={product}
-        icon={<CheckCircle2Icon className="size-10 text-emerald-600" />}
-        title="Purchase Successful"
-        message={`Thank you for purchasing ${product.name}.`}
-        showCoursesLink
+        icon={<AlertCircleIcon className="size-10 text-destructive" />}
+        title="Payment not completed"
+        message="We couldn't confirm this payment. If money left your account, contact support with your purchase reference and we'll sort it out."
       />
     )
   }

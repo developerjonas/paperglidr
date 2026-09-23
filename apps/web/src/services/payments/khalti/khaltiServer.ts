@@ -1,6 +1,11 @@
 import { env as clientEnv } from "@/data/env/client";
 import type { KhaltiConfig } from "../config";
-import type { PaymentGateway, VerifyPaymentResult } from "../types";
+import {
+  errorResult,
+  type GatewayPaymentStatus,
+  type PaymentGateway,
+  type VerifyPaymentResult,
+} from "../types";
 import { initiateKhaltiPayment } from "./khaltiClient";
 
 type KhaltiLookupResponse = {
@@ -9,11 +14,22 @@ type KhaltiLookupResponse = {
   status:
     | "Completed"
     | "Pending"
+    | "Initiated"
     | "Expired"
     | "User canceled"
     | "Refunded"
     | "Partially Refunded";
   transaction_id: string | null;
+};
+
+const STATUS_MAP: Record<string, GatewayPaymentStatus> = {
+  Completed: "completed",
+  Pending: "pending",
+  Initiated: "pending",
+  Expired: "failed",
+  "User canceled": "failed",
+  Refunded: "failed",
+  "Partially Refunded": "failed",
 };
 
 export async function verifyKhaltiTransaction(
@@ -22,6 +38,7 @@ export async function verifyKhaltiTransaction(
 ): Promise<VerifyPaymentResult> {
   const response = await fetch(`${config.baseUrl}/epayment/lookup/`, {
     method: "POST",
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Key ${config.secretKey}`,
@@ -29,28 +46,31 @@ export async function verifyKhaltiTransaction(
     body: JSON.stringify({ pidx }),
   });
 
-  if (!response.ok) {
+  // Khalti answers 404 for a pidx it doesn't know.
+  if (response.status === 404) {
     return {
-      verified: false,
-      status: "failed",
-      gatewayTransactionId: null,
+      status: "not_found",
       amountInPaisa: null,
+      gatewayTransactionId: null,
+      gatewayStatus: "404",
       raw: await response.text(),
     };
   }
+  if (!response.ok) {
+    return errorResult({ httpStatus: response.status, body: await response.text() });
+  }
 
   const data = (await response.json()) as KhaltiLookupResponse;
-  const isComplete = data.status === "Completed";
+  if (data.pidx !== pidx) {
+    return errorResult({ reason: "lookup response mismatch", data });
+  }
 
   return {
-    verified: isComplete,
-    status: isComplete
-      ? "completed"
-      : data.status === "Pending"
-        ? "pending"
-        : "failed",
-    gatewayTransactionId: data.transaction_id ?? data.pidx,
-    amountInPaisa: data.total_amount,
+    status: STATUS_MAP[data.status] ?? "error",
+    // Khalti's native unit is already paisa.
+    amountInPaisa: Number.isInteger(data.total_amount) ? data.total_amount : null,
+    gatewayTransactionId: data.transaction_id,
+    gatewayStatus: data.status,
     raw: data,
   };
 }
@@ -67,14 +87,11 @@ export const createKhaltiGateway = (config: KhaltiConfig): PaymentGateway => ({
     return {
       type: "redirect",
       url: result.payment_url,
-      gatewayTransactionId: result.pidx,
+      checkoutId: result.pidx,
     };
   },
-  async verify({ gatewayTransactionId, gatewayCheckoutId }) {
-    // pidx is what Khalti's lookup API needs. We store it as
-    // gatewayTransactionId the moment initiate responds (see purchases
-    // action), so prefer that — gatewayCheckoutId is only a fallback.
-    const pidx = gatewayTransactionId ?? gatewayCheckoutId;
-    return verifyKhaltiTransaction(config, { pidx });
+  async verify({ gatewayCheckoutId }) {
+    // gatewayCheckoutId holds the pidx Khalti returned at initiation.
+    return verifyKhaltiTransaction(config, { pidx: gatewayCheckoutId });
   },
 });

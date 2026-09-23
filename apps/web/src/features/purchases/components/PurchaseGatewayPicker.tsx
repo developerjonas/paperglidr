@@ -6,7 +6,7 @@ import Image from "next/image"
 import QRCode from "qrcode"
 import { Button } from "@/components/ui/button"
 import type { GatewayName } from "@/services/payments/config"
-import { initiatePurchase, confirmPurchase } from "../actions/purchases"
+import { initiatePurchase } from "../actions/purchases"
 const gatewayLabels: Record<GatewayName, string> = {
   esewa: "Pay with eSewa",
   khalti: "Pay with Khalti",
@@ -33,12 +33,25 @@ export function PurchaseGatewayPicker({
   useEffect(() => {
     if (activeQr == null) return
     const interval = setInterval(async () => {
-      const result = await confirmPurchase({ purchaseId: activeQr.purchaseId })
-      if (!result.error) {
+      if (Date.now() > activeQr.expiresAt.getTime()) {
+        // QR expired: stop polling; the reconciliation cron settles it.
+        clearInterval(interval)
+        router.push(`/products/purchase-failure?purchaseId=${activeQr.purchaseId}`)
+        return
+      }
+      const response = await fetch(
+        `/api/payments/fonepay/status/${activeQr.purchaseId}`,
+        { cache: "no-store" }
+      ).catch(() => null)
+      const body = response?.ok ? await response.json() : null
+      if (body?.status === "completed") {
         clearInterval(interval)
         router.push(
           `/products/${productId}/purchase/success?purchaseId=${activeQr.purchaseId}`
         )
+      } else if (body?.status === "failed") {
+        clearInterval(interval)
+        router.push(`/products/purchase-failure?purchaseId=${activeQr.purchaseId}`)
       }
     }, 3000)
     return () => clearInterval(interval)
