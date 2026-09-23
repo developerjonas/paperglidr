@@ -1,7 +1,7 @@
 "use server";
 import { db } from "@/drizzle/db";
 import { ProductTable, PurchaseTable } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   insertPurchase,
   getPurchaseByIdempotencyKey,
@@ -13,6 +13,7 @@ import type { InitiatePaymentResult } from "@/services/payments/types";
 import { getReferringInstructorId } from "../db/referral";
 import { verifyAndFulfil } from "../lib/verifyAndFulfil";
 import { enrollFree } from "../lib/freeEnrollment";
+import { wherePublicProducts } from "@/features/products/permissions/products";
 import { getGateway } from "@/services/payments/gateways";
 import { isGatewayEnabled, type GatewayName } from "@/services/payments/config";
 import { getReturnUrls } from "@/services/payments/returnUrls";
@@ -66,8 +67,9 @@ export async function initiatePurchase({
   }
 
   const product = await db.query.ProductTable.findFirst({
-    where: eq(ProductTable.id, productId),
+    where: and(eq(ProductTable.id, productId), wherePublicProducts),
   });
+  // Unpublished (private) products can't be bought.
   if (product == null) return fail("Product not found");
 
   let discountCodeId: string | null = null;
