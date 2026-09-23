@@ -35,6 +35,7 @@ import {
   WalletIcon,
 } from "lucide-react";
 import { ReactNode } from "react";
+import { requireAdmin } from "@/services/auth";
 
 const MANAGEMENT_LINKS = [
   {
@@ -82,6 +83,7 @@ const MANAGEMENT_LINKS = [
 ];
 
 export default async function AdminPage() {
+  await requireAdmin();
   const {
     averageNetPurchasesPerCustomer,
     netPurchases,

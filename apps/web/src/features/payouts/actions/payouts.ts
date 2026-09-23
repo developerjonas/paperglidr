@@ -1,7 +1,7 @@
 "use server"
 import { revalidatePath } from "next/cache"
-import { getCurrentUser } from "@/services/auth"
-import { canManagePayouts, canRequestPayout } from "../permissions/payouts"
+import { getCurrentUser, requireAdmin } from "@/services/auth"
+import { canRequestPayout } from "../permissions/payouts"
 import {
   getInstructorAvailableBalance,
   markPayoutPaid,
@@ -33,16 +33,14 @@ export async function requestPayout(unsafeData: { amountInRupees: number; bankDe
 }
 
 export async function approvePayout(payoutId: string) {
-  const user = await getCurrentUser()
-  if (!canManagePayouts(user)) return { error: true, message: "You don't have permission to manage payouts" }
+  await requireAdmin()
   await markPayoutPaid(payoutId)
   revalidatePath("/admin/payouts")
   return { error: false, message: "Payout marked as paid" }
 }
 
 export async function denyPayout(payoutId: string, reason: string) {
-  const user = await getCurrentUser()
-  if (!canManagePayouts(user)) return { error: true, message: "You don't have permission to manage payouts" }
+  await requireAdmin()
   await rejectPayout(payoutId, reason)
   revalidatePath("/admin/payouts")
   return { error: false, message: "Payout rejected" }

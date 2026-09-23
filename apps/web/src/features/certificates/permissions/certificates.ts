@@ -15,9 +15,5 @@ export async function canViewCertificate(
   return certificate?.userId === userId
 }
 
-export function canRevokeCertificate({ role }: { role: UserRole | undefined }) {
-  return role === "admin"
-}
-
 // No permission function for verification-by-code — that page is intentionally
 // public. Anyone with the code (or a scanned QR) can confirm authenticity.

@@ -45,13 +45,6 @@ export async function canUpdateCourseReview(
 
 export const canDeleteCourseReview = canUpdateCourseReview;
 
-/**
- * Only platform admins can hide a review.
- */
-export function canHideCourseReview({ role }: { role: UserRole | undefined }) {
-  return canAccessAdminPages({ role });
-}
-
 export async function getUserCourseCompletionPercent(
   userId: string,
   courseId: string,

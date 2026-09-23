@@ -3,13 +3,12 @@
 "use server";
 
 import { z } from "zod";
-import { getCurrentUser } from "@/services/auth";
+import { getCurrentUser, requireAdmin } from "@/services/auth";
 import { SupportTicketStatus, supportTicketStatuses } from "@/drizzle/schema";
 import { newTicketSchema, replySchema } from "../schemas/supportTickets";
 import {
   canCreateSupportTicket,
   canReplyToTicket,
-  canManageTicketStatus,
 } from "../permissions/supportTickets";
 import {
   createTicket,
@@ -66,12 +65,9 @@ export async function updateSupportTicketStatus(
   ticketId: string,
   status: SupportTicketStatus,
 ) {
-  const currentUser = await getCurrentUser();
-  if (
-    !canManageTicketStatus(currentUser) ||
-    !supportTicketStatuses.includes(status)
-  ) {
-    return { error: true, message: "Not authorized" };
+  await requireAdmin();
+  if (!supportTicketStatuses.includes(status)) {
+    return { error: true, message: "Invalid status" };
   }
 
   const ticket = await getTicketWithMessages(ticketId);

@@ -1,6 +1,6 @@
 "use server"
-import { getCurrentUser } from "@/services/auth"
-import { canRevokeCertificate, canViewCertificate } from "../permissions/certificates"
+import { getCurrentUser, requireAdmin } from "@/services/auth"
+import { canViewCertificate } from "../permissions/certificates"
 import {
   getCertificate,
   getCertificateByCode,
@@ -31,10 +31,7 @@ export async function getCertificateForVerification(certificateCode: string) {
 }
 
 export async function revokeCertificate(id: string, unsafeData: { reason: string }) {
-  const user = await getCurrentUser()
-  if (!canRevokeCertificate(user)) {
-    return { error: true, message: "You don't have permission to revoke certificates" }
-  }
+  await requireAdmin()
   const { success, data } = revokeCertificateSchema.safeParse(unsafeData)
   if (!success) {
     return { error: true, message: "A reason is required" }

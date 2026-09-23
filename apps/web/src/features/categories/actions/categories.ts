@@ -7,11 +7,12 @@ import { revalidateCategoryCache } from "../db/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { categorySchema } from "../schemas/categories";
+import { requireAdmin } from "@/services/auth";
 
 export async function createCategory(
   unsafeData: z.infer<typeof categorySchema>,
 ) {
-  // Add permission check here if applicable (e.g., getCurrentUser())
+  await requireAdmin();
   const { success, data } = categorySchema.safeParse(unsafeData);
 
   if (!success) {
@@ -35,7 +36,7 @@ export async function createCategory(
 }
 
 export async function deleteCategory(id: string) {
-  // Add permission check here if applicable
+  await requireAdmin();
   await db.delete(CategoryTable).where(eq(CategoryTable.id, id));
   revalidateCategoryCache(id);
   redirect("/admin/categories");

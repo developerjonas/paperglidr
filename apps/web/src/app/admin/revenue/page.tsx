@@ -18,8 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { requireAdmin } from "@/services/auth";
 
 export default async function AdminRevenuePage() {
+  await requireAdmin();
   const [summary, byMonth, bySource] = await Promise.all([
     getRevenueSummary(),
     getRevenueByMonth(6),

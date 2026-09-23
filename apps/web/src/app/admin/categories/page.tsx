@@ -20,8 +20,10 @@ import { CategoryTable } from "@/drizzle/schema";
 import { getCategoryGlobalTag } from "@/features/categories/db/cache";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { deleteCategory } from "@/features/categories/actions/categories"; // Action to handle category deletion
+import { requireAdmin } from "@/services/auth";
 
 export default async function CategoriesPage() {
+  await requireAdmin();
   const categories = await getCategories();
 
   return (

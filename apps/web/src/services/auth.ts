@@ -1,11 +1,11 @@
 import { db } from "@/drizzle/db";
 import { UserRole, UserTable } from "@/drizzle/schema";
-import { getUserIdTag } from "@/features/users/db/cache";
 import { auth } from "@/lib/auth";
+import { canAccessAdminPages } from "@/permissions/general";
 import { eq } from "drizzle-orm";
-import { unstable_cache } from "next/cache";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 
 export type AppUser = {
   userId: string | undefined;
@@ -14,16 +14,25 @@ export type AppUser = {
   redirectToSignIn: () => ReturnType<typeof redirect>;
 };
 
+// Both lookups are memoized per request only (React cache), never across
+// requests. The user row carries `role`, which every authorization check
+// reads — a cross-request cache here meant a promoted or demoted user kept
+// their old role indefinitely. One primary-key query per request is the
+// price of never deciding authorization on a stale role.
+const getSession = cache(async () =>
+  auth.api.getSession({ headers: await headers() }),
+);
+
+export const getUser = cache(async (id: string) =>
+  db.query.UserTable.findFirst({ where: eq(UserTable.id, id) }),
+);
+
 export async function getCurrentUser({
   allData = false,
 } = {}): Promise<AppUser> {
   const redirectToSignIn = () => redirect("/sign-in");
 
-  // Fetch the session from Better Auth using request headers
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
+  const session = await getSession();
   const currentDbUserId = session?.user?.id;
 
   if (!currentDbUserId) {
@@ -35,7 +44,6 @@ export async function getCurrentUser({
     };
   }
 
-  // Fetch user details from Drizzle DB using your cached query
   const user = await getUser(currentDbUserId);
 
   return {
@@ -46,15 +54,14 @@ export async function getCurrentUser({
   };
 }
 
-export const getUser = (id: string) =>
-  unstable_cache(
-    async () => {
-      return db.query.UserTable.findFirst({
-        where: eq(UserTable.id, id),
-      });
-    },
-    [`user-${id}`],
-    {
-      tags: [getUserIdTag(id)],
-    },
-  )();
+/**
+ * Gate for every admin page, the admin layout, and every admin-only server
+ * action. Non-admins (and signed-out visitors) get notFound() — a 404 that
+ * doesn't reveal the route exists. In a server action it throws before any
+ * work is done. Uses the fresh, per-request role from getCurrentUser().
+ */
+export async function requireAdmin() {
+  const { userId, role } = await getCurrentUser();
+  if (userId == null || !canAccessAdminPages({ role })) notFound();
+  return { userId, role: "admin" as const };
+}

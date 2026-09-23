@@ -7,12 +7,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/PageHeader";
-import { getCurrentUser } from "@/services/auth";
+import { getCurrentUser, requireAdmin } from "@/services/auth";
 import { getReviewsForInstructor } from "@/features/reviews/db/reviews";
 import { AdminReviewRowActions } from "@/features/reviews/components/AdminReviewRowActions";
 import { StarRatingDisplay } from "@/features/reviews/components/StarRatingDisplay";
 
 export default async function AdminReviewsPage() {
+  await requireAdmin();
   const { userId, role } = await getCurrentUser();
   const reviews = await getReviewsForInstructor({ userId: userId!, role });
 

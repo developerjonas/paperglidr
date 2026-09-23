@@ -18,7 +18,3 @@ export async function canViewPayout(
   })
   return payout?.instructorId === userId
 }
-
-export function canManagePayouts({ role }: { role: UserRole | undefined }) {
-  return role === "admin"
-}

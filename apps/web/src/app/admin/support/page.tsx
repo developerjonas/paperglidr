@@ -15,8 +15,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDate } from "@/lib/formatters";
+import { requireAdmin } from "@/services/auth";
 
 export default async function AdminSupportPage() {
+  await requireAdmin();
   const tickets = await getAllTickets();
 
   return (

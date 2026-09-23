@@ -5,12 +5,14 @@ import { getTicketWithMessages } from "@/features/support/db/supportTickets";
 import { SupportTicketThread } from "@/features/support/components/SupportTicketThread";
 import { AdminTicketStatusSelect } from "@/features/support/components/AdminTicketStatusSelect";
 import { PageHeader } from "@/components/PageHeader";
+import { requireAdmin } from "@/services/auth";
 
 export default async function AdminSupportTicketPage({
   params,
 }: {
   params: Promise<{ ticketId: string }>;
 }) {
+  await requireAdmin();
   const { ticketId } = await params;
   const ticket = await getTicketWithMessages(ticketId);
   if (ticket == null) return notFound();

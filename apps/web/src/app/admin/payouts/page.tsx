@@ -10,8 +10,10 @@ import { PageHeader } from "@/components/PageHeader"
 import { getPendingPayouts } from "@/features/payouts/db/payouts"
 import { PayoutRowActions } from "@/features/payouts/components/PayoutRowActions"
 import { formatPrice } from "@/lib/formatters"
+import { requireAdmin } from "@/services/auth"
 
 export default async function AdminPayoutsPage() {
+  await requireAdmin()
   const payouts = await getPendingPayouts()
 
   return (

@@ -28,7 +28,3 @@ export function canReplyToTicket(
   if (ticket.status === "closed") return false;
   return canViewTicket(currentUser, ticket);
 }
-
-export function canManageTicketStatus(currentUser: CurrentUser) {
-  return currentUser.role === "admin";
-}

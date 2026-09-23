@@ -1,13 +1,12 @@
 "use server";
 
 import { z } from "zod";
-import { getCurrentUser } from "@/services/auth";
+import { getCurrentUser, requireAdmin } from "@/services/auth";
 import { reviewSchema } from "../schemas/reviews";
 import {
   canCreateCourseReview,
   canUpdateCourseReview,
   canDeleteCourseReview,
-  canHideCourseReview,
   canReplyToCourseReview,
 } from "../permissions/reviews";
 import {
@@ -49,11 +48,7 @@ export async function deleteReview(id: string) {
 }
 
 export async function hideReview(id: string, isHidden: boolean) {
-  const currentUser = await getCurrentUser();
-
-  if (!canHideCourseReview(currentUser)) {
-    return { error: true, message: "Not authorized" };
-  }
+  await requireAdmin();
 
   await setReviewHidden(id, isHidden);
   return {

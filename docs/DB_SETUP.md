@@ -72,8 +72,7 @@ Production starts empty; there's no data to carry over from the dev DB.
    ADMIN_EMAIL=founder@example.com pnpm db:seed
    ```
    If the user doesn't exist yet, the seed exits with code 1 and says so; nothing is changed. The email match is case-insensitive.
-6. **Purge the Next.js data cache** so the new role is picked up. In Vercel, use the project's Settings → Data Cache (called "Caches" in newer dashboards) → purge. Confirm the exact location in the current dashboard. `getCurrentUser()` caches the user row, including `role`, with no expiry (`src/services/auth.ts`, `getUser`), so without a purge the promoted admin keeps seeing the non-admin view. A proper fix is tracked separately.
-7. **Verify:** the admin opens `/admin`.
+6. **Verify:** the admin opens `/admin` (reload if it was already open). Roles are read fresh from the database on every request, so the promotion applies on the next request, with no cache purge. Demotion works the same way: set `role = 'user'` and it applies on their next request.
 
 ## Baseline contents (for reference)
 
