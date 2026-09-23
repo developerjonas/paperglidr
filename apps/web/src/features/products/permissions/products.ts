@@ -1,6 +1,11 @@
 import { db } from "@/drizzle/db";
-import { CourseProductTable, ProductTable, UserRole } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import {
+  CourseProductTable,
+  CourseTable,
+  ProductTable,
+  UserRole,
+} from "@/drizzle/schema";
+import { eq, inArray } from "drizzle-orm";
 
 export function canCreateProducts({ userId }: { userId: string | undefined }) {
   return userId != null;
@@ -39,6 +44,30 @@ export async function canDeleteProducts(
   if (!userId || !productId) return false;
   if (role === "admin") return true;
   return userOwnsProductViaCourses(userId, productId);
+}
+
+/**
+ * A product may only bundle courses its creator authored (admins: any).
+ * Without this, anyone could bundle another creator's paid course into
+ * their own ₹0 product and enroll for free. Checked on create and update,
+ * since courseIds comes from the form.
+ */
+export async function canBundleCourses(
+  { userId, role }: { userId: string | undefined; role: UserRole | undefined },
+  courseIds: string[],
+) {
+  if (!userId) return false;
+  if (role === "admin") return true;
+  const uniqueIds = [...new Set(courseIds)];
+  if (uniqueIds.length === 0) return false;
+  const courses = await db
+    .select({ authorId: CourseTable.authorId })
+    .from(CourseTable)
+    .where(inArray(CourseTable.id, uniqueIds));
+  return (
+    courses.length === uniqueIds.length &&
+    courses.every((course) => course.authorId === userId)
+  );
 }
 
 export const wherePublicProducts = eq(ProductTable.status, "public");

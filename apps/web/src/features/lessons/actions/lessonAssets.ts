@@ -10,6 +10,7 @@ import {
   insertLessonAsset,
   deleteLessonAsset,
   getLessonAssetsForLesson,
+  getLessonAsset,
 } from "../db/lessonAssets";
 import { buildStorageKey, getUploadUrl } from "@/services/storage/r2";
 
@@ -66,6 +67,14 @@ export async function requestLessonAssetUploadUrl(
  */
 export async function removeLessonAsset(assetId: string, lessonId: string) {
   await canEditLessonAssets(lessonId); // throws if unauthorized
+
+  // The permission above is for lessonId; the asset must actually belong to
+  // that lesson, or any asset could be deleted via a lesson the caller owns.
+  const asset = await getLessonAsset(assetId);
+  if (asset == null || asset.lessonId !== lessonId) {
+    throw new Error("Asset not found");
+  }
+
   return deleteLessonAsset(assetId);
 }
 

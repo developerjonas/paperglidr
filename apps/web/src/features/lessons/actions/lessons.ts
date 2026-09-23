@@ -35,7 +35,15 @@ export async function updateLesson(
   unsafeData: z.infer<typeof lessonSchema>
 ) {
   const { success, data } = lessonSchema.safeParse(unsafeData)
-  if (!success || !(await canUpdateLessons(await getCurrentUser(), id))) {
+  const user = await getCurrentUser()
+  // The lesson must be the caller's AND so must the section it's being
+  // saved into — sectionId comes from the form, and without the second
+  // check a lesson could be moved into another creator's course.
+  if (
+    !success ||
+    !(await canUpdateLessons(user, id)) ||
+    !(await canCreateLessons(user, data.sectionId))
+  ) {
     return { error: true, message: "There was an error updating your lesson" }
   }
   await updateLessonDb(id, data)
@@ -49,12 +57,14 @@ export async function deleteLesson(id: string) {
   return { error: false, message: "Successfully deleted your lesson" }
 }
 export async function updateLessonOrders(lessonIds: string[]) {
-  const firstId = lessonIds[0]
-  if (
-    lessonIds.length === 0 ||
-    !firstId ||
-    !(await canUpdateLessons(await getCurrentUser(), firstId))
-  ) {
+  const user = await getCurrentUser()
+  // Every id must be authorized, not just the first.
+  const allowed =
+    lessonIds.length > 0 &&
+    (await Promise.all(lessonIds.map(id => canUpdateLessons(user, id)))).every(
+      Boolean
+    )
+  if (!allowed) {
     return { error: true, message: "Error reordering your lessons" }
   }
   await updateLessonOrdersDb(lessonIds)

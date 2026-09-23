@@ -10,6 +10,7 @@ import {
   canCreateProducts,
   canDeleteProducts,
   canUpdateProducts,
+  canBundleCourses,
 } from "../permissions/products";
 import { canPublishProduct } from "../lib/canPublishProduct";
 import { productSchema } from "../schema/products";
@@ -38,6 +39,10 @@ export async function createProduct(unsafeData: z.infer<typeof productSchema>) {
     return { error: true, message: "There was an error creating your product" };
   }
 
+  if (!(await canBundleCourses(user, data.courseIds))) {
+    return { error: true, message: "You can only include your own courses" };
+  }
+
   if (data.status === "public") {
     const check = await canPublishProduct({
       description: data.description,
@@ -63,6 +68,10 @@ export async function updateProduct(
 
   if (!success || !(await canUpdateProducts(user, id))) {
     return { error: true, message: "There was an error updating your product" };
+  }
+
+  if (!(await canBundleCourses(user, data.courseIds))) {
+    return { error: true, message: "You can only include your own courses" };
   }
 
   if (data.status === "public") {

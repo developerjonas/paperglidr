@@ -120,7 +120,10 @@ async function enrollInFreeProduct(productId: string) {
     where: and(eq(ProductTable.id, productId), wherePublicProducts),
     with: { courseProducts: { columns: { courseId: true } } },
   })
-  if (product == null) notFound()
+  // productId arrives via .bind(), which Next does not encrypt — this action
+  // can be invoked with any product id. Only genuinely free products may
+  // skip the gateway.
+  if (product == null || product.priceInRupees !== 0) notFound()
 
   const idempotencyKey = crypto.randomUUID()
 
