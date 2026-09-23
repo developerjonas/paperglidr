@@ -1,4 +1,5 @@
 "use client"
+import { use } from "react"
 import Link from "next/link"
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
@@ -10,17 +11,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-export default function SignInPage() {
+import { safeRedirectPath } from "@/lib/safeRedirect"
+export default function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirectTo?: string | string[] }>
+}) {
+  // Only a path on this site; anything else falls back to "/".
+  const redirectTo = safeRedirectPath(use(searchParams).redirectTo)
   const handleGitHubSignIn = async () => {
     await authClient.signIn.social({
       provider: "github",
-      callbackURL: "/", // Where to direct the user after login
+      callbackURL: redirectTo,
     })
   }
   const handleGoogleSignIn = async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/", // Where to direct the user after login
+      callbackURL: redirectTo,
     })
   }
   return (
@@ -73,7 +81,11 @@ export default function SignInPage() {
           <div>
             Don&apos;t have an account?{" "}
             <Link
-              href="/sign-up"
+              href={
+                redirectTo === "/"
+                  ? "/sign-up"
+                  : `/sign-up?redirectTo=${encodeURIComponent(redirectTo)}`
+              }
               className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Sign up

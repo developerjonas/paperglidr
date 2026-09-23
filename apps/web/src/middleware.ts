@@ -42,7 +42,7 @@ export function middleware(request: NextRequest) {
     const sessionCookie = getSessionCookie(request)
     if (sessionCookie == null) {
       const signInUrl = new URL("/sign-in", request.url)
-      signInUrl.searchParams.set("redirectTo", pathname)
+      signInUrl.searchParams.set("redirectTo", pathname + request.nextUrl.search)
       return captureReferral(request, NextResponse.redirect(signInUrl))
     }
   }
