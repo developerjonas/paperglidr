@@ -5,8 +5,11 @@ import { eq } from "drizzle-orm";
 import {
   insertPurchase,
   getPurchaseByIdempotencyKey,
+  markPurchaseFailed,
   updatePurchase,
 } from "../db/purchases";
+import { recordPaymentEvent } from "../db/paymentEvents";
+import type { InitiatePaymentResult } from "@/services/payments/types";
 import { getReferringInstructorId } from "../db/referral";
 import { verifyAndFulfil } from "../lib/verifyAndFulfil";
 import { getGateway } from "@/services/payments/gateways";
@@ -36,25 +39,33 @@ export async function initiatePurchase({
   discountCode?: string;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (session?.user == null) return { error: true, message: "Not signed in" };
+  if (session?.user == null) return fail("Not signed in");
+
+  // One key per checkout attempt ("<checkout uuid>:<gateway>", generated
+  // once per checkout mount) — so a double click or retry reuses the same
+  // purchase instead of creating a second one.
+  if (!checkoutKeyPattern.test(idempotencyKey) || !idempotencyKey.endsWith(`:${gateway}`)) {
+    return fail("Invalid checkout. Please reload the page.");
+  }
 
   const existing = await getPurchaseByIdempotencyKey(idempotencyKey);
   if (existing != null) {
-    return {
-      error: false,
-      purchaseId: existing.id,
-      redirectUrl:
-        existing.rawGatewayResponse != null
-          ? ((existing.rawGatewayResponse as { redirectUrl?: string })
-              .redirectUrl ?? null)
-          : null,
-    };
+    const stored = (existing.rawGatewayResponse as StoredInitiation | null)?.initiation;
+    if (
+      existing.userId !== session.user.id ||
+      existing.productId !== productId ||
+      existing.status !== "pending" ||
+      stored == null
+    ) {
+      return fail("This checkout has expired. Please reload the page.");
+    }
+    return initiationResponse(existing.id, stored);
   }
 
   const product = await db.query.ProductTable.findFirst({
     where: eq(ProductTable.id, productId),
   });
-  if (product == null) return { error: true, message: "Product not found" };
+  if (product == null) return fail("Product not found");
 
   let discountCodeId: string | null = null;
   let discountAmountPaisa = 0;
@@ -103,13 +114,13 @@ export async function initiatePurchase({
       discountAmountPaisa,
     });
     if (purchase == null)
-      return { error: true, message: "Could not start free purchase" };
+      return fail("Could not start free purchase");
 
     return {
-      error: false,
+      error: false as const,
       purchaseId: purchase.id,
-      redirectUrl: null,
-      isFree: true,
+      redirect: null,
+      qr: null,
     };
   }
 
@@ -117,7 +128,7 @@ export async function initiatePurchase({
   // The client's list is a convenience, never the check.
   const wiredGateway = isGatewayEnabled(gateway) ? getGateway(gateway) : null;
   if (wiredGateway == null)
-    return { error: true, message: "Unsupported payment method" };
+    return fail("Unsupported payment method");
 
   const purchase = await insertPurchase({
     userId: session.user.id,
@@ -133,37 +144,99 @@ export async function initiatePurchase({
     discountAmountPaisa,
   });
   if (purchase == null)
-    return { error: true, message: "Could not start purchase" };
+    return fail("Could not start purchase");
 
-  const initiation = await wiredGateway.initiate({
+  let initiation: InitiatePaymentResult;
+  try {
+    initiation = await wiredGateway.initiate({
+      purchaseId: purchase.id,
+      amountInPaisa: purchase.pricePaidInPaisa,
+      productName: productDetails.name,
+      ...getReturnUrls(gateway, purchase.id),
+    });
+  } catch (error) {
+    // The gateway refused or was unreachable: this attempt is over.
+    console.error(`[payments] initiate failed for ${purchase.id}`, error);
+    await markPurchaseFailed({ id: purchase.id });
+    await recordPaymentEvent({
+      purchaseId: purchase.id,
+      source: "initiate",
+      gateway,
+      outcome: "error",
+      detail: { reason: "initiate failed" },
+    });
+    return fail("The payment provider couldn't be reached. Please try again.");
+  }
+
+  const stored: StoredInitiation["initiation"] =
+    initiation.type === "redirect"
+      ? {
+          type: "redirect",
+          url: initiation.url,
+          method: initiation.method ?? "GET",
+          formFields: initiation.formFields ?? null,
+        }
+      : {
+          type: "qr",
+          qrString: initiation.qrString,
+          expiresAt: initiation.expiresAt.toISOString(),
+        };
+
+  // gatewayCheckoutId: the gateway's reference for this checkout (eSewa
+  // uuid / Khalti pidx / Fonepay PRN) — what verifyAndFulfil asks about.
+  // rawGatewayResponse keeps the initiation so a retried click replays it.
+  await updatePurchase(purchase.id, {
+    gatewayCheckoutId: initiation.checkoutId,
+    rawGatewayResponse: { initiation: stored } satisfies StoredInitiation,
+  });
+  await recordPaymentEvent({
     purchaseId: purchase.id,
+    source: "initiate",
+    gateway,
+    outcome: "initiated",
     amountInPaisa: purchase.pricePaidInPaisa,
-    productName: productDetails.name,
-    ...getReturnUrls(gateway, purchase.id),
   });
 
-  // The gateway's reference for this checkout (eSewa uuid / Khalti pidx /
-  // Fonepay PRN) — what verifyAndFulfil asks the gateway about later.
-  await updatePurchase(purchase.id, { gatewayCheckoutId: initiation.checkoutId });
+  return initiationResponse(purchase.id, stored);
+}
 
+const fail = (message: string) => ({ error: true as const, message });
+
+const checkoutKeyPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(esewa|khalti|fonepay)$/;
+
+type StoredInitiation = {
+  initiation:
+    | {
+        type: "redirect";
+        url: string;
+        method: "GET" | "POST";
+        formFields: Record<string, string> | null;
+      }
+    | { type: "qr"; qrString: string; expiresAt: string };
+};
+
+function initiationResponse(
+  purchaseId: string,
+  initiation: StoredInitiation["initiation"],
+) {
   if (initiation.type === "redirect") {
     return {
-      error: false,
-      purchaseId: purchase.id,
+      error: false as const,
+      purchaseId,
       redirect: {
         url: initiation.url,
-        method: initiation.method ?? "GET",
-        formFields: initiation.formFields,
+        method: initiation.method,
+        formFields: initiation.formFields ?? undefined,
       },
       qr: null,
     };
   }
-
   return {
-    error: false,
-    purchaseId: purchase.id,
+    error: false as const,
+    purchaseId,
     redirect: null,
-    qr: { qrString: initiation.qrString, expiresAt: initiation.expiresAt },
+    qr: { qrString: initiation.qrString, expiresAt: new Date(initiation.expiresAt) },
   };
 }
 

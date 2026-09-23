@@ -70,6 +70,10 @@ export const env = createEnv({
     FONEPAY_PASSWORD: z.string().min(1).optional(),
     FONEPAY_BASE_URL: z.string().url().optional(),
 
+    // Shared secret for /api/cron/reconcile-payments (Bearer token). Unset =
+    // the endpoint refuses every request.
+    CRON_SECRET: z.string().min(32).optional(),
+
     // --- SMSPasal (instructor phone verification) ---
     SMSPASAL_API_KEY: z.string().min(1).optional(),
     SMSPASAL_SENDER_ID: z.string().min(1).optional(),

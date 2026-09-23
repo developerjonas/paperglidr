@@ -62,7 +62,8 @@
         "FONEPAY_SECRET_KEY",
         "FONEPAY_USERNAME",
         "FONEPAY_PASSWORD",
-        "FONEPAY_BASE_URL"
+        "FONEPAY_BASE_URL",
+        "CRON_SECRET"
       ]
     },
     "lint": {

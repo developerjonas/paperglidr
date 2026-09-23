@@ -24,6 +24,10 @@ export function PurchaseGatewayPicker({
 }) {
   const [isPending, setIsPending] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // One checkout attempt per mount: retries and double clicks reuse the
+  // same purchase. The parent remounts this component (via `key`) when the
+  // discount code changes.
+  const [checkoutId] = useState(() => crypto.randomUUID())
   const [activeQr, setActiveQr] = useState<{
     purchaseId: string
     qrDataUrl: string
@@ -59,7 +63,7 @@ export function PurchaseGatewayPicker({
   async function handleSelect(gateway: GatewayName) {
     setIsPending(gateway)
     setError(null)
-    const idempotencyKey = crypto.randomUUID()
+    const idempotencyKey = `${checkoutId}:${gateway}`
     const result = await initiatePurchase({
       productId,
       gateway,
@@ -103,10 +107,6 @@ export function PurchaseGatewayPicker({
         window.location.href = result.redirect.url
         return
       }
-    }
-    // 3. Fallback for direct redirect URLs
-    if (result.redirectUrl != null) {
-      window.location.href = result.redirectUrl
     }
   }
   if (activeQr != null) {

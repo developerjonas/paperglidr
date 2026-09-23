@@ -58,6 +58,7 @@ export function PurchaseCheckoutCard({
       )}
 
       <PurchaseGatewayPicker
+        key={discount?.code ?? "no-discount"}
         productId={productId}
         discountCode={discount?.code}
         gateways={gateways}

@@ -27,6 +27,7 @@ import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import Link from "next/link";
 import {
   BookOpenIcon,
+  CreditCardIcon,
   DollarSignIcon,
   FolderIcon,
   LifeBuoyIcon,
@@ -55,6 +56,12 @@ const MANAGEMENT_LINKS = [
     description: "Manage courses, sections, and lessons",
     href: "/admin/courses",
     icon: BookOpenIcon,
+  },
+  {
+    title: "Purchases",
+    description: "Pending, failed and disputed payments; re-check with the gateway",
+    href: "/admin/purchases",
+    icon: CreditCardIcon,
   },
   {
     title: "Payouts",

@@ -20,7 +20,12 @@ import type {
   VerifyPaymentResult,
 } from "@/services/payments/types";
 import { revalidatePurchaseCache } from "../db/cache";
-import { markPurchaseCompleted, markPurchaseDisputed } from "../db/purchases";
+import {
+  markPurchaseCompleted,
+  markPurchaseDisputed,
+  markPurchaseFailed,
+} from "../db/purchases";
+import { recordPaymentEvent } from "../db/paymentEvents";
 
 /** Who asked — recorded with every verification. */
 export type FulfilSource = "return" | "poll" | "success_page" | "cron" | "admin";
@@ -29,6 +34,7 @@ export type FulfilOutcome =
   | "completed" // this call completed the purchase
   | "already_completed" // someone else did (or it was done before)
   | "pending"
+  | "failed"
   | "disputed"
   | "error" // no answer from the gateway; nothing changed
   | "skipped" // nothing to verify (refunded, disputed, free, unknown gateway)
@@ -55,6 +61,10 @@ export const defaultFulfilDeps: FulfilDeps = {
 };
 
 const UNIQUE_VIOLATION = "23505";
+
+// A gateway may not know about a payment the instant the buyer leaves its
+// page. "No record" only becomes a failure after this long.
+export const NOT_FOUND_GRACE_MS = 30 * 60 * 1000;
 
 function isUniqueViolation(error: unknown) {
   const cause = error instanceof DrizzleQueryError ? error.cause : error;
@@ -91,7 +101,16 @@ export async function verifyAndFulfil(
   if (purchase.status === "completed") {
     return { outcome: "already_completed", purchase: ref };
   }
-  if (purchase.status !== "pending") return { outcome: "skipped", purchase: ref };
+  // pending: normal. failed: re-checked because late success wins.
+  // disputed / refunded / anything else: terminal for automated flows.
+  if (purchase.status !== "pending" && purchase.status !== "failed") {
+    return { outcome: "skipped", purchase: ref };
+  }
+  const event = {
+    purchaseId: purchase.id,
+    source,
+    gateway: purchase.gateway,
+  } as const;
 
   const verifier = isGatewayName(purchase.gateway)
     ? deps.getVerifier(purchase.gateway)
@@ -101,6 +120,7 @@ export async function verifyAndFulfil(
     console.warn(
       `[payments] ${source}: cannot verify purchase ${purchase.id}, gateway ${purchase.gateway} is not enabled`,
     );
+    await recordPaymentEvent({ ...event, outcome: "error", detail: { reason: "gateway not enabled" } });
     return { outcome: "error", purchase: ref };
   }
 
@@ -113,20 +133,52 @@ export async function verifyAndFulfil(
     });
   } catch (error) {
     console.error(`[payments] ${source}: verify failed for ${purchase.id}`, error);
+    await recordPaymentEvent({ ...event, outcome: "error", detail: { reason: "verify threw" } });
     return { outcome: "error", purchase: ref };
   }
+  const reported = {
+    gatewayStatus: verification.gatewayStatus,
+    amountInPaisa: verification.amountInPaisa,
+  };
 
   switch (verification.status) {
     case "completed":
       break;
     case "pending":
-    case "not_found":
-    case "failed":
-      // Failure states are applied by task 9's reconciliation; until then an
-      // unfinished payment simply stays pending.
+      await recordPaymentEvent({ ...event, ...reported, outcome: "pending" });
       return { outcome: "pending", purchase: ref };
     case "error":
+      await recordPaymentEvent({ ...event, ...reported, outcome: "error", detail: verification.raw });
       return { outcome: "error", purchase: ref };
+    case "not_found":
+    case "failed": {
+      const withinGrace =
+        verification.status === "not_found" &&
+        Date.now() - purchase.createdAt.getTime() < NOT_FOUND_GRACE_MS;
+      if (withinGrace || purchase.status === "failed") {
+        // Too early to call it — or already failed, nothing new to record.
+        if (withinGrace) await recordPaymentEvent({ ...event, ...reported, outcome: "pending" });
+        return { outcome: purchase.status === "failed" ? "failed" : "pending", purchase: ref };
+      }
+      const failed = await markPurchaseFailed({
+        id: purchase.id,
+        rawGatewayResponse: verification.raw,
+      });
+      if (failed == null) {
+        // Raced with another transition — report what actually happened.
+        const now = await db.query.PurchaseTable.findFirst({
+          where: eq(PurchaseTable.id, purchase.id),
+          columns: { status: true },
+        });
+        return {
+          outcome: now?.status === "completed" ? "already_completed" : now?.status === "disputed" ? "disputed" : "skipped",
+          purchase: ref,
+        };
+      }
+      revalidatePurchaseCache(purchase);
+      await recordPaymentEvent({ ...event, ...reported, outcome: "failed" });
+      return { outcome: "failed", purchase: ref };
+    }
   }
 
   // The gateway says "paid" — but only the exact amount, in paisa, counts.
@@ -136,6 +188,12 @@ export async function verifyAndFulfil(
     );
     await markPurchaseDisputed({ id: purchase.id, rawGatewayResponse: verification.raw });
     revalidatePurchaseCache(purchase);
+    await recordPaymentEvent({
+      ...event,
+      ...reported,
+      outcome: "disputed",
+      detail: { reason: "amount mismatch", expectedAmountInPaisa: purchase.pricePaidInPaisa },
+    });
     return { outcome: "disputed", purchase: ref };
   }
 
@@ -151,13 +209,24 @@ export async function verifyAndFulfil(
       );
       await markPurchaseDisputed({ id: purchase.id, rawGatewayResponse: verification.raw });
       revalidatePurchaseCache(purchase);
+      await recordPaymentEvent({
+        ...event,
+        ...reported,
+        outcome: "disputed",
+        detail: { reason: "transaction id already used", gatewayTransactionId: verification.gatewayTransactionId },
+      });
       return { outcome: "disputed", purchase: ref };
     }
     console.error(`[payments] ${source}: fulfilment failed for ${purchase.id}`, error);
+    await recordPaymentEvent({ ...event, ...reported, outcome: "error", detail: { reason: "fulfilment failed" } });
     return { outcome: "error", purchase: ref };
   }
 
-  if (fulfilled == null) return { outcome: "already_completed", purchase: ref };
+  if (fulfilled == null) {
+    await recordPaymentEvent({ ...event, ...reported, outcome: "already_completed" });
+    return { outcome: "already_completed", purchase: ref };
+  }
+  await recordPaymentEvent({ ...event, ...reported, outcome: "completed" });
 
   revalidatePurchaseCache(fulfilled);
   revalidateProductCache(fulfilled.productId);

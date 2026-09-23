@@ -7,6 +7,7 @@ import {
   timestamp,
   pgEnum,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../schemaHelpers";
 import { relations } from "drizzle-orm";
@@ -107,6 +108,8 @@ export const PurchaseTable = pgTable(
       t.gateway,
       t.gatewayTransactionId,
     ),
+    // Reconciliation cron: pending/failed purchases by age.
+    index("purchases_status_created_at_idx").on(t.status, t.createdAt),
   ],
 );
 

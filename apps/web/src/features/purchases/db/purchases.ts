@@ -1,7 +1,7 @@
 import { db } from "@/drizzle/db";
 import { PurchaseTable } from "@/drizzle/schema";
 import { revalidatePurchaseCache } from "./cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { desc } from "drizzle-orm"
 
 export async function insertPurchase(
@@ -116,7 +116,9 @@ export async function markPurchaseCompleted(
       gatewayTransactionId,
       rawGatewayResponse,
     })
-    .where(and(eq(PurchaseTable.id, id), eq(PurchaseTable.status, "pending")))
+    // "failed" too: late success wins — if the gateway later confirms a
+    // payment we'd given up on, the buyer still gets what they paid for.
+    .where(and(eq(PurchaseTable.id, id), inArray(PurchaseTable.status, ["pending", "failed"])))
     .returning();
 
   // undefined means either the purchase doesn't exist, or it was already
@@ -136,6 +138,26 @@ export async function markPurchaseDisputed(
   const [updatedPurchase] = await trx
     .update(PurchaseTable)
     .set({ status: "disputed", rawGatewayResponse })
+    .where(and(eq(PurchaseTable.id, id), inArray(PurchaseTable.status, ["pending", "failed"])))
+    .returning();
+  return updatedPurchase;
+}
+
+/**
+ * Terminal failure reported by the gateway (cancelled, expired, refunded,
+ * or no record after the grace period), or given up on by the cron. Only
+ * moves a PENDING purchase — never touches completed/disputed/refunded.
+ */
+export async function markPurchaseFailed(
+  { id, rawGatewayResponse }: { id: string; rawGatewayResponse?: unknown },
+  trx: Omit<typeof db, "$client"> = db,
+) {
+  const [updatedPurchase] = await trx
+    .update(PurchaseTable)
+    .set({
+      status: "failed",
+      ...(rawGatewayResponse !== undefined ? { rawGatewayResponse } : {}),
+    })
     .where(and(eq(PurchaseTable.id, id), eq(PurchaseTable.status, "pending")))
     .returning();
   return updatedPurchase;
