@@ -1,20 +1,17 @@
-import { PageHeader } from "@/components/PageHeader"
+import { LegalPage } from "@/components/LegalPage"
 
 const SUPPORT_EMAIL = "[email protected]"
 const LAST_UPDATED = "[DATE]"
 
 export default function ContentPolicyPage() {
   return (
-    <div className="container max-w-3xl py-8">
-      <PageHeader title="Content Policy" />
-      <div className="prose prose-sm dark:prose-invert max-w-none mt-4">
-        <p className="text-muted-foreground">Last updated: {LAST_UPDATED}</p>
+    <LegalPage title="Content Policy" lastUpdated={LAST_UPDATED}>
 
         <p>
           This Content Policy sets the rules for what Instructors may
           publish on PaperGlidr, and what buyers may do with content they
           purchase. It works alongside our{" "}
-          <a href="/legal/terms">Terms of Service</a>.
+          <a href="/tos">Terms of Service</a>.
         </p>
 
         <h2>1. What You May Publish</h2>
@@ -131,7 +128,7 @@ export default function ContentPolicyPage() {
         <h2>7. Copyright Claims</h2>
         <p>
           If you believe content on PaperGlidr infringes your copyright, see
-          our <a href="/legal/dmca">DMCA &amp; Takedown Policy</a> for how
+          our <a href="/dmca">DMCA &amp; Takedown Policy</a> for how
           to submit a claim.
         </p>
 
@@ -142,7 +139,6 @@ export default function ContentPolicyPage() {
           violating content, or permanent termination, depending on
           severity and whether the violation is repeated.
         </p>
-      </div>
-    </div>
+    </LegalPage>
   )
 }

@@ -1,6 +1,4 @@
-import { PageHeader } from "@/components/PageHeader"
-
-
+import { LegalPage } from "@/components/LegalPage"
 
 // PLACEHOLDER FIELDS — fill in before launch:
 const COMPANY_LEGAL_NAME = "Paperglidr Technology Pvt. Ltd."
@@ -11,10 +9,7 @@ const LAST_UPDATED = "[DATE]"
 
 export default function TermsOfServicePage() {
   return (
-    <div className="container max-w-3xl py-8">
-      <PageHeader title="Terms of Service" />
-      <div className="prose prose-sm dark:prose-invert max-w-none mt-4">
-        <p className="text-muted-foreground">Last updated: {LAST_UPDATED}</p>
+    <LegalPage title="Terms of Service" lastUpdated={LAST_UPDATED}>
 
         <p>
           These Terms of Service (&quot;Terms&quot;) govern your access to and use of
@@ -88,7 +83,7 @@ export default function TermsOfServicePage() {
           <li>
             Instructors are solely responsible for the accuracy, legality,
             and quality of their Course content. See our{" "}
-            <a href="/legal/content-policy">Content Policy</a> for specific
+            <a href="/content">Content Policy</a> for specific
             rules on what may and may not be published.
           </li>
           <li>
@@ -135,7 +130,7 @@ export default function TermsOfServicePage() {
           PaperGlidr respects intellectual property rights and expects the
           same from its users. If you believe your copyrighted work has been
           uploaded without authorization, see our{" "}
-          <a href="/legal/dmca">DMCA &amp; Takedown Policy</a>.
+          <a href="/dmca">DMCA &amp; Takedown Policy</a>.
         </p>
 
         <h2>8. Limitation of Liability</h2>
@@ -166,7 +161,6 @@ export default function TermsOfServicePage() {
           Questions about these Terms can be sent to{" "}
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
         </p>
-      </div>
-    </div>
+    </LegalPage>
   )
 }

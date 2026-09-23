@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/PageHeader"
+import { LegalPage } from "@/components/LegalPage"
 
 const DMCA_AGENT_EMAIL = "[email protected]"
 const COMPANY_LEGAL_NAME = "Paperglidr Technology Pvt. Ltd."
@@ -7,10 +7,7 @@ const LAST_UPDATED = "[DATE]"
 
 export default function DmcaPolicyPage() {
   return (
-    <div className="container max-w-3xl py-8">
-      <PageHeader title="DMCA & Takedown Policy" />
-      <div className="prose prose-sm dark:prose-invert max-w-none mt-4">
-        <p className="text-muted-foreground">Last updated: {LAST_UPDATED}</p>
+    <LegalPage title="DMCA & Takedown Policy" lastUpdated={LAST_UPDATED}>
 
         <p>
           {COMPANY_LEGAL_NAME} respects the intellectual property rights of
@@ -122,7 +119,6 @@ export default function DmcaPolicyPage() {
           <br />
           Email: <a href={`mailto:${DMCA_AGENT_EMAIL}`}>{DMCA_AGENT_EMAIL}</a>
         </p>
-      </div>
-    </div>
+    </LegalPage>
   )
 }
