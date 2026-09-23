@@ -6,7 +6,10 @@ export const productSchema = z.object({
   name: z.string().min(1, "Required"),
   priceInRupees: z.number().int().nonnegative(),
   description: z.string().min(1, "Required"),
-  imageUrl: z.string().refine(isAllowedImageUrl, imageHostErrorMessage),
+  imageUrl: z
+    .string()
+    .min(1, "Upload a thumbnail")
+    .refine(isAllowedImageUrl, imageHostErrorMessage),
   status: z.enum(productStatuses),
   categoryId: z.string().nullable().optional(),
   tagIds: z.array(z.string()).default([]),

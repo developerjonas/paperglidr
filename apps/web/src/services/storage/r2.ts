@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   DeleteObjectCommand,
+  CopyObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
@@ -20,6 +21,10 @@ const r2 = new S3Client({
 });
 
 const BUCKET = env.R2_BUCKET_NAME;
+// Everything in the public bucket is readable by anyone at
+// R2_PUBLIC_BASE_URL. Only copyToPublicBucket writes to it, and only after
+// the file has been checked in the private bucket.
+const PUBLIC_BUCKET = env.R2_PUBLIC_BUCKET_NAME;
 
 /**
  * Build a storage key that's predictable enough to reason about but not
@@ -130,4 +135,27 @@ export async function putObject(opts: {
     })
   )
   return opts.storageKey
+}
+
+/**
+ * Copies a checked object from the private bucket to the public one and
+ * returns its public URL. Server-side copy — the bytes never pass through
+ * this app.
+ */
+export async function copyToPublicBucket(opts: {
+  sourceKey: string
+  destinationKey: string
+  contentType: string
+}) {
+  await r2.send(
+    new CopyObjectCommand({
+      Bucket: PUBLIC_BUCKET,
+      Key: opts.destinationKey,
+      CopySource: `${BUCKET}/${opts.sourceKey}`,
+      ContentType: opts.contentType,
+      MetadataDirective: "REPLACE",
+      CacheControl: "public, max-age=31536000, immutable",
+    })
+  )
+  return `${env.R2_PUBLIC_BASE_URL}/${opts.destinationKey}`
 }

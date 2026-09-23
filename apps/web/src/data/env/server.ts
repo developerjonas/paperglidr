@@ -41,6 +41,14 @@ export const env = createEnv({
     R2_SECRET_ACCESS_KEY: z.string().min(1),
     R2_BUCKET_NAME: z.string().min(1),
     R2_ACCOUNT_ID: z.string().min(1),
+    // Public bucket for product thumbnails and instructor photos, served
+    // from a custom domain (R2_PUBLIC_BASE_URL, e.g.
+    // https://images.paperglidr.com). Lesson files never go here.
+    R2_PUBLIC_BUCKET_NAME: z.string().min(1),
+    R2_PUBLIC_BASE_URL: z
+      .string()
+      .url()
+      .refine(url => !url.endsWith("/"), "No trailing slash"),
 
     // --- Bunny Stream (not used at launch) ---
     BUNNY_STREAM_LIBRARY_ID: z.string().min(1).optional(),

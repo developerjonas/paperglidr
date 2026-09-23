@@ -4,9 +4,9 @@
 // instead of crashing the page that shows it.
 //
 // Built in: OAuth avatars (session user.image). Product and instructor
-// images are URLs creators paste in — there is no image upload yet — so
-// their hosts come from NEXT_PUBLIC_IMAGE_HOSTS (comma-separated hostnames,
-// e.g. "images.paperglidr.com,res.cloudinary.com").
+// images are uploaded to the public R2 bucket (features/images), so
+// NEXT_PUBLIC_IMAGE_HOSTS only needs that bucket's custom domain, e.g.
+// "images.paperglidr.com". Everything in that bucket has been checked.
 //
 // Read from process.env directly, not data/env/client.ts: next.config.ts
 // imports this before the app's env module exists, and the literal

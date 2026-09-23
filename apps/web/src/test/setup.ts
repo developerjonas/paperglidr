@@ -21,6 +21,8 @@ const placeholders: Record<string, string> = {
   R2_ACCESS_KEY_ID: "test-placeholder",
   R2_SECRET_ACCESS_KEY: "test-placeholder",
   R2_BUCKET_NAME: "test-placeholder",
+  R2_PUBLIC_BUCKET_NAME: "test-placeholder",
+  R2_PUBLIC_BASE_URL: "https://images.example.test",
   RESEND_API_KEY: "re_test_placeholder",
   INVOICE_FROM_EMAIL: "billing@example.test",
   NOTIFICATIONS_FROM_EMAIL: "notify@example.test",

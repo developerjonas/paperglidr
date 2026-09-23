@@ -11,7 +11,7 @@ export const instructorSchema = z.object({
   bio: z.string().min(20, "Tell learners a bit more about you").max(500),
   profileImageUrl: z
     .string()
-    .url("Enter a valid image URL")
+    .min(1, "Upload a profile photo")
     .refine(isAllowedImageUrl, imageHostErrorMessage),
 });
 

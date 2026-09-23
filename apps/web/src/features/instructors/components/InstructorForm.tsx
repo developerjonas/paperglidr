@@ -17,7 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import { ImageUploadField } from "@/features/images/components/ImageUploadField";
+import { safeRedirectPath } from "@/lib/safeRedirect";
 
 export function InstructorForm({
   defaultValues,
@@ -38,8 +39,6 @@ export function InstructorForm({
     },
   });
 
-  const profileImageUrl = form.watch("profileImageUrl");
-
   async function onSubmit(values: InstructorFormValues) {
     const res = await saveInstructorProfile(values);
     toast({
@@ -47,7 +46,10 @@ export function InstructorForm({
       variant: res.error ? "destructive" : "default",
     });
     if (!res.error) {
-      const redirectTo = searchParams.get("redirect") ?? `/instructors/${values.handle}`;
+      const redirectTo = safeRedirectPath(
+        searchParams.get("redirect"),
+        `/instructors/${values.handle}`,
+      );
       router.push(redirectTo);
     }
   }
@@ -55,21 +57,20 @@ export function InstructorForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {profileImageUrl && (
-          <Image
-            src={profileImageUrl}
-            alt="Profile preview"
-            className="h-20 w-20 rounded-full object-cover border"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
-        )}
         <FormField
           control={form.control}
           name="profileImageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Profile photo URL</FormLabel>
-              <FormControl><Input placeholder="https://..." {...field} /></FormControl>
+              <FormLabel>Profile photo</FormLabel>
+              <FormControl>
+                <ImageUploadField
+                  purpose="instructor"
+                  value={field.value}
+                  onChange={field.onChange}
+                  previewClassName="aspect-square w-20 rounded-full"
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

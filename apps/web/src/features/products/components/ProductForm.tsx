@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ImageUploadField } from "@/features/images/components/ImageUploadField";
 import { MultiSelect } from "@/components/ui/custom/multi-select";
 
 export function ProductForm({
@@ -125,10 +126,14 @@ export function ProductForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  <RequiredLabelIcon /> Image Url
+                  <RequiredLabelIcon /> Thumbnail
                 </FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <ImageUploadField
+                    purpose="product"
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
