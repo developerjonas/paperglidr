@@ -2,24 +2,13 @@ import { createEnv } from "@t3-oss/env-nextjs"
 import { z } from "zod"
 
 // Server-only variables. Public (NEXT_PUBLIC_*) variables live in
-// ./client.ts — server code may import both.
+// ./client.ts and database variables in ./db.ts — server code may import all three.
 //
 // Payment gateway variables (ESEWA_*, KHALTI_*, FONEPAY_*) are deliberately
 // NOT declared here: they will get their own validated config module in
 // services/payments (GTM plan task 7).
 export const env = createEnv({
   server: {
-    // --- Database ---
-    DB_PASSWORD: z.string().min(1),
-    DB_USER: z.string().min(1),
-    DB_NAME: z.string().min(1),
-    DB_HOST: z.string().min(1),
-    // "false" for local Postgres without TLS; anything else (or unset) = SSL on
-    DB_SSL: z
-      .enum(["true", "false"])
-      .default("true")
-      .transform(value => value === "true"),
-
     // --- Better Auth ---
     BETTER_AUTH_SECRET: z.string().min(1),
     BETTER_AUTH_URL: z.string().url(),

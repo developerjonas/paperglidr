@@ -1,4 +1,4 @@
-import { env } from "@/data/env/server";
+import { env } from "@/data/env/db";
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
@@ -12,6 +12,7 @@ export default defineConfig({
     user: env.DB_USER,
     database: env.DB_NAME,
     host: env.DB_HOST,
+    port: env.DB_PORT,
     ssl: env.DB_SSL,
   },
 });

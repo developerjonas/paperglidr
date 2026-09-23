@@ -1,4 +1,4 @@
-import { env } from "@/data/env/server";
+import { env } from "@/data/env/db";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 
@@ -9,6 +9,7 @@ export const db = drizzle({
     user: env.DB_USER,
     database: env.DB_NAME,
     host: env.DB_HOST,
+    port: env.DB_PORT,
     ssl: env.DB_SSL,
   },
 });
