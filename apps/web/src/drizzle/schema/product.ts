@@ -6,6 +6,7 @@ import {
   pgEnum,
   uuid,
   customType,
+  index,
 } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../schemaHelpers";
 import { CourseProductTable } from "./courseProduct";
@@ -43,7 +44,10 @@ export const ProductTable = pgTable("products", {
   ),
   createdAt,
   updatedAt,
-});
+}, table => [
+  // Full-text search (features/search) matches on search_vector with @@.
+  index("products_search_vector_idx").using("gin", table.searchVector),
+]);
 
 export const ProductRelationships = relations(
   ProductTable,

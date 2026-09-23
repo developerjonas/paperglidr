@@ -1,0 +1,1 @@
+CREATE INDEX "products_search_vector_idx" ON "products" USING gin ("search_vector");
