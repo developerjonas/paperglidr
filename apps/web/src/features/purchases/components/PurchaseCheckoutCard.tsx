@@ -4,13 +4,18 @@ import { useState } from "react"
 import { PromoCodeInput } from "@/features/discounts/components/PromoCodeInput"
 import { PurchaseGatewayPicker } from "./PurchaseGatewayPicker"
 import { formatPrice } from "@/lib/formatters"
+import type { GatewayName } from "@/services/payments/config"
 
 export function PurchaseCheckoutCard({
   productId,
   priceInRupees,
+  gateways,
+  testMode,
 }: {
   productId: string
   priceInRupees: number
+  gateways: GatewayName[]
+  testMode: boolean
 }) {
   const [discount, setDiscount] = useState<{
     code: string
@@ -43,12 +48,20 @@ export function PurchaseCheckoutCard({
         onApplied={setDiscount}
       />
 
-      {/* ADJUST: PurchaseGatewayPicker's real implementation hasn't been
-          seen — it needs a new optional `discountCode` prop, threaded
-          into whatever it passes to initiatePurchase server-side. Without
-          that, this widget shows a discounted price but never actually
-          applies it to the charge. */}
-      <PurchaseGatewayPicker productId={productId} discountCode={discount?.code} />
+      {testMode && (
+        <p
+          role="status"
+          className="rounded-[5px] border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-300"
+        >
+          TEST MODE — no real money. Payments go to gateway sandboxes.
+        </p>
+      )}
+
+      <PurchaseGatewayPicker
+        productId={productId}
+        discountCode={discount?.code}
+        gateways={gateways}
+      />
     </div>
   )
 }

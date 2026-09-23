@@ -16,6 +16,7 @@ import { wherePublicProducts } from "@/features/products/permissions/products"
 import { insertPurchase } from "@/features/purchases/db/purchases"
 import { addUserCourseAccess } from "@/features/courses/db/userCourseAccess"
 import { PurchaseCheckoutCard } from "@/features/purchases/components/PurchaseCheckoutCard"
+import { getEnabledGateways, getPaymentConfig } from "@/services/payments/config"
 import { getCurrentUser } from "@/services/auth"
 import { and, eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
@@ -92,6 +93,8 @@ async function SuspendedComponent({
             <PurchaseCheckoutCard
               productId={productId}
               priceInRupees={product.priceInRupees}
+              gateways={getEnabledGateways()}
+              testMode={getPaymentConfig().mode === "sandbox"}
             />
           </CardContent>
         )}

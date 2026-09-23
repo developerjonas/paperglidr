@@ -15,9 +15,13 @@ import {
   markPurchaseCompleted,
 } from "../db/purchases";
 import { getReferringInstructorId } from "../db/referral";
-import { esewaGateway } from "@/services/payments/esewa/esewaServer";
-import { khaltiGateway } from "@/services/payments/khalti/khaltiServer";
-import { fonepayGateway } from "@/services/payments/fonepay/fonepayServer";
+import { getGateway } from "@/services/payments/gateways";
+import {
+  isGatewayEnabled,
+  isGatewayName,
+  type GatewayName,
+} from "@/services/payments/config";
+import { env as clientEnv } from "@/data/env/client";
 import { auth } from "@/lib/auth"; // ASSUMPTION: however you currently get the logged-in user server-side
 import { headers } from "next/headers";
 import {
@@ -35,13 +39,6 @@ import { validateDiscountCode } from "@/features/discounts/lib/validateDiscountC
 import { recordDiscountRedemption } from "@/features/discounts/db/discounts";
 import { getCurrentUser, requireAdmin } from "@/services/auth";
 
-const gateways = {
-  esewa: esewaGateway,
-  khalti: khaltiGateway,
-  fonepay: fonepayGateway,
-} as const;
-type WiredGateway = keyof typeof gateways;
-
 export async function initiatePurchase({
   productId,
   gateway,
@@ -49,7 +46,7 @@ export async function initiatePurchase({
   discountCode,
 }: {
   productId: string;
-  gateway: WiredGateway | "free";
+  gateway: GatewayName | "free";
   idempotencyKey: string;
   // Raw code string, typed by the user or carried over from
   // PromoCodeInput's preview. Re-validated from scratch here — the
@@ -135,7 +132,9 @@ export async function initiatePurchase({
     };
   }
 
-  const wiredGateway = gateways[gateway];
+  // Server-side: only gateways enabled in this deployment's payment config.
+  // The client's list is a convenience, never the check.
+  const wiredGateway = isGatewayEnabled(gateway) ? getGateway(gateway) : null;
   if (wiredGateway == null)
     return { error: true, message: "Unsupported payment method" };
 
@@ -155,7 +154,7 @@ export async function initiatePurchase({
   if (purchase == null)
     return { error: true, message: "Could not start purchase" };
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL!;
+  const baseUrl = clientEnv.NEXT_PUBLIC_APP_URL;
 
   const initiation = await wiredGateway.initiate({
     purchaseId: purchase.id,
@@ -204,7 +203,13 @@ export async function confirmPurchase({ purchaseId }: { purchaseId: string }) {
   if (purchase.status === "completed")
     return { error: false, message: "Already confirmed" };
 
-  const verification = await gateways[purchase.gateway as WiredGateway].verify({
+  const gateway = isGatewayName(purchase.gateway)
+    ? getGateway(purchase.gateway)
+    : null;
+  if (gateway == null)
+    return { error: true, message: "Payment could not be verified" };
+
+  const verification = await gateway.verify({
     gatewayCheckoutId: purchase.gatewayCheckoutId,
     gatewayTransactionId: purchase.gatewayTransactionId,
     amountInPaisa: purchase.pricePaidInPaisa,

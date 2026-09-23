@@ -50,18 +50,19 @@
         "SMSPASAL_SENDER_ID",
         "SMSPASAL_CAMPAIGN_ID",
         "SMSPASAL_ROUTE_ID",
+        "PAYMENT_MODE",
+        "PAYMENT_ENABLED_GATEWAYS",
         "ESEWA_PRODUCT_CODE",
         "ESEWA_SECRET_KEY",
         "ESEWA_FORM_URL",
         "ESEWA_STATUS_URL",
         "KHALTI_SECRET_KEY",
-        "KHALTI_INITIATE_URL",
-        "KHALTI_LOOKUP_URL",
+        "KHALTI_BASE_URL",
         "FONEPAY_MERCHANT_CODE",
         "FONEPAY_SECRET_KEY",
         "FONEPAY_USERNAME",
         "FONEPAY_PASSWORD",
-        "FONEPAY_DYNAMIC_QR_URL"
+        "FONEPAY_BASE_URL"
       ]
     },
     "lint": {

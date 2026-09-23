@@ -1,10 +1,7 @@
+import { env as clientEnv } from "@/data/env/client";
+import type { KhaltiConfig } from "../config";
 import type { PaymentGateway, VerifyPaymentResult } from "../types";
 import { initiateKhaltiPayment } from "./khaltiClient";
-
-const KHALTI_SECRET_KEY = process.env.KHALTI_SECRET_KEY!;
-const KHALTI_LOOKUP_URL =
-  process.env.KHALTI_LOOKUP_URL ??
-  "https://dev.khalti.com/api/v2/epayment/lookup/";
 
 type KhaltiLookupResponse = {
   pidx: string;
@@ -19,16 +16,15 @@ type KhaltiLookupResponse = {
   transaction_id: string | null;
 };
 
-export async function verifyKhaltiTransaction({
-  pidx,
-}: {
-  pidx: string;
-}): Promise<VerifyPaymentResult> {
-  const response = await fetch(KHALTI_LOOKUP_URL, {
+export async function verifyKhaltiTransaction(
+  config: KhaltiConfig,
+  { pidx }: { pidx: string },
+): Promise<VerifyPaymentResult> {
+  const response = await fetch(`${config.baseUrl}/epayment/lookup/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Key ${KHALTI_SECRET_KEY}`,
+      Authorization: `Key ${config.secretKey}`,
     },
     body: JSON.stringify({ pidx }),
   });
@@ -59,14 +55,14 @@ export async function verifyKhaltiTransaction({
   };
 }
 
-export const khaltiGateway: PaymentGateway = {
+export const createKhaltiGateway = (config: KhaltiConfig): PaymentGateway => ({
   async initiate({ purchaseId, amountInPaisa, productName, successUrl }) {
-    const result = await initiateKhaltiPayment({
+    const result = await initiateKhaltiPayment(config, {
       amountInPaisa,
       purchaseOrderId: purchaseId,
       purchaseOrderName: productName,
       returnUrl: successUrl,
-      websiteUrl: process.env.NEXT_PUBLIC_APP_URL!,
+      websiteUrl: clientEnv.NEXT_PUBLIC_APP_URL,
     });
     return {
       type: "redirect",
@@ -79,6 +75,6 @@ export const khaltiGateway: PaymentGateway = {
     // gatewayTransactionId the moment initiate responds (see purchases
     // action), so prefer that — gatewayCheckoutId is only a fallback.
     const pidx = gatewayTransactionId ?? gatewayCheckoutId;
-    return verifyKhaltiTransaction({ pidx });
+    return verifyKhaltiTransaction(config, { pidx });
   },
-};
+});

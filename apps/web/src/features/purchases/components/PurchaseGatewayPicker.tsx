@@ -1,23 +1,29 @@
 "use client"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import Image from "next/image"
 import QRCode from "qrcode"
 import { Button } from "@/components/ui/button"
+import type { GatewayName } from "@/services/payments/config"
 import { initiatePurchase, confirmPurchase } from "../actions/purchases"
-const gatewayOptions = [
-  { value: "esewa", label: "Pay with eSewa" },
-  { value: "khalti", label: "Pay with Khalti" },
-  { value: "fonepay", label: "Pay with Fonepay QR" },
-] as const
+const gatewayLabels: Record<GatewayName, string> = {
+  esewa: "Pay with eSewa",
+  khalti: "Pay with Khalti",
+  fonepay: "Pay with Fonepay QR",
+}
 export function PurchaseGatewayPicker({
   productId,
   discountCode,
+  gateways,
 }: {
   productId: string
   discountCode?: string
+  // Only the gateways enabled in this deployment — computed server-side.
+  gateways: GatewayName[]
 }) {
   const [isPending, setIsPending] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [activeQr, setActiveQr] = useState<{
     purchaseId: string
     qrDataUrl: string
@@ -37,10 +43,9 @@ export function PurchaseGatewayPicker({
     }, 3000)
     return () => clearInterval(interval)
   }, [activeQr, productId, router])
-  async function handleSelect(
-    gateway: (typeof gatewayOptions)[number]["value"]
-  ) {
+  async function handleSelect(gateway: GatewayName) {
     setIsPending(gateway)
+    setError(null)
     const idempotencyKey = crypto.randomUUID()
     const result = await initiatePurchase({
       productId,
@@ -50,6 +55,7 @@ export function PurchaseGatewayPicker({
     })
     if (result.error) {
       setIsPending(null)
+      setError(result.message ?? "Could not start the payment. Please try again.")
       return
     }
     // 1. Handle QR payment flow (Fonepay)
@@ -106,19 +112,34 @@ export function PurchaseGatewayPicker({
       </div>
     )
   }
+  if (gateways.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Payments are temporarily unavailable.{" "}
+        <Link href="/support/new" className="underline underline-offset-4">
+          Contact support
+        </Link>
+      </p>
+    )
+  }
   return (
     <div className="flex flex-col gap-2 w-full">
-      {gatewayOptions.map(option => (
+      {gateways.map(gateway => (
         <Button
-          key={option.value}
+          key={gateway}
           size="lg"
           className="w-full"
           disabled={isPending != null}
-          onClick={() => handleSelect(option.value)}
+          onClick={() => handleSelect(gateway)}
         >
-          {isPending === option.value ? "Loading..." : option.label}
+          {isPending === gateway ? "Loading..." : gatewayLabels[gateway]}
         </Button>
       ))}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

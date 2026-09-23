@@ -1,5 +1,6 @@
+import type { FonepayConfig } from "../config"
 import type { PaymentGateway, VerifyPaymentResult, InitiatePaymentResult } from "../types"
-import { buildFonepayQrSignature, buildFonepayStatusSignature, fonepayConfig } from "./fonepayClient"
+import { buildFonepayQrSignature, buildFonepayStatusSignature } from "./fonepayClient"
 
 type FonepayQrDownloadResponse = {
   qrMessage?: string
@@ -20,34 +21,37 @@ type FonepayStatusResponse = {
 // guides; confirm the real figure from your bank/Fonepay merchant docs.
 const QR_VALIDITY_MINUTES = 15
 
-export async function generateFonepayQr({
-  purchaseId,
-  amountInPaisa,
-  productName,
-}: {
-  purchaseId: string
-  amountInPaisa: number
-  productName: string
-}): Promise<InitiatePaymentResult> {
+export async function generateFonepayQr(
+  config: FonepayConfig,
+  {
+    purchaseId,
+    amountInPaisa,
+    productName,
+  }: {
+    purchaseId: string
+    amountInPaisa: number
+    productName: string
+  },
+): Promise<InitiatePaymentResult> {
   const prn = purchaseId
   const remarks1 = productName.slice(0, 160) // Fonepay's R1 field has a max length
   const remarks2 = "Paperglidr purchase"
-  const { amount, signature } = buildFonepayQrSignature({
+  const { amount, signature } = buildFonepayQrSignature(config, {
     amountInPaisa,
     prn,
     remarks1,
     remarks2,
   })
-  const response = await fetch(`${fonepayConfig.dynamicQrUrl}/thirdPartyDynamicQrDownload`, {
+  const response = await fetch(`${config.baseUrl}/thirdPartyDynamicQrDownload`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       amount,
       prn,
-      merchantCode: fonepayConfig.merchantCode,
+      merchantCode: config.merchantCode,
       dataValidation: signature,
-      username: fonepayConfig.username,
-      password: fonepayConfig.password,
+      username: config.username,
+      password: config.password,
       remarks1,
       remarks2,
     }),
@@ -67,26 +71,29 @@ export async function generateFonepayQr({
   }
 }
 
-export async function verifyFonepayTransaction({
-  prn,
-  expectedAmountInPaisa,
-}: {
+export async function verifyFonepayTransaction(
+  config: FonepayConfig,
+  {
+    prn,
+    expectedAmountInPaisa,
+  }: {
   prn: string
   // Required, not optional — without this, a "success" status on this PRN
   // was being accepted regardless of what amount actually cleared. This is
   // the fix for that gap.
   expectedAmountInPaisa: number
-}): Promise<VerifyPaymentResult> {
-  const signature = buildFonepayStatusSignature(prn)
-  const response = await fetch(`${fonepayConfig.dynamicQrUrl}/thirdPartyDynamicQrGetStatus`, {
+  },
+): Promise<VerifyPaymentResult> {
+  const signature = buildFonepayStatusSignature(config, prn)
+  const response = await fetch(`${config.baseUrl}/thirdPartyDynamicQrGetStatus`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       prn,
-      merchantCode: fonepayConfig.merchantCode,
+      merchantCode: config.merchantCode,
       dataValidation: signature,
-      username: fonepayConfig.username,
-      password: fonepayConfig.password,
+      username: config.username,
+      password: config.password,
     }),
   })
   if (!response.ok) {
@@ -122,12 +129,12 @@ export async function verifyFonepayTransaction({
   }
 }
 
-export const fonepayGateway: PaymentGateway = {
+export const createFonepayGateway = (config: FonepayConfig): PaymentGateway => ({
   async initiate({ purchaseId, amountInPaisa, productName }) {
-    return generateFonepayQr({ purchaseId, amountInPaisa, productName })
+    return generateFonepayQr(config, { purchaseId, amountInPaisa, productName })
   },
   async verify({ gatewayCheckoutId, gatewayTransactionId, amountInPaisa }) {
     const prn = gatewayTransactionId ?? gatewayCheckoutId
-    return verifyFonepayTransaction({ prn, expectedAmountInPaisa: amountInPaisa })
+    return verifyFonepayTransaction(config, { prn, expectedAmountInPaisa: amountInPaisa })
   },
-}
+})

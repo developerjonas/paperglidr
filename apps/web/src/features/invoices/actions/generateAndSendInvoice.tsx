@@ -8,6 +8,7 @@ import {
 } from "../pdf/InvoiceDocument";
 import { putObject } from "@/services/storage/r2";
 import { sendEmail } from "@/services/email/resend";
+import { env } from "@/data/env/server";
 
 export async function generateAndSendInvoice(invoiceId: string) {
   const invoice = await db.query.InvoiceTable.findFirst({
@@ -42,7 +43,7 @@ export async function generateAndSendInvoice(invoiceId: string) {
   });
 
   await sendEmail({
-    from: process.env.INVOICE_FROM_EMAIL!, // e.g. "Paperglidr <billing@paperglidr.com>" — domain must be verified in Resend
+    from: env.INVOICE_FROM_EMAIL, // e.g. "Paperglidr <billing@paperglidr.com>" — domain must be verified in Resend
     to: invoice.buyerEmail,
     subject: `Your Paperglidr invoice ${invoice.invoiceNumber}`,
     html: `

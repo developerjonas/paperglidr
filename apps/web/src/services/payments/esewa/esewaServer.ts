@@ -1,10 +1,6 @@
+import type { EsewaConfig } from "../config";
 import type { PaymentGateway, VerifyPaymentResult } from "../types";
 import { buildEsewaFormPayload } from "./esewaClient";
-
-const ESEWA_PRODUCT_CODE = process.env.ESEWA_PRODUCT_CODE ?? "EPAYTEST";
-const ESEWA_STATUS_URL =
-  process.env.ESEWA_STATUS_URL ??
-  "https://rc.esewa.com.np/api/epay/transaction/status/";
 
 type EsewaStatusResponse = {
   product_code: string;
@@ -26,16 +22,19 @@ type EsewaStatusResponse = {
  * eSewa actually received the money. Never trust the redirect back to your
  * success_url alone; that URL shape can be replayed by anyone.
  */
-export async function verifyEsewaTransaction({
-  transactionUuid,
-  totalAmountInPaisa,
-}: {
-  transactionUuid: string;
-  totalAmountInPaisa: number;
-}): Promise<VerifyPaymentResult> {
+export async function verifyEsewaTransaction(
+  config: EsewaConfig,
+  {
+    transactionUuid,
+    totalAmountInPaisa,
+  }: {
+    transactionUuid: string;
+    totalAmountInPaisa: number;
+  },
+): Promise<VerifyPaymentResult> {
   const totalAmount = (totalAmountInPaisa / 100).toFixed(2);
-  const url = new URL(ESEWA_STATUS_URL);
-  url.searchParams.set("product_code", ESEWA_PRODUCT_CODE);
+  const url = new URL(config.statusUrl);
+  url.searchParams.set("product_code", config.productCode);
   url.searchParams.set("total_amount", totalAmount);
   url.searchParams.set("transaction_uuid", transactionUuid);
 
@@ -66,9 +65,9 @@ export async function verifyEsewaTransaction({
   };
 }
 
-export const esewaGateway: PaymentGateway = {
+export const createEsewaGateway = (config: EsewaConfig): PaymentGateway => ({
   async initiate({ purchaseId, amountInPaisa, successUrl, failureUrl }) {
-    const { formUrl, fields } = buildEsewaFormPayload({
+    const { formUrl, fields } = buildEsewaFormPayload(config, {
       amountInPaisa,
       transactionUuid: purchaseId, // purchase.id doubles as transaction_uuid — already unique per attempt
       successUrl,
@@ -82,9 +81,9 @@ export const esewaGateway: PaymentGateway = {
     };
   },
   async verify({ gatewayCheckoutId, amountInPaisa }) {
-    return verifyEsewaTransaction({
+    return verifyEsewaTransaction(config, {
       transactionUuid: gatewayCheckoutId,
       totalAmountInPaisa: amountInPaisa,
     });
   },
-};
+});

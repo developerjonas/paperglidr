@@ -4,9 +4,8 @@ import { z } from "zod"
 // Server-only variables. Public (NEXT_PUBLIC_*) variables live in
 // ./client.ts and database variables in ./db.ts — server code may import all three.
 //
-// Payment gateway variables (ESEWA_*, KHALTI_*, FONEPAY_*) are deliberately
-// NOT declared here: they will get their own validated config module in
-// services/payments (GTM plan task 7).
+// Payment variables are declared here but only READ by
+// services/payments/config.ts, which applies the sandbox/live rules.
 export const env = createEnv({
   server: {
     // --- Better Auth ---
@@ -51,6 +50,25 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().min(1),
     INVOICE_FROM_EMAIL: z.string().min(1),
     NOTIFICATIONS_FROM_EMAIL: z.string().min(1),
+
+    // --- Payments (resolved by services/payments/config.ts) ---
+    // Required, no default: a deploy must say explicitly whether it takes
+    // real money.
+    PAYMENT_MODE: z.enum(["sandbox", "live"]),
+    // Optional allow-list / kill switch, e.g. "esewa,khalti". Unset = every
+    // configured gateway.
+    PAYMENT_ENABLED_GATEWAYS: z.string().optional(),
+    ESEWA_PRODUCT_CODE: z.string().min(1).optional(),
+    ESEWA_SECRET_KEY: z.string().min(1).optional(),
+    ESEWA_FORM_URL: z.string().url().optional(),
+    ESEWA_STATUS_URL: z.string().url().optional(),
+    KHALTI_SECRET_KEY: z.string().min(1).optional(),
+    KHALTI_BASE_URL: z.string().url().optional(),
+    FONEPAY_MERCHANT_CODE: z.string().min(1).optional(),
+    FONEPAY_SECRET_KEY: z.string().min(1).optional(),
+    FONEPAY_USERNAME: z.string().min(1).optional(),
+    FONEPAY_PASSWORD: z.string().min(1).optional(),
+    FONEPAY_BASE_URL: z.string().url().optional(),
 
     // --- SMSPasal (instructor phone verification) ---
     SMSPASAL_API_KEY: z.string().min(1).optional(),
