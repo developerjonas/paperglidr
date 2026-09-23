@@ -435,7 +435,9 @@ async function main() {
   // Checkout page: only enabled gateways, test-mode banner
   const checkoutHtml = await (await fetch(`${BASE_URL}/products/${productB.id}/purchase`, { headers: { Cookie: sessionCookie(attacker.token) } })).text()
   check("checkout shows eSewa", checkoutHtml.includes("Pay with eSewa"))
-  check("checkout hides Fonepay (no credentials)", !checkoutHtml.includes("Fonepay"))
+  // Match the button label: the word "Fonepay" also appears in site-wide
+  // meta/marketing copy.
+  check("checkout hides Fonepay (no credentials)", !checkoutHtml.includes("Pay with Fonepay"))
   check(
     `checkout ${process.env.KHALTI_SECRET_KEY ? "shows" : "hides"} Khalti (${process.env.KHALTI_SECRET_KEY ? "test key set" : "no key"})`,
     checkoutHtml.includes("Pay with Khalti") === Boolean(process.env.KHALTI_SECRET_KEY),
