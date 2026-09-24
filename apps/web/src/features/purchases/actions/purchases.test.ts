@@ -370,3 +370,59 @@ describe("paid checkouts respect a discount's limits under concurrency", () => {
     expect(later.error).toBe(false)
   })
 })
+
+const purchaseIdOf = (result: Awaited<ReturnType<typeof initiatePurchase>>) =>
+  "purchaseId" in result ? result.purchaseId : undefined
+
+describe("one pending checkout per buyer, product and gateway", () => {
+  it("two checkouts at once -> one purchase; a later retry returns it", async () => {
+    const { product } = await createProduct({ priceInRupees: 999 })
+    // Force the race: both checkouts get past every read, then wait before
+    // inserting. Without the per-buyer lock both would insert.
+    const blocker = await db.$client.connect()
+    await blocker.query("begin")
+    await blocker.query("lock table purchases in share row exclusive mode")
+    const attempts = [1, 2].map(() =>
+      session.as(buyerId, () => initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa") })),
+    )
+    await new Promise(resolve => setTimeout(resolve, 500))
+    await blocker.query("commit")
+    blocker.release()
+    const results = await Promise.all(attempts)
+
+    const rows = await purchasesOf(buyerId)
+    expect(rows).toHaveLength(1)
+    for (const result of results) {
+      // Either the same checkout, or told to wait while it's being set up.
+      if (result.error) expect(result.message).toContain("already starting")
+      else expect(purchaseIdOf(result)).toBe(rows[0]!.id)
+    }
+
+    // A fresh click later (new checkout key) gets the same pending checkout.
+    const again = await initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa") })
+    expect(again).toMatchObject({ error: false, purchaseId: rows[0]!.id })
+    expect(await purchasesOf(buyerId)).toHaveLength(1)
+  })
+
+  it("an old pending checkout, or one at a different price, isn't reused", async () => {
+    const { product, creator } = await createProduct({ priceInRupees: 1000 })
+    await initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa") })
+    const [first] = await purchasesOf(buyerId)
+
+    // Same product, now with a 50% code: a new checkout replaces the old one.
+    const code = `SUP${crypto.randomUUID().slice(0, 8)}`.toUpperCase()
+    await db.insert(DiscountCodeTable).values({ code, creatorId: creator.id, scopeType: "storewide", discountType: "percentage", amount: 50 })
+    const discounted = await initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa"), discountCode: code })
+    expect(discounted.error).toBe(false)
+    const discountedId = purchaseIdOf(discounted)
+    expect(discountedId).not.toBe(first!.id)
+    const rows = await purchasesOf(buyerId)
+    expect(rows.find(r => r.id === first!.id)!.status).toBe("failed")
+    expect(rows.find(r => r.id === discountedId)!.pricePaidInPaisa).toBe(50000)
+
+    // Older than the reuse window: a new checkout.
+    await db.update(PurchaseTable).set({ createdAt: new Date(Date.now() - 31 * 60 * 1000) }).where(eq(PurchaseTable.userId, buyerId))
+    const later = await initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa"), discountCode: code })
+    expect(purchaseIdOf(later)).not.toBe(discountedId)
+  })
+})

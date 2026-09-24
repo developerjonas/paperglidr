@@ -1,7 +1,7 @@
 "use server";
 import { db } from "@/drizzle/db";
 import { ProductTable, PurchaseTable } from "@/drizzle/schema";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, gt, sql } from "drizzle-orm";
 import {
   insertPurchase,
   getPurchaseByIdempotencyKey,
@@ -13,7 +13,10 @@ import type { InitiatePaymentResult } from "@/services/payments/types";
 import { getReferringInstructorId } from "../db/referral";
 import { verifyAndFulfil } from "../lib/verifyAndFulfil";
 import { alreadyOwnsProduct } from "../lib/ownership";
-import { lockAndCheckDiscountLimits } from "@/features/discounts/db/discounts";
+import {
+  DISCOUNT_RESERVATION_MS,
+  lockAndCheckDiscountLimits,
+} from "@/features/discounts/db/discounts";
 import { enrollFree } from "../lib/freeEnrollment";
 import { wherePublicProducts } from "@/features/products/permissions/products";
 import { getGateway } from "@/services/payments/gateways";
@@ -40,6 +43,11 @@ export async function initiatePurchase(input: InitiatePurchaseInput) {
 }
 
 type InitiatePurchaseInput = Parameters<typeof startCheckout>[0];
+
+// A pending checkout this recent, for the same product, gateway and price,
+// is returned instead of starting another (same window a discount use is
+// held for).
+const CHECKOUT_REUSE_MS = DISCOUNT_RESERVATION_MS;
 
 async function startCheckout({
   productId,
@@ -150,16 +158,57 @@ async function startCheckout({
   if (wiredGateway == null)
     return fail("Unsupported payment method");
 
-  // Discount limits are checked and the purchase is created in ONE
-  // transaction with the code row locked, like the free path: parallel
-  // checkouts can't all take a code's last use. The pending purchase holds
-  // the use (DISCOUNT_RESERVATION_MS); fulfilment records the redemption.
+  // One transaction, two locks:
+  // 1. an advisory lock per (buyer, product), so two checkouts of the same
+  //    product by the same buyer serialize. If one is already pending for
+  //    this gateway (recent, same price), it's returned instead of a
+  //    second one — a buyer can't end up paying twice. A pending checkout
+  //    at a different price (e.g. another discount code) is superseded.
+  // 2. the discount code row (lockAndCheckDiscountLimits), like the free
+  //    path: parallel checkouts can't all take a code's last use. The
+  //    pending purchase holds the use (DISCOUNT_RESERVATION_MS);
+  //    fulfilment records the redemption.
   const userId = session.user.id;
-  const purchase = await db.transaction(async (trx) => {
+  const started = await db.transaction(async (trx) => {
+    await trx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`checkout:${userId}:${productId}`}, 0))`,
+    );
+    const [open] = await trx
+      .select()
+      .from(PurchaseTable)
+      .where(
+        and(
+          eq(PurchaseTable.userId, userId),
+          eq(PurchaseTable.productId, productId),
+          eq(PurchaseTable.gateway, gateway),
+          eq(PurchaseTable.status, "pending"),
+          gt(PurchaseTable.createdAt, new Date(Date.now() - CHECKOUT_REUSE_MS)),
+        ),
+      )
+      .orderBy(desc(PurchaseTable.createdAt))
+      .limit(1);
+    if (open != null) {
+      const stored = (open.rawGatewayResponse as StoredInitiation | null)?.initiation;
+      const qrExpired =
+        stored?.type === "qr" && new Date(stored.expiresAt).getTime() <= Date.now();
+      if (
+        open.pricePaidInPaisa === pricePaidInPaisa &&
+        open.discountCodeId === discountCodeId &&
+        !qrExpired
+      ) {
+        return { reuse: open, stored: stored ?? null };
+      }
+      // Different price/code, or an expired QR: this checkout replaces it.
+      await trx
+        .update(PurchaseTable)
+        .set({ status: "failed", updatedAt: new Date() })
+        .where(and(eq(PurchaseTable.id, open.id), eq(PurchaseTable.status, "pending")));
+    }
+
     if (discountCodeId != null) {
       await lockAndCheckDiscountLimits({ discountCodeId, userId }, trx);
     }
-    return insertPurchase(
+    const inserted = await insertPurchase(
       {
         userId,
         productId,
@@ -175,7 +224,17 @@ async function startCheckout({
       },
       trx,
     );
+    return { purchase: inserted };
   });
+  if ("reuse" in started) {
+    // The other checkout is still talking to the gateway: its payment page
+    // isn't ready yet.
+    if (started.stored == null) {
+      return fail("Your checkout is already starting. Please wait a moment and try again.");
+    }
+    return initiationResponse(started.reuse.id, started.stored);
+  }
+  const purchase = started.purchase;
   if (purchase == null)
     return fail("Could not start purchase");
 
