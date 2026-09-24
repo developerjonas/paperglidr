@@ -1,3 +1,4 @@
+import { POLICY_TERMS } from "@/config/policyTerms";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/services/auth";
 import { getInstructorByUserId } from "@/features/instructors/db/instructors";
@@ -89,14 +90,16 @@ export default async function InstructorOnboardingPage() {
                       variant="secondary"
                       className="rounded-[4px] px-1.5 py-0 text-[9px]"
                     >
-                      Optional
+                      {POLICY_TERMS.payoutRequiresVerifiedPhone
+                        ? "Required for payouts"
+                        : "Optional"}
                     </Badge>
                   )}
                 </div>
                 <CardDescription>
-                  Optional. Verifying your phone raises how many products you
-                  can have on sale at once. You can publish and receive
-                  payouts without it.
+                  {POLICY_TERMS.payoutRequiresVerifiedPhone
+                    ? "You can publish without it, but you need a verified phone to request payouts. Verifying also raises how many products you can have on sale at once."
+                    : "Optional. Verifying your phone raises how many products you can have on sale at once."}
                 </CardDescription>
               </CardHeader>
               <CardContent>

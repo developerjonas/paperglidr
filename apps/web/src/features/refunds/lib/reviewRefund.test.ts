@@ -54,11 +54,20 @@ describe("refund approval", () => {
     const admin = await createUser("admin")
     const request = await openRequest(purchase.id, buyer.id, courseIds[0]!)
 
-    // Two admins click approve at the same moment.
-    const results = await Promise.all([
+    // Two admins click approve at the same moment. A blocker lets both read
+    // the request but stops either from updating it until both are in
+    // flight, so without the request row lock both would "approve".
+    const blocker = await db.$client.connect()
+    await blocker.query("begin")
+    await blocker.query("lock table refund_requests in share row exclusive mode")
+    const approvals = [
       approveRefundRequest({ requestId: request.id, adminId: admin.id }),
       approveRefundRequest({ requestId: request.id, adminId: admin.id }),
-    ])
+    ]
+    await new Promise(resolve => setTimeout(resolve, 500))
+    await blocker.query("commit")
+    blocker.release()
+    const results = await Promise.all(approvals)
     expect(results.map(r => r.outcome).sort()).toEqual(["already_reviewed", "approved"])
 
     const [after] = await db.select().from(PurchaseTable).where(eq(PurchaseTable.id, purchase.id))

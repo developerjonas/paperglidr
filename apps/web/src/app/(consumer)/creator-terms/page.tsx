@@ -10,6 +10,8 @@ const {
   creatorSharePercent,
   referralWindowDays,
   minimumPayout,
+  payoutHoldDays,
+  payoutRequiresVerifiedPhone,
   refundWindowDays,
   refundCompletionThresholdPercent,
 } = POLICY_TERMS
@@ -45,6 +47,8 @@ export default function CreatorTermsPage() {
           Verifying your mobile number raises the number of courses and live
           products you can publish. The current limits are shown in your
           creator dashboard.
+          {payoutRequiresVerifiedPhone &&
+            " A verified mobile number is also required before you can request a payout (section 6)."}
         </li>
         <li>
           You act as an independent creator, not as our employee, agent or
@@ -159,20 +163,25 @@ export default function CreatorTermsPage() {
       <h2>6. Payouts</h2>
       <ul>
         <li>
-          Your <strong>available balance</strong> is your share of all your
-          sales, minus refunds, minus payouts already paid, minus payout
-          requests still being processed.
+          Your <strong>available balance</strong> is your share of your sales
+          whose refund window has closed — earnings from a sale become
+          available <strong>{payoutHoldDays} days</strong> after the purchase —
+          minus refunds, minus payouts already paid, minus payout requests
+          still being processed. Earnings from more recent sales are shown as
+          on hold.
         </li>
         <li>
           You can request a payout from your{" "}
           <Link href="/teach/payouts">creator dashboard</Link> once your
           available balance reaches at least <strong>{minimumPayout}</strong>.
           Each request must be for at least that amount.
+          {payoutRequiresVerifiedPhone &&
+            " You must have verified your mobile number in your instructor profile to request a payout."}
         </li>
         <li>
           Payouts are <strong>processed manually</strong> by our team and paid
-          in NPR by bank transfer to the account details you give in the
-          request. Please check them carefully; we are not responsible for a
+          in NPR, by bank transfer or to an eSewa or Khalti wallet, to the
+          details you give in the request. Please check them carefully; we are not responsible for a
           payment sent to incorrect details you provided.
         </li>
         <li>

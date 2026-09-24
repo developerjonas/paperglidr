@@ -53,7 +53,7 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
   - Google and GitHub sign-in, including provider tokens stored with the account.
   - Session IP address and user agent.
   - Instructor phone numbers (only a hash of the OTP is stored).
-  - Payout bank details.
+  - Payout details: bank name, branch, account name and number, or an eSewa/Khalti wallet ID.
   - Gateway responses stored verbatim.
   - Invoices.
   - Progress, certificates and posted content.
@@ -71,8 +71,8 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
   - the request must come within 7 days (168 hours) of when the order was placed, counted to the minute;
   - **and** strictly less than 20% of the course's lessons must be complete;
   - eligibility is judged at the time of the request.
-- **⚠ Code gap:** the eligibility check currently passes the *product* ID where it needs the *course* ID. As a result it computes 0% completion, so today only the 7-day condition is actually enforced automatically. The in-app refund button is also not shown yet. Refunds are handled manually through support until task 16 fixes both. The written rule is the intended one.
-- **Decide:** the bundle rule. The draft says completion is measured "across the courses in that purchase taken together", which the code doesn't implement yet.
+- **Fixed (task 16):** the completion check now uses the purchase's courses (it used the product ID and always saw 0%). Buyers request refunds from the purchase page; an admin approves or rejects at /admin/refunds, and the buyer is emailed either way. Approval ends access and reverses the creator's earnings; the money is returned by hand in the gateway dashboard.
+- **Implemented:** the bundle rule. Completion is measured across all the courses in the purchase taken together, as the draft says. **Confirm** that's the intended rule.
 - **Decide:** the discretionary refunds wording: "may refund outside these conditions… e.g. materially different from description".
 - **Decide:** whether to promise a processing time. The draft deliberately doesn't. Refunds are issued manually in each gateway's merchant dashboard.
 - **Assumed:** refunds go only to the original payment method, for the amount actually paid, and access ends on refund.
@@ -83,12 +83,13 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
   - a minimum payout of NPR 1,000;
   - the fee is applied to the amount actually paid, after discounts;
   - a bundle's price is split equally across its courses;
-  - payouts are manual, by bank transfer to the details the creator enters;
+  - payouts are manual, by bank transfer or to an eSewa/Khalti wallet, to the details the creator enters;
+  - **new (fix/money-ops):** earnings from a sale are withdrawable only after that sale's refund window (7 days) closes, and a payout needs a verified mobile number;
   - a refunded sale is deducted from the creator's balance even after payout.
 - **Decide:** the licence scope granted to PaperGlidr (hosting, streaming, and promotion using previews, titles and the creator's name). Should it survive after a creator leaves?
 - **Decide:** who bears gateway fees. The code doesn't deduct them from creators, so the platform absorbs them. Confirm whether this should be stated.
 - **Decide:** payout timing. None is promised. Add a service level, for example within 7 working days of a request?
-- **Decide:** whether earnings from a sale should be held until its refund window closes. Today they can be withdrawn immediately and clawed back later; task 17 plans a hold.
+- **Changed:** earnings from a sale are now held until its refund window closes (task 17), and payouts require a verified mobile number. The Creator Terms and the onboarding page say so; both read the rule from code. **Confirm** the wording.
 - **Decide:** notice period for fee changes. The draft says "before the change takes effect" without a number.
 - **Aligned:** the onboarding page used to say phone verification is "required before you can publish courses or receive payouts". It now matches the code and the terms: verification is optional and only raises the limit on how many products can be on sale at once.
 
@@ -113,7 +114,7 @@ Engineering follow-ups; the policies describe the intended behaviour.
 
 | Policy says | Product today | Tracked |
 |---|---|---|
-| Refund if less than 20% complete | The completion check uses the wrong ID, so only the 7-day window is enforced | GTM task 16 |
-| Ask for a refund in the app or through support | No in-app refund button; support only | GTM task 16 |
+| Refund if less than 20% complete | Enforced, across all courses in a bundle | Done (task 16) |
+| Ask for a refund in the app or through support | "Request refund" on the purchase page; admins approve at /admin/refunds | Done (task 16) |
 | Reports go through support | No in-app report button | GTM task 18 |
-| Earnings clawed back after refunds | Yes, but no hold before payout | GTM task 17 |
+| Earnings clawed back after refunds | Yes; sales are held for the refund window before they can be withdrawn | Done (task 17) |

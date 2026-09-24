@@ -1,12 +1,16 @@
 import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { revalidateInstructorCache } from "./cache/instructors";
+import { getInstructorUserTag, revalidateInstructorCache } from "./cache/instructors";
+import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { CourseTable, CourseProductTable, ProductTable } from "@/drizzle/schema"
 import { and } from "drizzle-orm"
 
 export async function getInstructorByUserId(userId: string) {
   "use cache";
+  // Tagged so phone verification and profile edits show up immediately
+  // (the payout gate reads phoneVerifiedAt from here).
+  cacheTag(getInstructorUserTag(userId));
   return db.query.InstructorTable.findFirst({
     where: eq(InstructorTable.userId, userId),
   });

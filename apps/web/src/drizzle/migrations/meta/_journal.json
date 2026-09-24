@@ -36,6 +36,13 @@
       "when": 1790215439708,
       "tag": "0004_refund_request_open_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790215818738,
+      "tag": "0005_payout_details",
+      "breakpoints": true
     }
   ]
 }

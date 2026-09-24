@@ -1,4 +1,8 @@
-import { MINIMUM_PAYOUT_PAISA } from "@/features/payouts/db/payouts"
+import {
+  MINIMUM_PAYOUT_PAISA,
+  PAYOUT_HOLD_MS,
+  PAYOUT_REQUIRES_VERIFIED_PHONE,
+} from "@/features/payouts/db/payouts"
 import { MIN_DESCRIPTION_LENGTH } from "@/features/products/lib/canPublishProduct"
 import {
   REFUND_COMPLETION_THRESHOLD_PERCENT,
@@ -19,6 +23,8 @@ export const POLICY_TERMS = {
   refundWindowHours: REFUND_WINDOW_MS / (60 * 60 * 1000),
   refundCompletionThresholdPercent: REFUND_COMPLETION_THRESHOLD_PERCENT,
   minimumPayout: npr(MINIMUM_PAYOUT_PAISA / 100),
+  payoutHoldDays: PAYOUT_HOLD_MS / (24 * 60 * 60 * 1000),
+  payoutRequiresVerifiedPhone: PAYOUT_REQUIRES_VERIFIED_PHONE,
   platformFeePercent: {
     referralLink: PLATFORM_FEE_RATE_BPS.instructor_link / 100,
     platform: PLATFORM_FEE_RATE_BPS.platform / 100,

@@ -51,10 +51,10 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `deleteLesson` | owner | lesson's course author or admin | ✅ |
 | | `updateLessonOrders` | owner | **every** lesson ID is the caller's | 🔧 sweep: only the first ID was checked |
 | `features/lessons/actions/userLessonComplete.ts` | `updateLessonCompleteStatus` | owner | caller has access to the lesson's course; writes only the caller's progress | ✅ |
-| `features/payouts/actions/payouts.ts` | `requestPayout` | signed-in | caller's own balance | ✅ (see Found list) |
+| `features/payouts/actions/payouts.ts` | `requestPayout` | signed-in | caller's own balance; verified phone required; only sales past the refund window count; check + insert in one transaction with the instructor row locked | 🔧 task 17: two concurrent requests could spend the same balance, fresh (still refundable) sales were withdrawable, and non-validation errors were returned raw |
 | | `approvePayout` | admin | `requireAdmin()` | 🔧 task 4: was a cached-role check |
 | | `denyPayout` | admin | `requireAdmin()` | 🔧 task 4: was a cached-role check |
-| | `getMyAvailableBalanceInRupees` | signed-in | caller's own balance | ✅ |
+| | `getMyBalancesInRupees` | signed-in | caller's own available and held balance | ✅ (renamed in task 17) |
 | `features/products/actions/products.ts` | `createProduct` | signed-in | author = caller; **every bundled course is the caller's** | 🔧 sweep: any course could be bundled, so another creator's paid course could be sold at ₹0 / enrolled free |
 | | `updateProduct` | owner | product owner **and** every bundled course is the caller's | 🔧 sweep: same bug as `createProduct` |
 | | `deleteProduct` | owner | product owner or admin | ✅ |
