@@ -29,6 +29,7 @@ What the app reports, and the steps to set up alerts and uptime checks by hand. 
 | `area=payments`, `payment_event=gateway_disabled` | a pending purchase's gateway is no longer enabled. Level: warning | `verifyAndFulfil` |
 | `area=payments` (with `context=payments: cron reconcile`) | the reconciliation cron itself failed | `/api/cron/reconcile-payments` |
 | `area=startup`, `payment_event=gateway_disabled` | at server boot, a live gateway's config has a sandbox URL, test credential or non-https URL, so it was switched off. The site stays up. Also `area=startup` warnings for allow-list typos | `services/payments/bootCheck.ts` |
+| `area=invoices`, `invoice_event=attempt_failed` / `gave_up` | an invoice's PDF or email failed; the cron retries up to 5 times, then `gave_up` | `features/invoices/lib/deliverInvoice.ts` |
 | `area=deliver` | `/api/lessons/…/deliver` answered 5xx: an exception, or a deliberate 500 such as an asset with no storage key | deliver route |
 
 Every payment event also carries `gateway` (esewa / khalti / fonepay) and `source` (return / poll / cron / admin / success_page), plus the purchase ID as extra data.
@@ -84,7 +85,10 @@ Send every alert to email, and to the phone app or Slack if you have them. Use t
 5. **Startup: payment gateway disabled** (issue alert)
    - If: tag `area` equals `startup`. Level: error. Notify immediately.
    - A live gateway failed its config check at boot and was switched off: the site is up but can't take that gateway's payments. The event's extra data says which variable is wrong. Fix it in Vercel and redeploy.
-6. **Everything else** (issue alert): *a new issue is created*, environment Production, notify by email in a daily digest (action interval: 1 day). This covers `area=action`, `area=route` and browser errors without paging you.
+6. **Invoice delivery gave up** (issue alert)
+   - If: tag `area` equals `invoices` **and** tag `invoice_event` equals `gave_up`. Notify by email.
+   - The buyer paid and has access, but never got their invoice. Check `last_delivery_error` on the invoice (usually a Resend domain or API key problem), fix it, then set `delivery_attempts = 0` on the affected invoices so the cron sends them.
+7. **Everything else** (issue alert): *a new issue is created*, environment Production, notify by email in a daily digest (action interval: 1 day). This covers `area=action`, `area=route` and browser errors without paging you.
 
 ## Steps: uptime checks
 

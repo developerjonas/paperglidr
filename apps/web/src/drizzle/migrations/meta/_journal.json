@@ -50,6 +50,13 @@
       "when": 1790216093467,
       "tag": "0006_product_moderation",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790217861046,
+      "tag": "0007_invoice_delivery_retries",
+      "breakpoints": true
     }
   ]
 }

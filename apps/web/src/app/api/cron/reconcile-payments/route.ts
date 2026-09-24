@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { env } from "@/data/env/server";
 import { reconcilePayments } from "@/features/purchases/lib/reconcilePayments";
 import { routeError } from "@/lib/safeError";
+import { captureError } from "@/lib/observability";
+import { retryInvoiceDeliveries } from "@/features/invoices/lib/deliverInvoice";
 
 // Batch of up to 50 gateway checks at concurrency 5.
 export const maxDuration = 60;
@@ -18,8 +20,28 @@ function secretMatches(presented: string, secret: string) {
   return crypto.timingSafeEqual(a, b);
 }
 
+// Housekeeping that rides on the same schedule. Each job is isolated: one
+// failing (reported to Sentry) doesn't stop the others or fail the run.
+async function step<T>(name: string, job: () => Promise<T>) {
+  try {
+    return await job();
+  } catch (error) {
+    captureError(error, { area: "payments", context: `cron: ${name}` });
+    console.error(`[cron] ${name} failed`, error);
+    return { error: true };
+  }
+}
+
+async function runJobs() {
+  // Payment reconciliation keeps its summary at the top level (other
+  // tools read { checked, outcomes }); a failure here fails the run.
+  const payments = await reconcilePayments();
+  const invoices = await step("invoice retry", () => retryInvoiceDeliveries());
+  return { ...payments, invoices };
+}
+
 /**
- * Payment reconciliation. Scheduler-agnostic: any caller presenting
+ * Payment reconciliation, then invoice retries. Scheduler-agnostic: any caller presenting
  * `Authorization: Bearer <CRON_SECRET>` may trigger it (Vercel Cron sends
  * exactly that header when CRON_SECRET is set). Without CRON_SECRET
  * configured, every request is refused.
@@ -36,7 +58,7 @@ async function handle(request: Request) {
     // A Sentry cron monitor (created on the first check-in when SENTRY_DSN
     // is set): it alerts when a run fails, or when the scheduler stops
     // calling this at all. No-op without Sentry.
-    const summary = await Sentry.withMonitor("reconcile-payments", () => reconcilePayments(), {
+    const summary = await Sentry.withMonitor("reconcile-payments", runJobs, {
       schedule: { type: "crontab", value: CRON_SCHEDULE },
       checkinMargin: 5,
       maxRuntime: 2,

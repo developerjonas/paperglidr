@@ -15,6 +15,8 @@ export async function generateAndSendInvoice(invoiceId: string) {
     where: eq(InvoiceTable.id, invoiceId),
   });
   if (invoice == null) throw new Error(`Invoice ${invoiceId} not found`);
+  // Already delivered (a retry raced a success): never email twice.
+  if (invoice.emailedAt != null) return;
 
   const invoiceData: InvoiceDocumentData = {
     invoiceNumber: invoice.invoiceNumber,
@@ -41,6 +43,11 @@ export async function generateAndSendInvoice(invoiceId: string) {
     body: pdfBuffer,
     contentType: "application/pdf",
   });
+  // Recorded straight away, so a failed email still leaves the stored PDF.
+  await db
+    .update(InvoiceTable)
+    .set({ pdfR2Key: r2Key })
+    .where(eq(InvoiceTable.id, invoice.id));
 
   await sendEmail({
     from: env.INVOICE_FROM_EMAIL, // e.g. "Paperglidr <billing@paperglidr.com>" — domain must be verified in Resend

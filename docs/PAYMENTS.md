@@ -60,7 +60,10 @@ These are sent per request. Register or whitelist them where the gateway's dashb
 
 - `apps/web/vercel.json` runs `/api/cron/reconcile-payments` every 5 minutes. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
 - Any scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://paperglidr.com/api/cron/reconcile-payments`.
-- Without `CRON_SECRET` the endpoint refuses every request. It returns a summary such as `{"checked": 3, "outcomes": {"completed": 1, "pending": 2}}`.
+- Without `CRON_SECRET` the endpoint refuses every request. It returns a summary such as `{"checked": 3, "outcomes": {"completed": 1, "pending": 2}, "invoices": {...}}`.
+- The same run also does housekeeping, each step isolated so one failure doesn't stop the others:
+  - **Invoice retry.** Invoices whose PDF or email failed (`emailed_at` still null) are retried at most 5 times, at least 10 minutes apart, for 30 days. An atomic claim means the cron and the post-payment send never email the same invoice twice. After the 5th failure Sentry gets `area=invoices`, `invoice_event=gave_up`. The error is in `invoices.last_delivery_error`.
+- The run is wrapped in a Sentry cron monitor (`reconcile-payments`). See `docs/OBSERVABILITY.md`.
 
 ## Tests
 

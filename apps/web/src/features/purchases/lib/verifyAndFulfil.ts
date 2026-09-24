@@ -9,7 +9,7 @@ import {
 } from "@/drizzle/schema";
 import { addUserCourseAccess } from "@/features/courses/db/userCourseAccess";
 import { recordDiscountRedemption } from "@/features/discounts/db/discounts";
-import { generateAndSendInvoice } from "@/features/invoices/actions/generateAndSendInvoice";
+import { deliverInvoice } from "@/features/invoices/lib/deliverInvoice";
 import { createInvoiceForPurchase } from "@/features/invoices/db/invoices";
 import { createLedgerEntry } from "@/features/ledger/db/ledger";
 import { revalidateProductCache } from "@/features/products/db/cache";
@@ -58,7 +58,10 @@ export type FulfilDeps = {
 
 export const defaultFulfilDeps: FulfilDeps = {
   getVerifier: getGateway,
-  sendInvoice: generateAndSendInvoice,
+  // Counts as delivery attempt 1; the cron retries failures.
+  sendInvoice: async (invoiceId: string) => {
+    await deliverInvoice(invoiceId);
+  },
 };
 
 const UNIQUE_VIOLATION = "23505";
@@ -274,8 +277,8 @@ export async function verifyAndFulfil(
 
   // Fire-and-forget, deliberately outside the transaction: PDF rendering
   // and email delivery are external I/O and must never roll back a
-  // purchase that's already committed. invoice.pdfR2Key/emailedAt staying
-  // null is the retry signal.
+  // purchase that's already committed. invoice.emailedAt staying null is
+  // the retry signal: the reconciliation cron retries (deliverInvoice).
   deps.sendInvoice(fulfilled.invoiceId).catch(error => {
     console.error(`Invoice generation/send failed for purchase ${fulfilled.id}`, error);
   });

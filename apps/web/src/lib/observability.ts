@@ -3,13 +3,14 @@ import * as Sentry from "@sentry/nextjs"
 /**
  * Tags used by the alert rules in docs/OBSERVABILITY.md. Keep the names in
  * sync with that doc.
- * - area: payments | deliver | action | route | startup
+ * - area: payments | deliver | action | route | startup | invoices | cleanup
  * - payment_event (area=payments): verify_error | gateway_error |
  *   amount_mismatch | reused_transaction | fulfilment_error |
  *   gateway_disabled
+ * - invoice_event (area=invoices): attempt_failed | gave_up
  */
 export type ObservabilityTags = {
-  area: "payments" | "deliver" | "action" | "route" | "startup"
+  area: "payments" | "deliver" | "action" | "route" | "startup" | "invoices" | "cleanup"
   payment_event?:
     | "verify_error"
     | "gateway_error"
