@@ -72,20 +72,24 @@ export function LessonForm({
   })
 
   async function onSubmit(values: z.infer<typeof lessonSchema>) {
-    const action =
-      lesson == null ? createLesson : updateLesson.bind(null, lesson.id)
+    // Once the lesson exists (passed in, or created by the first save),
+    // every save updates it. Deciding by the `lesson` prop meant a second
+    // "Save details" after creating called createLesson again: a duplicate.
+    const isNew = savedLessonId == null
+    const action = isNew
+      ? createLesson
+      : updateLesson.bind(null, savedLessonId)
     const data = await action(values)
     actionToast({ actionData: data })
     if (data.error) return
     setSavedStatus(values.status)
 
-    // createLesson's success payload needs to include the new id — adjust
-    // `data.id` below to whatever field name it actually returns.
-    if (lesson == null && "id" in data && typeof data.id === "string") {
-      setSavedLessonId(data.id)
-      return // stay on the form so the asset manager can appear — don't
-      // call onSuccessAction?.() yet for brand-new lessons, that would close
+    if (isNew && "id" in data && typeof data.id === "string") {
+      // Now in edit mode for the new lesson. Stay on the form so the asset
+      // manager can appear — calling onSuccessAction?.() here would close
       // the dialog before the instructor can upload content.
+      setSavedLessonId(data.id)
+      return
     }
 
     onSuccessAction?.()
