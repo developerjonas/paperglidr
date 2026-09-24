@@ -21,6 +21,15 @@ export function scrubEvent(event: ErrorEvent): ErrorEvent {
     if (exception.value) exception.value = exception.value.replace(/\nparams: [\s\S]*$/, `\nparams: ${SCRUBBED}`)
   }
   if (event.message) event.message = event.message.replace(/\nparams: [\s\S]*$/, `\nparams: ${SCRUBBED}`)
+  // Console output is recorded as breadcrumbs, and safeError logs the full
+  // error just before reporting it, so scrub those too. A console
+  // breadcrumb's raw arguments (the error object itself) are dropped.
+  for (const breadcrumb of event.breadcrumbs ?? []) {
+    if (breadcrumb.message) {
+      breadcrumb.message = breadcrumb.message.replace(/\nparams: [\s\S]*$/, `\nparams: ${SCRUBBED}`)
+    }
+    if (breadcrumb.category === "console") delete breadcrumb.data
+  }
   if (event.request) {
     delete event.request.cookies
     delete event.request.headers
