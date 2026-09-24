@@ -12,6 +12,8 @@ import { recordPaymentEvent } from "../db/paymentEvents";
 import type { InitiatePaymentResult } from "@/services/payments/types";
 import { getReferringInstructorId } from "../db/referral";
 import { verifyAndFulfil } from "../lib/verifyAndFulfil";
+import { alreadyOwnsProduct } from "../lib/ownership";
+import { lockAndCheckDiscountLimits } from "@/features/discounts/db/discounts";
 import { enrollFree } from "../lib/freeEnrollment";
 import { wherePublicProducts } from "@/features/products/permissions/products";
 import { getGateway } from "@/services/payments/gateways";
@@ -86,6 +88,12 @@ async function startCheckout({
   // Unpublished (private) products can't be bought.
   if (product == null) return fail("Product not found");
 
+  // Already bought (a completed purchase, or access to every course in it):
+  // don't take the money twice.
+  if (await alreadyOwnsProduct({ userId: session.user.id, productId: product.id })) {
+    return fail("You already own this course. Find it under My Courses.");
+  }
+
   let discountCodeId: string | null = null;
   let discountAmountPaisa = 0;
 
@@ -142,18 +150,31 @@ async function startCheckout({
   if (wiredGateway == null)
     return fail("Unsupported payment method");
 
-  const purchase = await insertPurchase({
-    userId: session.user.id,
-    productId,
-    productDetails,
-    pricePaidInPaisa,
-    gateway,
-    status: "pending",
-    gatewayCheckoutId: idempotencyKey,
-    idempotencyKey,
-    referredByInstructorId,
-    discountCodeId,
-    discountAmountPaisa,
+  // Discount limits are checked and the purchase is created in ONE
+  // transaction with the code row locked, like the free path: parallel
+  // checkouts can't all take a code's last use. The pending purchase holds
+  // the use (DISCOUNT_RESERVATION_MS); fulfilment records the redemption.
+  const userId = session.user.id;
+  const purchase = await db.transaction(async (trx) => {
+    if (discountCodeId != null) {
+      await lockAndCheckDiscountLimits({ discountCodeId, userId }, trx);
+    }
+    return insertPurchase(
+      {
+        userId,
+        productId,
+        productDetails,
+        pricePaidInPaisa,
+        gateway,
+        status: "pending",
+        gatewayCheckoutId: idempotencyKey,
+        idempotencyKey,
+        referredByInstructorId,
+        discountCodeId,
+        discountAmountPaisa,
+      },
+      trx,
+    );
   });
   if (purchase == null)
     return fail("Could not start purchase");

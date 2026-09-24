@@ -1,7 +1,8 @@
 import { db } from "@/drizzle/db";
 import { DiscountCodeTable } from "@/drizzle/schema/discountCode";
 import { DiscountRedemptionTable } from "@/drizzle/schema/discountRedemption";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
+import { PurchaseTable } from "@/drizzle/schema/purchase";
 import { DiscountCodeFormValues } from "../schemas/discounts";
 import { revalidateDiscountCodeCache } from "./cache";
 import { UserFacingError } from "@/lib/safeError";
@@ -87,6 +88,22 @@ export async function getUserRedemptionCount(
  * inserting anything that references the code — or the FK's key-share lock
  * taken by that insert deadlocks against this row lock.
  */
+/**
+ * A pending checkout holds its discount use for this long. Two parallel
+ * checkouts can't both take a code's last use; an abandoned one frees it
+ * after 30 minutes. (A payment that completes later than that is still
+ * honoured, so a code can in rare cases go one use over its limit.)
+ */
+export const DISCOUNT_RESERVATION_MS = 30 * 60 * 1000;
+
+/**
+ * Call inside the transaction that creates the purchase (paid or free).
+ * Locks the code row (SELECT … FOR UPDATE) so concurrent checkouts
+ * serialize, then checks the limits against completed redemptions PLUS
+ * recent pending checkouts using the code. Throws UserFacingError when a
+ * limit is reached. The lock is taken first, before anything else in the
+ * transaction (see the note on lock order in freeEnrollment.ts).
+ */
 export async function lockAndCheckDiscountLimits(
   { discountCodeId, userId }: { discountCodeId: string; userId: string },
   trx: Omit<typeof db, "$client">,
@@ -110,11 +127,26 @@ export async function lockAndCheckDiscountLimits(
         eq(DiscountRedemptionTable.userId, userId),
       ),
     );
+  const since = new Date(Date.now() - DISCOUNT_RESERVATION_MS);
+  const [reserved] = await trx
+    .select({
+      total: sql<number>`count(*)`.mapWith(Number),
+      mine: sql<number>`count(*) filter (where ${PurchaseTable.userId} = ${userId})`.mapWith(Number),
+    })
+    .from(PurchaseTable)
+    .where(
+      and(
+        eq(PurchaseTable.discountCodeId, discountCodeId),
+        eq(PurchaseTable.status, "pending"),
+        gt(PurchaseTable.createdAt, since),
+      ),
+    );
   if (
     code == null ||
     code.status !== "active" ||
-    (code.maxRedemptions != null && code.redemptionCount >= code.maxRedemptions) ||
-    (userRedemptions?.count ?? 0) >= code.maxRedemptionsPerUser
+    (code.maxRedemptions != null &&
+      code.redemptionCount + (reserved?.total ?? 0) >= code.maxRedemptions) ||
+    (userRedemptions?.count ?? 0) + (reserved?.mine ?? 0) >= code.maxRedemptionsPerUser
   ) {
     throw new UserFacingError("That code has reached its usage limit.");
   }
