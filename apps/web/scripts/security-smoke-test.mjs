@@ -425,6 +425,127 @@ async function main() {
   check("support ticket page at /support/<id>", (await getStatus(`/support/${ticket.id}`, creatorA.token)) === 200)
   check("old /support/support/<id> is gone", (await getStatus(`/support/support/${ticket.id}`, creatorA.token)) === 404)
 
+  // ---------------------------------------------------------------- money ops (fix/money-ops)
+  console.log("== refunds, moderation, reports, payouts, checkout, middleware")
+  const act = async (name, args, token) => {
+    const res = await call(name, args, token)
+    return { ...res, msg: message(res.body) }
+  }
+  const redirectOf = async (pathname, token) => {
+    const response = await fetch(BASE_URL + pathname, {
+      redirect: "manual",
+      headers: token ? { Cookie: sessionCookie(token) } : {},
+    })
+    return { status: response.status, location: response.headers.get("location") ?? "" }
+  }
+
+  // Refunds (task 16): creator A's completed purchase of product B is fresh
+  // and 0% complete, so it's eligible.
+  const purchaseHtml = await (await fetch(`${BASE_URL}/purchases/${purchase.id}`, { headers: { Cookie: sessionCookie(creatorA.token) } })).text()
+  check("purchase page shows 'Request refund' for an eligible purchase", purchaseHtml.includes("Request refund"))
+  const refundRows = async () => q(`select status, "reviewedBy" from refund_requests where "purchaseId" = $1`, [purchase.id])
+  let res1 = await act("requestRefund", [purchase.id, "not what I expected"], attacker.token)
+  check("requestRefund on someone else's purchase rejected", res1.msg === "Purchase not found" && (await refundRows()).length === 0, res1.msg)
+  res1 = await act("requestRefund", [purchase.id, "not what I expected"], creatorA.token)
+  check("buyer can request a refund", res1.msg === "Refund request submitted." && (await refundRows()).length === 1, res1.msg)
+  res1 = await act("requestRefund", [purchase.id], creatorA.token)
+  check("only one open refund request per purchase", (await refundRows()).length === 1, res1.msg)
+  const refundRequest = await one(`select id from refund_requests where "purchaseId" = $1`, [purchase.id])
+  res1 = await act("approveRefund", [refundRequest.id], attacker.token)
+  check(
+    "approveRefund by a normal user rejected (purchase untouched)",
+    (await refundRows())[0].status === "pending" && (await one(`select status from purchases where id = $1`, [purchase.id])).status === "completed",
+    `http ${res1.status}`,
+  )
+  const refundsPage = await (await fetch(`${BASE_URL}/admin/refunds`, { headers: { Cookie: sessionCookie(admin.token) } })).text()
+  check("admin refunds page lists the request with the gateway reference", refundsPage.includes("B product") && refundsPage.includes(`smoke-${run}`))
+  res1 = await act("rejectRefund", [refundRequest.id, "Outside policy"], admin.token)
+  const rejected = (await refundRows())[0]
+  check("admin rejects with a reason (access kept)", rejected.status === "denied" && rejected.reviewedBy === admin.id, res1.msg)
+
+  // Moderation (task 18): a verified creator's "Publish" lands in review.
+  const creatorC = await createUser("creator-c", run)
+  await q(
+    `insert into instructors("userId", handle, name, bio, "profileImageUrl", phone_verified_at) values ($1, $2, 'C', 'bio', '/c.png', now())`,
+    [creatorC.id, `smoke_c_${run}`],
+  )
+  const courseC = await one(`insert into courses(name, description, author_id) values ('C course', 'd', $1) returning id`, [creatorC.id])
+  const sectionC = await one(`insert into course_sections(name, "order", "courseId", status) values ('C s', 0, $1, 'public') returning id`, [courseC.id])
+  const lessonC = await one(`insert into lessons(name, "order", status, "sectionId") values ('C intro', 0, 'preview', $1) returning id`, [sectionC.id])
+  await q(
+    `insert into lesson_assets("lessonId", type, provider, role, "externalId", status) values ($1, 'youtube', 'youtube', 'primary', 'dQw4w9WgXcQ', 'ready')`,
+    [lessonC.id],
+  )
+  const productName = `C product ${run}`
+  await act("createProduct", [{
+    name: productName,
+    priceInRupees: 500,
+    description: "A complete, practical course for the Loksewa exam with worked examples and past papers. ".repeat(2),
+    imageUrl: "/c.png",
+    status: "public",
+    categoryId: null,
+    tagIds: [],
+    courseIds: [courseC.id],
+  }], creatorC.token)
+  const productC = await one(`select id, status from products where name = $1`, [productName])
+  check("a creator's new product lands in pending_review", productC?.status === "pending_review", productC?.status)
+  check("a product in review can't be opened publicly", (await getStatus(`/products/${productC.id}`)) === 404)
+  await act("approveProductReview", [productC.id], attacker.token)
+  check("approveProductReview by a normal user rejected", (await one(`select status from products where id = $1`, [productC.id])).status === "pending_review")
+  res1 = await act("approveProductReview", [productC.id], admin.token)
+  check("admin approves -> public", (await one(`select status from products where id = $1`, [productC.id])).status === "public", res1.msg)
+
+  // Reports (task 18)
+  res1 = await act("reportContent", [{ targetType: "product", targetId: productB.id, reason: "piracy", details: "copied" }], attacker.token)
+  const report = await one(`select id, status from reports where "reporterId" = $1 and "targetId" = $2`, [attacker.id, productB.id])
+  check("signed-in user can report a product", report?.status === "pending", res1.msg)
+  res1 = await act("reportContent", [{ targetType: "product", targetId: hiddenProduct.id, reason: "scam" }], attacker.token)
+  check("can't report a product that isn't public", res1.msg === "That content couldn't be found.", res1.msg)
+  res1 = await act("reportContent", [{ targetType: "lesson", targetId: lockedLesson.id, reason: "scam" }], attacker.token)
+  check("can't report a lesson you can't open", res1.msg === "That content couldn't be found.", res1.msg)
+  await act("reviewReport", [{ reportId: report.id, status: "dismissed" }], attacker.token)
+  check("reviewReport by a normal user rejected", (await one(`select status from reports where id = $1`, [report.id])).status === "pending")
+
+  // Payouts (task 17): creator B has earnings but no verified phone.
+  const payoutsBefore = (await one(`select count(*)::int n from payouts where "instructorId" = $1`, [creatorB.id])).n
+  res1 = await act("requestPayout", [{ amountInRupees: 1000, details: { method: "esewa", walletId: "9800000000", accountName: "B" } }], creatorB.token)
+  check(
+    "payout blocked without a verified phone",
+    res1.msg?.includes("Verify your phone") && (await one(`select count(*)::int n from payouts where "instructorId" = $1`, [creatorB.id])).n === payoutsBefore,
+    res1.msg,
+  )
+
+  // Buying twice
+  res1 = await act("initiatePurchase", [{ productId: productB.id, gateway: "esewa", idempotencyKey: `${crypto.randomUUID()}:esewa` }], creatorA.token)
+  check("initiatePurchase rejects a product the buyer already owns", res1.msg?.includes("already own"), res1.msg)
+
+  // YouTube on free previews only
+  res1 = await act("setLessonYouTubeVideo", [lockedLesson.id, "https://youtu.be/dQw4w9WgXcQ"], creatorB.token)
+  check("YouTube refused on a paid lesson", res1.msg?.includes("free preview lessons"), res1.msg)
+  res1 = await act("setLessonYouTubeVideo", [previewLesson.id, "https://youtu.be/dQw4w9WgXcQ"], attacker.token)
+  check("YouTube can't be set on another creator's lesson", !(await q(`select 1 from lesson_assets where "lessonId" = $1 and provider = 'youtube'`, [previewLesson.id])).length)
+
+  // Teach product pages are owner-only. Profiles are inserted with SQL,
+  // which doesn't clear the app's cached "no instructor profile" for a
+  // user who already hit /teach, so use a creator that hasn't: creator C
+  // (owner of product C) and a fresh creator D.
+  const creatorD = await createUser("creator-d", run)
+  await q(
+    `insert into instructors("userId", handle, name, bio, "profileImageUrl") values ($1, $2, 'D', 'bio', '/d.png')`,
+    [creatorD.id, `smoke_d_${run}`],
+  )
+  check("another creator's product editor -> 404", (await getStatus(`/teach/products/${productC.id}/edit`, creatorD.token)) === 404)
+  check("owner opens their product editor", (await getStatus(`/teach/products/${productC.id}/edit`, creatorC.token)) === 200)
+  const teachList = await (await fetch(`${BASE_URL}/teach/products`, { headers: { Cookie: sessionCookie(creatorD.token) } })).text()
+  check("/teach/products lists only your own products", !teachList.includes(productName) && !teachList.includes("B product"))
+
+  // Middleware: /courses and /support keep redirectTo; previews stay public
+  let red = await redirectOf("/courses")
+  check("signed-out /courses -> sign-in with redirectTo", red.status === 307 && red.location.includes("/sign-in?redirectTo=%2Fcourses"), red.location)
+  red = await redirectOf("/support/new?purchaseId=x")
+  check("signed-out /support/new -> sign-in with redirectTo (query kept)", red.status === 307 && red.location.includes("redirectTo=%2Fsupport%2Fnew%3FpurchaseId%3Dx"), red.location)
+  check("signed-out preview lesson page still 200", (await getStatus(`/courses/${courseB.id}/lessons/${previewLesson.id}`)) === 200)
+
   // ---------------------------------------------------------------- admin routes
   console.log("== /admin routes")
   const adminRoutes = [
@@ -438,6 +559,9 @@ async function main() {
     "/admin/reviews",
     "/admin/purchases",
     "/admin/purchases?status=disputed",
+    "/admin/refunds",
+    "/admin/products",
+    "/admin/reports",
   ]
   for (const route of adminRoutes) {
     check(`normal user gets 404 on ${route}`, (await getStatus(route, attacker.token)) === 404)
@@ -445,6 +569,9 @@ async function main() {
   check("signed-out visitor gets 404 on /admin (no redirect)", (await getStatus("/admin")) === 404)
   check("admin gets 200 on /admin", (await getStatus("/admin", admin.token)) === 200)
   check("admin gets 200 on /admin/purchases", (await getStatus("/admin/purchases", admin.token)) === 200)
+  for (const route of ["/admin/refunds", "/admin/products", "/admin/reports"]) {
+    check(`admin gets 200 on ${route}`, (await getStatus(route, admin.token)) === 200)
+  }
 
   const promoted = await createUser("promoted", run)
   const before = await getStatus("/admin", promoted.token)
