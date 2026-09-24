@@ -79,3 +79,33 @@ describe("payment verification reports", () => {
     ])
   })
 })
+
+describe("payment startup check", () => {
+  it("a misconfigured live gateway is disabled and reported; nothing throws", async () => {
+    const saved = { ...process.env }
+    Object.assign(process.env, {
+      PAYMENT_MODE: "live",
+      ESEWA_PRODUCT_CODE: "EPAYTEST", // sandbox merchant in a live deploy
+      ESEWA_SECRET_KEY: "live-secret",
+      ESEWA_FORM_URL: "https://epay.esewa.com.np/api/epay/main/v2/form",
+      ESEWA_STATUS_URL: "https://epay.esewa.com.np/api/epay/transaction/status/",
+      KHALTI_SECRET_KEY: "live-khalti-key",
+      KHALTI_BASE_URL: "https://khalti.com/api/v2",
+    })
+    vi.spyOn(console, "error").mockImplementation(() => {})
+    vi.spyOn(console, "info").mockImplementation(() => {})
+    try {
+      vi.resetModules()
+      const { reportPaymentConfigAtBoot } = await import("@/services/payments/bootCheck")
+      const { getEnabledGateways } = await import("@/services/payments/config")
+      expect(() => reportPaymentConfigAtBoot()).not.toThrow()
+      expect(getEnabledGateways()).toEqual(["khalti"])
+      expect(captured.messages.map(m => m.tags)).toEqual([
+        { area: "startup", payment_event: "gateway_disabled", gateway: "esewa", mode: "live" },
+      ])
+    } finally {
+      process.env = saved
+      vi.resetModules()
+    }
+  })
+})

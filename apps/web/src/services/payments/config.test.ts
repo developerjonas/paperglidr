@@ -65,29 +65,44 @@ describe("resolvePaymentConfig — live mode (invariant 3)", () => {
     ["ESEWA_STATUS_URL", SANDBOX_DEFAULTS.esewa.statusUrl],
     ["ESEWA_PRODUCT_CODE", "EPAYTEST"],
     ["ESEWA_SECRET_KEY", SANDBOX_DEFAULTS.esewa.secretKey],
-  ])("refuses to start when %s is a sandbox value", (key, value) => {
-    expect(() => resolvePaymentConfig({ PAYMENT_MODE: "live", ...LIVE_ESEWA, [key]: value })).toThrow(
-      PaymentConfigError,
-    )
+  ])("disables eSewa and reports it when %s is a sandbox value; other gateways keep working", (key, value) => {
+    const config = resolvePaymentConfig({ PAYMENT_MODE: "live", ...LIVE_ESEWA, ...LIVE_KHALTI, [key]: value })
+    expect(config.esewa).toBeNull()
+    expect(config.misconfigured.esewa).toContain(key)
+    expect(config.disabledReasons.esewa).toMatch(/^misconfigured:/)
+    expect(config.khalti).not.toBeNull()
+    expect(config.misconfigured.khalti).toBeUndefined()
   })
 
-  it("refuses a sandbox Khalti or Fonepay URL even when that gateway would otherwise be disabled", () => {
-    expect(() =>
-      resolvePaymentConfig({ PAYMENT_MODE: "live", KHALTI_BASE_URL: "https://dev.khalti.com/api/v2" }),
-    ).toThrow(PaymentConfigError)
-    expect(() =>
-      resolvePaymentConfig({ PAYMENT_MODE: "live", FONEPAY_BASE_URL: SANDBOX_DEFAULTS.fonepay.baseUrl }),
-    ).toThrow(PaymentConfigError)
+  it("flags a sandbox Khalti or Fonepay URL even when that gateway would otherwise be disabled", () => {
+    expect(
+      resolvePaymentConfig({ PAYMENT_MODE: "live", KHALTI_BASE_URL: "https://dev.khalti.com/api/v2" }).misconfigured.khalti,
+    ).toContain("dev.khalti.com")
+    expect(
+      resolvePaymentConfig({ PAYMENT_MODE: "live", FONEPAY_BASE_URL: SANDBOX_DEFAULTS.fonepay.baseUrl }).misconfigured
+        .fonepay,
+    ).toContain("dev-clientapi.fonepay.com")
   })
 
-  it("requires https for live URLs", () => {
-    expect(() =>
-      resolvePaymentConfig({
-        PAYMENT_MODE: "live",
-        ...LIVE_ESEWA,
-        ESEWA_STATUS_URL: "http://epay.esewa.com.np/api/epay/transaction/status/",
-      }),
-    ).toThrow(/https/)
+  it("requires https for live URLs (the gateway is disabled, not the site)", () => {
+    const config = resolvePaymentConfig({
+      PAYMENT_MODE: "live",
+      ...LIVE_ESEWA,
+      ESEWA_STATUS_URL: "http://epay.esewa.com.np/api/epay/transaction/status/",
+    })
+    expect(config.esewa).toBeNull()
+    expect(config.misconfigured.esewa).toMatch(/https/)
+  })
+
+  it("a PAYMENT_ENABLED_GATEWAYS allow-list can't re-enable a misconfigured gateway", () => {
+    const config = resolvePaymentConfig({
+      PAYMENT_MODE: "live",
+      PAYMENT_ENABLED_GATEWAYS: "esewa",
+      ...LIVE_ESEWA,
+      ESEWA_PRODUCT_CODE: "EPAYTEST",
+    })
+    expect(config.esewa).toBeNull()
+    expect(config.disabledReasons.esewa).toMatch(/^misconfigured:/)
   })
 
   it("requires PAYMENT_MODE to be set explicitly", () => {
@@ -126,10 +141,10 @@ describe("PAYMENT_ENABLED_GATEWAYS", () => {
     expect(config.khalti).toBeNull() // listed, but not configured
   })
 
-  it("rejects unknown gateway names", () => {
-    expect(() =>
-      resolvePaymentConfig({ PAYMENT_MODE: "sandbox", PAYMENT_ENABLED_GATEWAYS: "esewa,stub" }),
-    ).toThrow(PaymentConfigError)
+  it("ignores unknown gateway names (fail closed) and reports them", () => {
+    const config = resolvePaymentConfig({ PAYMENT_MODE: "sandbox", PAYMENT_ENABLED_GATEWAYS: "esewa,stub" })
+    expect(config.esewa).not.toBeNull()
+    expect(config.warnings).toEqual(["PAYMENT_ENABLED_GATEWAYS has unknown gateways: stub"])
   })
 })
 
