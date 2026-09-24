@@ -107,14 +107,16 @@ export async function updateProduct(
   }
 
   if (data.status === "public") {
-    // canUpdateProducts above already confirmed either admin or actual
-    // ownership, so user.userId is a safe stand-in for the product's real
-    // authorId here — a non-admin could only have reached this line by
-    // owning the product already.
+    // The cap is the product's author's (an admin may be editing someone
+    // else's product).
+    const author = await db.query.ProductTable.findFirst({
+      where: eq(ProductTable.id, id),
+      columns: { authorId: true },
+    });
     const check = await canPublishProduct({
       description: data.description,
       courseIds: data.courseIds,
-      authorId: user.userId!,
+      authorId: author?.authorId ?? user.userId!,
       role: user.role,
       excludeProductId: id,
     });

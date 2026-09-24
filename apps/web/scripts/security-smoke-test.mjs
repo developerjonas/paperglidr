@@ -536,6 +536,13 @@ async function main() {
   )
   check("another creator's product editor -> 404", (await getStatus(`/teach/products/${productC.id}/edit`, creatorD.token)) === 404)
   check("owner opens their product editor", (await getStatus(`/teach/products/${productC.id}/edit`, creatorC.token)) === 200)
+  const emptyProductC = await one(
+    `insert into products(name, description, "imageUrl", "priceInRupees", status, author_id)
+     values ('C empty', 'd', '/c.png', 100, 'private', $1) returning id`,
+    [creatorC.id],
+  )
+  check("author opens the editor of a product with no courses", (await getStatus(`/teach/products/${emptyProductC.id}/edit`, creatorC.token)) === 200)
+  check("another creator can't open it", (await getStatus(`/teach/products/${emptyProductC.id}/edit`, creatorD.token)) === 404)
   const teachList = await (await fetch(`${BASE_URL}/teach/products`, { headers: { Cookie: sessionCookie(creatorD.token) } })).text()
   check("/teach/products lists only your own products", !teachList.includes(productName) && !teachList.includes("B product"))
 

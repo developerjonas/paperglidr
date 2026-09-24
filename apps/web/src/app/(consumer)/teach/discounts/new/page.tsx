@@ -1,9 +1,5 @@
 import { db } from "@/drizzle/db";
-import {
-  CourseProductTable,
-  CourseTable,
-  ProductTable,
-} from "@/drizzle/schema";
+import { ProductTable } from "@/drizzle/schema";
 import { DiscountCodeForm } from "@/features/discounts/components/DiscountCodeForm";
 import { getProductGlobalTag } from "@/features/products/db/cache";
 import { auth } from "@/lib/auth";
@@ -49,21 +45,14 @@ export default async function NewDiscountCodePage({
   );
 }
 
-// Scoped to products where the current user authored at least one linked
-// course. Same "first-author-wins" caveat as the edit page for bundles
-// spanning multiple authors.
+// The current user's own products (products.authorId).
 async function getOwnProducts(authorId: string | undefined) {
   "use cache";
   cacheTag(getProductGlobalTag());
   if (!authorId) return [];
   return db
-    .selectDistinct({ id: ProductTable.id, name: ProductTable.name })
+    .select({ id: ProductTable.id, name: ProductTable.name })
     .from(ProductTable)
-    .innerJoin(
-      CourseProductTable,
-      eq(CourseProductTable.productId, ProductTable.id),
-    )
-    .innerJoin(CourseTable, eq(CourseTable.id, CourseProductTable.courseId))
-    .where(eq(CourseTable.authorId, authorId))
+    .where(eq(ProductTable.authorId, authorId))
     .orderBy(asc(ProductTable.name));
 }

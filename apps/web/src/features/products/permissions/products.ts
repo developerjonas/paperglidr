@@ -1,31 +1,21 @@
 import { db } from "@/drizzle/db";
-import {
-  CourseProductTable,
-  CourseTable,
-  ProductTable,
-  UserRole,
-} from "@/drizzle/schema";
+import { CourseTable, ProductTable, UserRole } from "@/drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 
 export function canCreateProducts({ userId }: { userId: string | undefined }) {
   return userId != null;
 }
 
-// ProductTable has no authorId of its own — ownership is derived through
-// the courses it bundles. Strictest interpretation: every linked course
-// must belong to this user. This replaces a check that compared against
-// product.authorId, a column that doesn't exist, meaning every non-admin
-// update/delete was silently failing before this fix.
-// ADJUST if bundles can span multiple authors and any-one-course should qualify.
-async function userOwnsProductViaCourses(userId: string, productId: string) {
-  const courseProducts = await db.query.CourseProductTable.findMany({
-    where: eq(CourseProductTable.productId, productId),
-    with: { course: { columns: { authorId: true } } },
+// A product belongs to its author (products.authorId, set on create).
+// Ownership doesn't depend on the bundled courses, so an author can open
+// and fix a product that has none; canBundleCourses separately limits
+// which courses can be added.
+async function userIsProductAuthor(userId: string, productId: string) {
+  const product = await db.query.ProductTable.findFirst({
+    where: eq(ProductTable.id, productId),
+    columns: { authorId: true },
   });
-  return (
-    courseProducts.length > 0 &&
-    courseProducts.every((cp) => cp.course.authorId === userId)
-  );
+  return product?.authorId === userId;
 }
 
 export async function canUpdateProducts(
@@ -34,7 +24,7 @@ export async function canUpdateProducts(
 ) {
   if (!userId || !productId) return false;
   if (role === "admin") return true;
-  return userOwnsProductViaCourses(userId, productId);
+  return userIsProductAuthor(userId, productId);
 }
 
 export async function canDeleteProducts(
@@ -43,7 +33,7 @@ export async function canDeleteProducts(
 ) {
   if (!userId || !productId) return false;
   if (role === "admin") return true;
-  return userOwnsProductViaCourses(userId, productId);
+  return userIsProductAuthor(userId, productId);
 }
 
 /**
