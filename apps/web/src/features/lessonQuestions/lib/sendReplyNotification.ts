@@ -7,6 +7,7 @@ import {
 } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { sendEmail } from "@/services/email/resend";
+import { escapeHtml } from "@/services/email/escapeHtml";
 import { env as clientEnv } from "@/data/env/client";
 import { env } from "@/data/env/server";
 
@@ -43,11 +44,12 @@ export async function sendReplyNotification({
     from: env.NOTIFICATIONS_FROM_EMAIL,
     to: asker.email,
     subject: `${replierName} replied to your question on "${lessonContext.lessonName}"`,
+    // Every value is user text (names, lesson title, the reply): escaped.
     html: `
-      <p>Hi ${asker.name},</p>
-      <p><strong>${replierName}</strong> replied to your question:</p>
-      <blockquote>${replyBody}</blockquote>
-      <p><a href="${link}">View the discussion</a></p>
+      <p>Hi ${escapeHtml(asker.name)},</p>
+      <p><strong>${escapeHtml(replierName)}</strong> replied to your question:</p>
+      <blockquote style="white-space: pre-wrap">${escapeHtml(replyBody)}</blockquote>
+      <p><a href="${escapeHtml(link)}">View the discussion</a></p>
     `,
   });
 }
