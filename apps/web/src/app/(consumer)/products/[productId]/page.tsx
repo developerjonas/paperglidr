@@ -1,3 +1,4 @@
+import { ReportButton } from "@/features/reports/components/ReportButton";
 import { SkeletonButton } from "@/components/Skeleton";
 import {
   Accordion,
@@ -126,6 +127,9 @@ export default async function ProductPage({
             </div>
 
             <InstructorBlock author={product.author} />
+            <div className="-ml-3">
+              <ReportButton targetType="product" targetId={product.id} />
+            </div>
           </div>
         </div>
       </section>

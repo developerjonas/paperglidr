@@ -211,7 +211,7 @@ export default async function HomePage() {
             {
               icon: Rocket,
               title: "Publish on your schedule",
-              body: "Sign up and publish when your course is ready. There's no application and no waitlist.",
+              body: "Sign up and submit your course when it's ready. There's no application and no waitlist; we check each course before it goes on sale.",
             },
             {
               icon: Wallet,

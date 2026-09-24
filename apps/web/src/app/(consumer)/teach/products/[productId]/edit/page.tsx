@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { db } from "@/drizzle/db";
 import {
+  type ProductStatus,
   CourseTable,
   ProductTable,
   CategoryTable,
@@ -48,6 +49,7 @@ export default async function EditProductPage({
       {/* ---------------- CONTENT ---------------- */}
       <section className="container mx-auto px-4 py-10">
         <div className="flex flex-col gap-10">
+          <ReviewStatus status={product.status} reviewNote={product.reviewNote} />
           <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
             <CardContent className="pt-6">
               <ProductForm
@@ -88,6 +90,36 @@ export default async function EditProductPage({
       </section>
     </div>
   );
+}
+
+function ReviewStatus({
+  status,
+  reviewNote,
+}: {
+  status: ProductStatus;
+  reviewNote: string | null;
+}) {
+  if (status === "pending_review") {
+    return (
+      <p className="rounded-md border px-4 py-3 text-sm">
+        <strong>Waiting for review.</strong> We check every product before it
+        goes on sale and will email you when it&apos;s approved or if something
+        needs to change.
+      </p>
+    );
+  }
+  if (status === "private" && reviewNote) {
+    return (
+      <div className="rounded-md border border-destructive/40 px-4 py-3 text-sm">
+        <strong>Not approved.</strong> Reason from our review:
+        <p className="mt-1 whitespace-pre-wrap">{reviewNote}</p>
+        <p className="mt-1 text-muted-foreground">
+          Fix the issue and choose &quot;Publish&quot; again to resubmit.
+        </p>
+      </div>
+    );
+  }
+  return null;
 }
 
 async function getDiscountCodesForProduct(productId: string, authorId: string) {
@@ -142,6 +174,7 @@ async function getProduct(id: string) {
       imageUrl: true,
       authorId: true,
       categoryId: true,
+      reviewNote: true,
     },
     where: eq(ProductTable.id, id),
     with: {

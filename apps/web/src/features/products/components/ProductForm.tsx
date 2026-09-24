@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { actionToast } from "@/hooks/use-toast";
 import { productSchema } from "../schema/products";
-import { ProductStatus, productStatuses } from "@/drizzle/schema";
+import { ProductStatus } from "@/drizzle/schema";
 import { createProduct, updateProduct } from "../actions/products";
 import {
   Select,
@@ -52,7 +52,13 @@ export function ProductForm({
 }) {
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: product ?? {
+    defaultValues: product
+      ? {
+          ...product,
+          // Waiting for review counts as "publish" in the form.
+          status: product.status === "private" ? "private" : "public",
+        }
+      : {
       name: "",
       description: "",
       courseIds: [],
@@ -155,11 +161,12 @@ export function ProductForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {productStatuses.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="private">Private (draft)</SelectItem>
+                    <SelectItem value="public">
+                      {product?.status === "public"
+                        ? "Published"
+                        : "Publish (sent for review)"}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

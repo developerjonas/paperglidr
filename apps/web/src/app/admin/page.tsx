@@ -28,8 +28,10 @@ import Link from "next/link";
 import {
   CreditCardIcon,
   DollarSignIcon,
+  FlagIcon,
   FolderIcon,
   LifeBuoyIcon,
+  PackageIcon,
   StarIcon,
   Undo2Icon,
   WalletIcon,
@@ -44,8 +46,18 @@ const MANAGEMENT_LINKS = [
     href: "/admin/categories",
     icon: FolderIcon,
   },
-  // Products and Courses admin pages come with GTM task 18; no links until
-  // those pages exist.
+  {
+    title: "Products",
+    description: "Review products creators have asked to publish",
+    href: "/admin/products",
+    icon: PackageIcon,
+  },
+  {
+    title: "Reports",
+    description: "Reported products and lessons",
+    href: "/admin/reports",
+    icon: FlagIcon,
+  },
   {
     title: "Purchases",
     description: "Pending, failed and disputed payments; re-check with the gateway",

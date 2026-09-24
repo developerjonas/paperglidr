@@ -1,3 +1,4 @@
+import { ReportButton } from "@/features/reports/components/ReportButton";
 import { ActionButton } from "@/components/ActionButton";
 import { SkeletonButton } from "@/components/Skeleton";
 import { Button } from "@/components/ui/button";
@@ -166,6 +167,11 @@ async function SuspenseBoundary({
             </div>
           </div>
 
+          {canView && (
+            <div className="-ml-3">
+              <ReportButton targetType="lesson" targetId={lesson.id} />
+            </div>
+          )}
           {canView ? (
             lesson.description && (
               <p className="text-sm text-muted-foreground">

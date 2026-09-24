@@ -43,6 +43,13 @@
       "when": 1790215818738,
       "tag": "0005_payout_details",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790216093467,
+      "tag": "0006_product_moderation",
+      "breakpoints": true
     }
   ]
 }

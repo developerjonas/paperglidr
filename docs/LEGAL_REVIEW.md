@@ -95,7 +95,8 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
 
 ### Content Policy (`/content`)
 - The publishing requirements now match the code: a thumbnail and price, a description of at least 100 characters, at least one course, and a preview lesson with a video.
-- **Removed claims that were false:** "report button on the course page" (it's never shown; reports go via support) and "downloads are traceable to the buyer" (buyer stamping isn't implemented).
+- **Removed claims that were false:** "downloads are traceable to the buyer" (buyer stamping isn't implemented).
+- **Changed (task 18):** publishing now goes through an admin review (approve, or reject with a reason). Section 3 says so and that a review is not an endorsement. The "Report" button is back on product and lesson pages, and the policy points to it. **Confirm** the wording.
 - **Decide:** the prohibited-content list for Nepal specifically, for example leaked exam papers, content involving minors, and hate speech.
 
 ### DMCA & Takedown Policy (`/dmca`)
@@ -116,5 +117,5 @@ Engineering follow-ups; the policies describe the intended behaviour.
 |---|---|---|
 | Refund if less than 20% complete | Enforced, across all courses in a bundle | Done (task 16) |
 | Ask for a refund in the app or through support | "Request refund" on the purchase page; admins approve at /admin/refunds | Done (task 16) |
-| Reports go through support | No in-app report button | GTM task 18 |
+| Report content in the app or through support | "Report" on product and lesson pages; admins review at /admin/reports | Done (task 18) |
 | Earnings clawed back after refunds | Yes; sales are held for the refund window before they can be withdrawn | Done (task 17) |

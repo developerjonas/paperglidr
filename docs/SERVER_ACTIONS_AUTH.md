@@ -55,9 +55,11 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `approvePayout` | admin | `requireAdmin()` | 🔧 task 4: was a cached-role check |
 | | `denyPayout` | admin | `requireAdmin()` | 🔧 task 4: was a cached-role check |
 | | `getMyBalancesInRupees` | signed-in | caller's own available and held balance | ✅ (renamed in task 17) |
-| `features/products/actions/products.ts` | `createProduct` | signed-in | author = caller; **every bundled course is the caller's** | 🔧 sweep: any course could be bundled, so another creator's paid course could be sold at ₹0 / enrolled free |
+| `features/products/actions/products.ts` | `createProduct` | signed-in | author = caller; **every bundled course is the caller's**; "publish" from a creator stores `pending_review` (the client can only send `private`/`public`) | 🔧 sweep: any course could be bundled, so another creator's paid course could be sold at ₹0 / enrolled free; task 18: moderation |
 | | `updateProduct` | owner | product owner **and** every bundled course is the caller's | 🔧 sweep: same bug as `createProduct` |
 | | `deleteProduct` | owner | product owner or admin | ✅ |
+| `features/products/actions/moderation.ts` | `approveProductReview` | admin | `requireAdmin()`; `pending_review` only (status-guarded) | 🆕 task 18 |
+| | `rejectProductReview` | admin | `requireAdmin()`; `pending_review` only; reason required | 🆕 task 18 |
 | `features/purchases/actions/purchases.ts` | `initiatePurchase` | signed-in | buys for the caller only | ✅ (see Found list) |
 | | `confirmPurchase` | owner | `purchase.userId` = caller | 🔧 task 5: had no check |
 | | `revokeAccess` | admin | `requireAdmin()` | 🔧 task 5: any signed-in user could revoke any purchase |
@@ -66,7 +68,8 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `requestRefund` | owner | `purchase.userId` = caller; eligibility recomputed server-side; one open request per purchase (unique index) | 🔧 fix/money-ops: same "Not signed in" bug; stored the product ID as the course ID |
 | | `approveRefund` | admin | `requireAdmin()`; request must be pending (row locked); revoke runs in the same transaction | 🆕 task 16 |
 | | `rejectRefund` | admin | `requireAdmin()`; pending only | 🆕 task 16 |
-| `features/reports/actions/reports.ts` | `reportCourse` | signed-in | reporter = caller | ✅ |
+| `features/reports/actions/reports.ts` | `reportContent` (was `reportCourse`) | signed-in | reporter = caller; target must be a public product or a lesson the caller can open; one open report per reporter and target | 🔧 task 18: read `session.user.id`, which `getCurrentUser()` never sets, so every report failed with "must be signed in" |
+| | `reviewReport` | admin | `requireAdmin()`; open reports only | 🆕 task 18 |
 | `features/reviews/actions/reviews.ts` | `createReview` | signed-in | ≥50% course completion; one per course | ✅ |
 | | `updateReview` | owner | review author | ✅ |
 | | `deleteReview` | owner | review author | ✅ |

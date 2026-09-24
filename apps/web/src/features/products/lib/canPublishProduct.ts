@@ -83,7 +83,9 @@ async function checkLiveProductCap(
     .where(
       and(
         eq(ProductTable.authorId, authorId),
-        eq(ProductTable.status, "public"),
+        // Waiting for review counts too, so the review queue can't be used
+        // to get around the cap.
+        inArray(ProductTable.status, ["public", "pending_review"]),
         excludeProductId ? ne(ProductTable.id, excludeProductId) : undefined,
       ),
     )

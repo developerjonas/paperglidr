@@ -7,6 +7,7 @@ import {
   uuid,
   customType,
   index,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../schemaHelpers";
 import { CourseProductTable } from "./courseProduct";
@@ -14,7 +15,9 @@ import { UserTable } from "./user";
 import { CategoryTable } from "./category";
 import { ProductTagTable } from "./tag";
 
-export const productStatuses = ["public", "private"] as const;
+// pending_review: the creator asked to publish; an admin approves (-> public)
+// or rejects (-> private, with reviewNote) at /admin/products.
+export const productStatuses = ["public", "private", "pending_review"] as const;
 export type ProductStatus = (typeof productStatuses)[number];
 export const productStatusEnum = pgEnum("product_status", productStatuses);
 
@@ -38,6 +41,12 @@ export const ProductTable = pgTable("products", {
   authorId: uuid("author_id")
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),
+  // Moderation (task 18). reviewNote is the rejection reason shown to the
+  // creator; cleared when they submit again.
+  submittedForReviewAt: timestamp("submitted_for_review_at", { withTimezone: true }),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  reviewedBy: uuid("reviewed_by").references(() => UserTable.id, { onDelete: "set null" }),
+  reviewNote: text("review_note"),
   searchVector: tsvector("search_vector").generatedAlwaysAs(
     (): SQL =>
       sql`setweight(to_tsvector('english', coalesce(${ProductTable.name}, '')), 'A') || setweight(to_tsvector('english', coalesce(${ProductTable.description}, '')), 'B')`,
