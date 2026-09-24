@@ -1,6 +1,6 @@
 import { db } from "@/drizzle/db";
 import { LedgerEntryTable } from "@/drizzle/schema";
-import { eq, sum } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidateLedgerEntryCache } from "./cache";
 
 // features/ledger/db/ledger.ts
@@ -115,14 +115,4 @@ export async function getInstructorLedgerEntries(instructorId: string) {
     where: eq(LedgerEntryTable.instructorId, instructorId),
     orderBy: (entries, { desc }) => desc(entries.createdAt),
   });
-}
-
-// Unchanged in logic — summing ALL entries (sale + refund) now correctly
-// nets out refunded amounts automatically, no special-casing needed here
-export async function getInstructorTotalEarnings(instructorId: string) {
-  const [result] = await db
-    .select({ total: sum(LedgerEntryTable.creatorEarningsPaisa) })
-    .from(LedgerEntryTable)
-    .where(eq(LedgerEntryTable.instructorId, instructorId));
-  return Number(result?.total ?? 0);
 }
