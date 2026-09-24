@@ -110,3 +110,59 @@ export async function purchaseState(purchaseId: string) {
 }
 
 export const paisa = (rupees: number) => rupees * 100
+
+/**
+ * A completed, paid purchase as fulfilment leaves it: course access and one
+ * ledger sale entry per course. `courses` > 1 makes a bundle.
+ */
+export async function createCompletedPurchase({
+  priceInRupees = 999,
+  ageMs = 0,
+  courses = 1,
+} = {}) {
+  const { product, course, creator } = await createProduct({ priceInRupees })
+  const courseIds = [course.id]
+  for (let i = 1; i < courses; i++) {
+    const [extra] = await db
+      .insert(CourseTable)
+      .values({ name: `Course ${run}-${++seq}`, description: "d", authorId: creator.id })
+      .returning()
+    await db.insert(CourseProductTable).values({ courseId: extra!.id, productId: product.id })
+    courseIds.push(extra!.id)
+  }
+  const buyer = await createUser("buyer")
+  const key = `${crypto.randomUUID()}:esewa`
+  const createdAt = new Date(Date.now() - ageMs)
+  const [purchase] = await db
+    .insert(PurchaseTable)
+    .values({
+      userId: buyer.id,
+      productId: product.id,
+      productDetails: { name: product.name, description: "d", imageUrl: "/x.png" },
+      pricePaidInPaisa: priceInRupees * 100,
+      gateway: "esewa",
+      status: "completed",
+      gatewayCheckoutId: key,
+      gatewayTransactionId: `txn-${key}`,
+      idempotencyKey: key,
+      createdAt,
+    })
+    .returning()
+  await db.insert(UserCourseAccessTable).values(courseIds.map(courseId => ({ userId: buyer.id, courseId })))
+  const share = Math.floor((priceInRupees * 100) / courseIds.length)
+  for (const courseId of courseIds) {
+    await db.insert(LedgerEntryTable).values({
+      purchaseId: purchase!.id,
+      courseId,
+      instructorId: creator.id,
+      entryType: "sale",
+      revenueSource: "platform",
+      platformFeeRateBps: 5000,
+      grossAmountPaisa: share,
+      platformFeePaisa: Math.floor(share / 2),
+      creatorEarningsPaisa: share - Math.floor(share / 2),
+      createdAt,
+    })
+  }
+  return { purchase: purchase!, product, courseIds, creator, buyer }
+}

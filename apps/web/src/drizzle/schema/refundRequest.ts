@@ -1,6 +1,6 @@
-import { pgTable, uuid, text, pgEnum, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, pgEnum, integer, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createdAt, updatedAt } from "../schemaHelpers";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { UserTable } from "./user";
 import { CourseTable } from "./course";
 import { PurchaseTable } from "./purchase";
@@ -24,6 +24,9 @@ export const RefundRequestTable = pgTable("refund_requests", {
   userId: uuid()
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),
+  // The purchase's first course (by id). A bundle has several; eligibility
+  // is computed across all of them, and the admin page shows the product
+  // from the purchase. Kept for "refund requests per course" lookups.
   courseId: uuid()
     .notNull()
     .references(() => CourseTable.id, { onDelete: "cascade" }),
@@ -40,7 +43,13 @@ export const RefundRequestTable = pgTable("refund_requests", {
   adminNote: text(),
   createdAt,
   updatedAt,
-});
+}, table => [
+  // One open request per purchase, so a purchase can't be refunded twice
+  // through two requests. A denied request doesn't count.
+  uniqueIndex("refund_requests_open_purchase_idx")
+    .on(table.purchaseId)
+    .where(sql`${table.status} in ('pending', 'approved', 'processed')`),
+]);
 
 export const RefundRequestRelationships = relations(
   RefundRequestTable,

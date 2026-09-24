@@ -3,7 +3,7 @@ import { MIN_DESCRIPTION_LENGTH } from "@/features/products/lib/canPublishProduc
 import {
   REFUND_COMPLETION_THRESHOLD_PERCENT,
   REFUND_WINDOW_MS,
-} from "@/features/refunds/lib/eligibility"
+} from "@/features/refunds/lib/refundTerms"
 import { PLATFORM_FEE_RATE_BPS } from "@/lib/comissionRate"
 import { REF_COOKIE_MAX_AGE_SECONDS } from "@/lib/referral"
 

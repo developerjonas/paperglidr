@@ -31,6 +31,7 @@ import {
   FolderIcon,
   LifeBuoyIcon,
   StarIcon,
+  Undo2Icon,
   WalletIcon,
 } from "lucide-react";
 import { ReactNode } from "react";
@@ -50,6 +51,12 @@ const MANAGEMENT_LINKS = [
     description: "Pending, failed and disputed payments; re-check with the gateway",
     href: "/admin/purchases",
     icon: CreditCardIcon,
+  },
+  {
+    title: "Refunds",
+    description: "Approve or reject refund requests; return the money in the gateway dashboard",
+    href: "/admin/refunds",
+    icon: Undo2Icon,
   },
   {
     title: "Payouts",

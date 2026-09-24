@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "refund_requests_open_purchase_idx" ON "refund_requests" USING btree ("purchaseId") WHERE "refund_requests"."status" in ('pending', 'approved', 'processed');

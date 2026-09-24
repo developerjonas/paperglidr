@@ -19,8 +19,7 @@ import { isGatewayEnabled, type GatewayName } from "@/services/payments/config";
 import { getReturnUrls } from "@/services/payments/returnUrls";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { revokeUserCourseAccess } from "@/features/courses/db/userCourseAccess";
-import { reverseLedgerEntriesForPurchase } from "@/features/ledger/db/ledger";
+import { revokePurchaseInTransaction } from "../lib/revokePurchase";
 import { revalidateProductCache } from "@/features/products/db/cache";
 import { validateDiscountCode } from "@/features/discounts/lib/validateDiscountCode";
 import { getCurrentUser, requireAdmin } from "@/services/auth";
@@ -310,34 +309,19 @@ export async function revokeAccess({ purchaseId }: { purchaseId: string }) {
 }
 
 async function revokePurchase(purchaseId: string) {
-
-  const purchase = await db.query.PurchaseTable.findFirst({
-    where: eq(PurchaseTable.id, purchaseId),
-  });
-
-  if (purchase == null) {
+  const result = await db.transaction((trx) =>
+    revokePurchaseInTransaction(trx, purchaseId),
+  );
+  if (result.outcome === "not_found") {
     return { error: true, message: "Purchase not found" };
   }
 
-  await db.transaction(async (trx) => {
-    // Mark refunded first: revokeUserCourseAccess keeps access to any course
-    // the buyer still owns through another non-refunded purchase, so this
-    // purchase must no longer count as one.
-    const now = new Date();
-    await trx
-      .update(PurchaseTable)
-      .set({ status: "refunded", refundedAt: now, updatedAt: now })
-      .where(eq(PurchaseTable.id, purchaseId));
-
-    await revokeUserCourseAccess(
-      { userId: purchase.userId, productId: purchase.productId },
-      trx,
-    );
-
-    await reverseLedgerEntriesForPurchase(purchaseId, trx);
-  });
-
-  revalidateProductCache(purchase.productId);
-
-  return { error: false, message: "Access revoked successfully" };
+  revalidateProductCache(result.purchase.productId);
+  return {
+    error: false,
+    message:
+      result.outcome === "already_refunded"
+        ? "Purchase was already refunded"
+        : "Access revoked successfully",
+  };
 }

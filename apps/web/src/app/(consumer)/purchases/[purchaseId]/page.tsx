@@ -11,14 +11,18 @@ import {
 } from "@/components/ui/card";
 import { db } from "@/drizzle/db";
 import { PurchaseTable } from "@/drizzle/schema";
-import { getPurchaseIdTag } from "@/features/purchases/db/cache";
+import { POLICY_TERMS } from "@/config/policyTerms";
+import type { PurchaseStatus } from "@/drizzle/schema";
+import { RefundRequestButton } from "@/features/refunds/components/RefundRequestButton";
+import { getLatestRefundRequest } from "@/features/refunds/db/refunds";
+import { getRefundEligibility } from "@/features/refunds/lib/eligibility";
 import { formatDate } from "@/lib/formatters";
 import { getCurrentUser } from "@/services/auth";
 import { and, eq } from "drizzle-orm";
-import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +54,7 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
   });
   if (userId == null || user == null) return redirectToSignIn();
 
+  if (!z.string().uuid().safeParse(purchaseId).success) return notFound();
   const enrollment = await getEnrollment({ userId, id: purchaseId });
   if (enrollment == null) return notFound();
 
@@ -65,9 +70,7 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
               {enrollment.productDetails.name}
             </h1>
             <Button variant="outline" asChild>
-              <Link href={`/courses/${enrollment.productId}`}>
-                Go to Course
-              </Link>
+              <Link href="/courses">Go to my courses</Link>
             </Button>
           </div>
         </div>
@@ -84,7 +87,7 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
                   <CardDescription>ID: {purchaseId}</CardDescription>
                 </div>
                 <Badge variant="secondary" className="rounded-[4px] text-xs">
-                  Enrolled
+                  {STATUS_LABELS[enrollment.status]}
                 </Badge>
               </div>
             </CardHeader>
@@ -115,13 +118,15 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Price
                 </p>
-                <p className="mt-0.5 text-sm font-medium">Free</p>
+                <p className="mt-0.5 text-sm font-medium">
+                  {enrollment.pricePaidInPaisa === 0
+                    ? "Free"
+                    : `NPR ${(enrollment.pricePaidInPaisa / 100).toLocaleString("en-IN")}`}
+                </p>
               </div>
             </CardContent>
             <CardFooter className="border-t border-white/20 pt-4 dark:border-white/10">
-              <p className="text-sm text-muted-foreground">
-                This course is free — no payment was required to access it.
-              </p>
+              <RefundSection purchase={enrollment} />
             </CardFooter>
           </Card>
         </div>
@@ -130,14 +135,85 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
   );
 }
 
+const STATUS_LABELS: Record<PurchaseStatus, string> = {
+  completed: "Enrolled",
+  pending: "Payment pending",
+  failed: "Payment failed",
+  disputed: "Under review",
+  refunded: "Refunded",
+}
+
+async function RefundSection({
+  purchase,
+}: {
+  purchase: NonNullable<Awaited<ReturnType<typeof getEnrollment>>>
+}) {
+  if (purchase.pricePaidInPaisa === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        This course is free — no payment was required to access it.
+      </p>
+    )
+  }
+  if (purchase.status === "refunded") {
+    return (
+      <p className="text-sm text-muted-foreground">
+        This purchase was refunded and its access has ended.
+      </p>
+    )
+  }
+
+  const latestRequest = await getLatestRefundRequest(purchase.id)
+  if (latestRequest?.status === "pending") {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Refund requested on {formatDate(latestRequest.createdAt)}. We&apos;ll
+        email you when it has been reviewed.
+      </p>
+    )
+  }
+
+  const eligibility = await getRefundEligibility(purchase.id)
+  if (eligibility.eligible) {
+    return (
+      <div className="flex w-full flex-col gap-2">
+        {latestRequest?.status === "denied" && (
+          <p className="text-sm text-muted-foreground">
+            An earlier refund request was not approved. You can ask again
+            while the purchase still qualifies.
+          </p>
+        )}
+        <RefundRequestButton
+          purchaseId={purchase.id}
+          msRemaining={eligibility.msRemaining}
+          completionPercent={eligibility.completionPercent}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <p className="text-sm text-muted-foreground">
+      {eligibility.reason === "window_closed"
+        ? `The ${POLICY_TERMS.refundWindowDays}-day refund window for this purchase has closed.`
+        : eligibility.reason === "completion_too_high"
+          ? `You've completed ${POLICY_TERMS.refundCompletionThresholdPercent}% or more of this course, so it no longer qualifies for a refund.`
+          : "This purchase isn't eligible for a refund."}{" "}
+      See our <Link href="/refund-policy" className="underline">refund policy</Link>.
+    </p>
+  )
+}
+
+// Uncached: status and refund state must be current on this page.
 async function getEnrollment({ userId, id }: { userId: string; id: string }) {
-  "use cache";
-  cacheTag(getPurchaseIdTag(id));
   return db.query.PurchaseTable.findFirst({
     columns: {
+      id: true,
       productId: true,
       productDetails: true,
       createdAt: true,
+      pricePaidInPaisa: true,
+      status: true,
     },
     where: and(eq(PurchaseTable.id, id), eq(PurchaseTable.userId, userId)),
   });

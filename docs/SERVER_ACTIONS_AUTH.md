@@ -62,8 +62,10 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `confirmPurchase` | owner | `purchase.userId` = caller | 🔧 task 5: had no check |
 | | `revokeAccess` | admin | `requireAdmin()` | 🔧 task 5: any signed-in user could revoke any purchase |
 | `app/(consumer)/products/[productId]/purchase/page.tsx` (inline) | `enrollInFreeProduct` | signed-in | public product **with price 0** | 🔧 sweep: price was never checked, so any public **paid** product could be enrolled for free by calling the action with its ID |
-| `features/refunds/actions/refunds.ts` | `checkMyRefundEligibility` | owner | `purchase.userId` = caller | ✅ |
-| | `requestRefund` | owner | `purchase.userId` = caller | ✅ |
+| `features/refunds/actions/refunds.ts` | `checkMyRefundEligibility` | owner | `purchase.userId` = caller | 🔧 fix/money-ops: read `session.user.id`, which `getCurrentUser()` never sets, so it always answered "Not signed in" |
+| | `requestRefund` | owner | `purchase.userId` = caller; eligibility recomputed server-side; one open request per purchase (unique index) | 🔧 fix/money-ops: same "Not signed in" bug; stored the product ID as the course ID |
+| | `approveRefund` | admin | `requireAdmin()`; request must be pending (row locked); revoke runs in the same transaction | 🆕 task 16 |
+| | `rejectRefund` | admin | `requireAdmin()`; pending only | 🆕 task 16 |
 | `features/reports/actions/reports.ts` | `reportCourse` | signed-in | reporter = caller | ✅ |
 | `features/reviews/actions/reviews.ts` | `createReview` | signed-in | ≥50% course completion; one per course | ✅ |
 | | `updateReview` | owner | review author | ✅ |
