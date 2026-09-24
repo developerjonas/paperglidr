@@ -780,6 +780,10 @@ async function main() {
     r = await initiate({ productId: productB.id, gateway, idempotencyKey: `${crypto.randomUUID()}:${gateway}` })
     check(`initiatePurchase rejects gateway "${gateway}"`, r.body.includes('"error":true') && (await purchaseCount()) === purchasesBefore, message(r.body))
   }
+  // The payments section left the attacker a pending eSewa checkout of
+  // product B (inserted directly, with no gateway page). A new checkout
+  // would correctly be told to wait for it, so close it first.
+  await q(`update purchases set status = 'failed' where id = $1 and status = 'pending'`, [esewaPurchase.id])
   r = await initiate({
     productId: productB.id,
     gateway: "esewa",

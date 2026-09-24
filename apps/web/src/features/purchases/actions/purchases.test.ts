@@ -420,6 +420,30 @@ describe("one pending checkout per buyer, product and gateway", () => {
     expect(rows.find(r => r.id === first!.id)!.status).toBe("failed")
     expect(rows.find(r => r.id === discountedId)!.pricePaidInPaisa).toBe(50000)
 
+    // A pending checkout that never got a gateway page (e.g. the server
+    // died mid-checkout) blocks for a minute at most, then is replaced.
+    const { product: other } = await createProduct({ priceInRupees: 700 })
+    const stuckKey = key("esewa")
+    const [stuck] = await db
+      .insert(PurchaseTable)
+      .values({
+        userId: buyerId,
+        productId: other.id,
+        productDetails: { name: "x", description: "d", imageUrl: "/x.png" },
+        pricePaidInPaisa: 70000,
+        gateway: "esewa",
+        status: "pending",
+        gatewayCheckoutId: stuckKey,
+        idempotencyKey: stuckKey,
+      })
+      .returning()
+    const waiting = await initiatePurchase({ productId: other.id, gateway: "esewa", idempotencyKey: key("esewa") })
+    expect(waiting).toMatchObject({ error: true, message: expect.stringContaining("already starting") })
+    await db.update(PurchaseTable).set({ createdAt: new Date(Date.now() - 2 * 60 * 1000) }).where(eq(PurchaseTable.id, stuck!.id))
+    const replaced = await initiatePurchase({ productId: other.id, gateway: "esewa", idempotencyKey: key("esewa") })
+    expect(replaced.error).toBe(false)
+    expect(purchaseIdOf(replaced)).not.toBe(stuck!.id)
+
     // Older than the reuse window: a new checkout.
     await db.update(PurchaseTable).set({ createdAt: new Date(Date.now() - 31 * 60 * 1000) }).where(eq(PurchaseTable.userId, buyerId))
     const later = await initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa"), discountCode: code })

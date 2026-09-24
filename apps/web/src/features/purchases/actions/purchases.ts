@@ -48,6 +48,9 @@ type InitiatePurchaseInput = Parameters<typeof startCheckout>[0];
 // is returned instead of starting another (same window a discount use is
 // held for).
 const CHECKOUT_REUSE_MS = DISCOUNT_RESERVATION_MS;
+// How long a checkout may take to get its gateway page before a new click
+// replaces it instead of waiting for it.
+const CHECKOUT_SETUP_MS = 60 * 1000;
 
 async function startCheckout({
   productId,
@@ -191,14 +194,21 @@ async function startCheckout({
       const stored = (open.rawGatewayResponse as StoredInitiation | null)?.initiation;
       const qrExpired =
         stored?.type === "qr" && new Date(stored.expiresAt).getTime() <= Date.now();
+      // No stored gateway page yet: another request is setting it up — but
+      // only briefly. Older than that, it never finished (e.g. the server
+      // died mid-checkout) and mustn't block the buyer.
+      const stillStarting =
+        stored == null && Date.now() - open.createdAt.getTime() < CHECKOUT_SETUP_MS;
       if (
         open.pricePaidInPaisa === pricePaidInPaisa &&
         open.discountCodeId === discountCodeId &&
-        !qrExpired
+        !qrExpired &&
+        (stored != null || stillStarting)
       ) {
         return { reuse: open, stored: stored ?? null };
       }
-      // Different price/code, or an expired QR: this checkout replaces it.
+      // Different price/code, an expired QR or a checkout that never got a
+      // gateway page: this checkout replaces it.
       await trx
         .update(PurchaseTable)
         .set({ status: "failed", updatedAt: new Date() })
