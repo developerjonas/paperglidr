@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { allowedImageHosts } from "./src/lib/imageHosts";
 
 const nextConfig: NextConfig = {
@@ -18,4 +19,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry (docs/OBSERVABILITY.md). Everything is optional: with no DSN the
+// SDK is never initialised, and with no SENTRY_AUTH_TOKEN source maps are
+// not uploaded, so the app builds and runs with Sentry unset.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  silent: !process.env.CI,
+  telemetry: false,
+});

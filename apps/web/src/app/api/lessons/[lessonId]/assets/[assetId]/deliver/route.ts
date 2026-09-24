@@ -4,6 +4,7 @@ import { getLessonAsset } from "@/features/lessons/db/lessonAssets";
 import { canAccessLessonContent } from "@/features/lessons/permissions/lessons";
 import { getDownloadUrl } from "@/services/storage/r2";
 import { getBunnyEmbedUrl } from "@/services/bunny/streamToken";
+import { captureEvent } from "@/lib/observability";
 import { routeError } from "@/lib/safeError";
 
 // Signed R2 URLs are the only thing guarding private files once issued,
@@ -85,9 +86,20 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ lessonId: string; assetId: string }> },
 ) {
+  let response: Response;
   try {
-    return await handle(req, context);
+    response = await handle(req, context);
   } catch (error) {
-    return routeError(error, "lessons: deliver asset");
+    // Reported with area=deliver by safeError (the alert rule's filter).
+    return routeError(error, "lessons: deliver asset", 500, undefined, { area: "deliver" });
   }
+  // Deliberate 5xx answers (e.g. an asset row with no storage key) aren't
+  // exceptions; report them under the same tag.
+  if (response.status >= 500) {
+    const { lessonId, assetId } = await context.params;
+    captureEvent("Lesson delivery returned 5xx", { area: "deliver", status: String(response.status) }, {
+      extra: { lessonId, assetId },
+    });
+  }
+  return response;
 }

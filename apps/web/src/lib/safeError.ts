@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
+import { captureError, type ObservabilityTags } from "./observability";
 
 /**
  * The allow-list: throw this when the message is deliberately written for
@@ -23,10 +24,13 @@ export function safeErrorMessage(
   error: unknown,
   context: string,
   fallback: string = GENERIC_ERROR_MESSAGE,
+  tags: ObservabilityTags = { area: "action" },
 ): string {
   unstable_rethrow(error);
   if (error instanceof UserFacingError) return error.message;
   console.error(`[${context}]`, error);
+  // Handled here, so Next's onRequestError never sees it: report it.
+  captureError(error, { ...tags, context });
   return fallback;
 }
 
@@ -41,9 +45,10 @@ export function routeError(
   context: string,
   status = 500,
   fallback?: string,
+  tags: ObservabilityTags = { area: "route" },
 ) {
   return NextResponse.json(
-    { error: safeErrorMessage(error, context, fallback) },
+    { error: safeErrorMessage(error, context, fallback, tags) },
     { status },
   );
 }

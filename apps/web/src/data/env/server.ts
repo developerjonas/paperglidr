@@ -50,6 +50,14 @@ export const env = createEnv({
       .url()
       .refine(url => !url.endsWith("/"), "No trailing slash"),
 
+    // --- Sentry (all optional; unset = no error reporting) ---
+    // Read directly from process.env by src/sentry.*.config.ts and
+    // lib/sentryOptions.ts (they run before this module); declared here so
+    // a malformed value fails validation.
+    SENTRY_DSN: z.string().url().optional(),
+    SENTRY_ENVIRONMENT: z.string().min(1).optional(),
+    SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
+
     // --- Mobile API ---
     // The user-specific /api/v1 routes (for the mobile app, not launching
     // yet) answer 404 unless this is "true". Public catalogue routes are
