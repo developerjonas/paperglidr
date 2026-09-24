@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, pgEnum, integer, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, pgEnum, integer, boolean, timestamp, uniqueIndex, primaryKey, index } from "drizzle-orm/pg-core";
 import { createdAt, updatedAt } from "../schemaHelpers";
 import { relations, sql } from "drizzle-orm";
 import { UserTable } from "./user";
@@ -24,9 +24,8 @@ export const RefundRequestTable = pgTable("refund_requests", {
   userId: uuid()
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),
-  // The purchase's first course (by id). A bundle has several; eligibility
-  // is computed across all of them, and the admin page shows the product
-  // from the purchase. Kept for "refund requests per course" lookups.
+  // The purchase's first course (by id), kept for existing queries. The
+  // full list — every course of a bundle — is in refund_request_courses.
   courseId: uuid()
     .notNull()
     .references(() => CourseTable.id, { onDelete: "cascade" }),
@@ -57,7 +56,8 @@ export const RefundRequestTable = pgTable("refund_requests", {
 
 export const RefundRequestRelationships = relations(
   RefundRequestTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
+    courses: many(RefundRequestCourseTable),
     purchase: one(PurchaseTable, {
       fields: [RefundRequestTable.purchaseId],
       references: [PurchaseTable.id],
@@ -77,6 +77,41 @@ export const RefundRequestRelationships = relations(
     processor: one(UserTable, {
       fields: [RefundRequestTable.processedBy],
       references: [UserTable.id],
+    }),
+  }),
+);
+
+/**
+ * Every course a refund request covers: one row for a single course, one
+ * per course for a bundle (the courses in the product when the refund was
+ * requested). Completion for eligibility is measured across all of them.
+ */
+export const RefundRequestCourseTable = pgTable(
+  "refund_request_courses",
+  {
+    refundRequestId: uuid("refund_request_id")
+      .notNull()
+      .references(() => RefundRequestTable.id, { onDelete: "cascade" }),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => CourseTable.id, { onDelete: "cascade" }),
+  },
+  table => [
+    primaryKey({ columns: [table.refundRequestId, table.courseId] }),
+    index("refund_request_courses_course_idx").on(table.courseId),
+  ],
+);
+
+export const RefundRequestCourseRelationships = relations(
+  RefundRequestCourseTable,
+  ({ one }) => ({
+    refundRequest: one(RefundRequestTable, {
+      fields: [RefundRequestCourseTable.refundRequestId],
+      references: [RefundRequestTable.id],
+    }),
+    course: one(CourseTable, {
+      fields: [RefundRequestCourseTable.courseId],
+      references: [CourseTable.id],
     }),
   }),
 );

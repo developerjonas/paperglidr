@@ -73,13 +73,12 @@ export async function requestRefund(purchaseId: string, reason?: string) {
     const refundRequest = await insertRefundRequest({
       purchaseId: purchase.id,
       userId,
-      courseId: eligibility.courseIds[0]!,
       reason: parsedReason.data || null,
       completionPercentAtRequest: Math.round(eligibility.completionPercent),
       withinWindowAtRequest: eligibility.withinWindow,
       eligible: true,
       status: "pending",
-    });
+    }, eligibility.courseIds);
     // The unique index allows one open request per purchase.
     if (refundRequest == null) {
       throw new UserFacingError("You've already requested a refund for this purchase.");

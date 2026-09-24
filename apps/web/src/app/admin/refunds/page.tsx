@@ -77,7 +77,16 @@ export default async function AdminRefundsPage() {
                   <br />
                   <span className="text-muted-foreground">{row.user.email}</span>
                 </TableCell>
-                <TableCell className="text-sm">{row.purchase.productDetails.name}</TableCell>
+                <TableCell className="text-sm">
+                  {row.purchase.productDetails.name}
+                  {row.courses.length > 1 && (
+                    <ul className="text-muted-foreground">
+                      {row.courses.map(({ course }) => (
+                        <li key={course.id}>{course.name}</li>
+                      ))}
+                    </ul>
+                  )}
+                </TableCell>
                 <TableCell className="text-sm">
                   {npr(row.purchase.pricePaidInPaisa)}
                   <br />

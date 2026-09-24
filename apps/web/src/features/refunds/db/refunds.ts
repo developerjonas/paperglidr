@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/drizzle/db";
-import { RefundRequestTable } from "@/drizzle/schema/refundRequest";
+import { RefundRequestCourseTable, RefundRequestTable } from "@/drizzle/schema/refundRequest";
 
 // A purchase can have at most one open request: pending, approved or
 // processed (enforced by refund_requests_open_purchase_idx). A denied
@@ -23,15 +23,27 @@ export async function getLatestRefundRequest(purchaseId: string) {
   });
 }
 
+/**
+ * The request and all of its courses, in one transaction. Returns null
+ * (nothing written) if the purchase already has an open request.
+ */
 export async function insertRefundRequest(
-  data: typeof RefundRequestTable.$inferInsert,
+  data: Omit<typeof RefundRequestTable.$inferInsert, "courseId">,
+  courseIds: string[],
 ) {
-  const [refundRequest] = await db
-    .insert(RefundRequestTable)
-    .values(data)
-    .onConflictDoNothing()
-    .returning();
-  return refundRequest ?? null;
+  if (courseIds.length === 0) throw new Error("A refund request needs at least one course");
+  return db.transaction(async (trx) => {
+    const [refundRequest] = await trx
+      .insert(RefundRequestTable)
+      .values({ ...data, courseId: courseIds[0]! })
+      .onConflictDoNothing()
+      .returning();
+    if (refundRequest == null) return null;
+    await trx
+      .insert(RefundRequestCourseTable)
+      .values(courseIds.map((courseId) => ({ refundRequestId: refundRequest.id, courseId })));
+    return refundRequest;
+  });
 }
 
 // Admin review queue: pending first (oldest first), then the most recent
@@ -41,6 +53,7 @@ export async function getRefundRequestsForAdmin() {
     user: { columns: { name: true, email: true } },
     reviewer: { columns: { name: true, email: true } },
     processor: { columns: { name: true, email: true } },
+    courses: { columns: {}, with: { course: { columns: { id: true, name: true } } } },
     purchase: {
       columns: {
         id: true,
