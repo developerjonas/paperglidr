@@ -165,10 +165,9 @@ async function checkStoredObject({
 }
 
 /**
- * Instructor removes an attachment or replaces a primary asset.
- * Does NOT delete the R2 object itself — add that as an explicit
- * background job if you want storage to actually shrink, rather than
- * risking an in-request delete racing a still-open signed download URL.
+ * Instructor removes an attachment or replaces a primary asset. The R2
+ * object is queued and deleted by the cron a few hours later (after any
+ * signed URL for it has expired), not in this request.
  */
 export async function removeLessonAsset(assetId: string, lessonId: string) {
   await canEditLessonAssets(lessonId); // throws if unauthorized
