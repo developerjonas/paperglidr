@@ -117,7 +117,11 @@ export async function verifyInstructorPhoneOtp(
       .where(eq(InstructorTable.id, instructor.id))
   })
 
-  revalidateInstructorCache({ id: instructor.id, userId: instructor.userId })
+  revalidateInstructorCache({
+    id: instructor.id,
+    userId: instructor.userId,
+    handle: instructor.handle,
+  })
 
   return { error: false, message: "Phone verified!" }
 }

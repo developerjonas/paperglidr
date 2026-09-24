@@ -1,7 +1,12 @@
 import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { revalidateInstructorCache } from "./cache/instructors";
+import {
+  getInstructorHandleTag,
+  getInstructorIdTag,
+  revalidateInstructorCache,
+} from "./cache/instructors";
+import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { CourseTable, CourseProductTable, ProductTable } from "@/drizzle/schema"
 import { and } from "drizzle-orm"
 
@@ -14,9 +19,12 @@ export async function getInstructorByUserId(userId: string) {
 
 export async function getInstructorByHandle(handle: string) {
   "use cache";
-  return db.query.InstructorTable.findFirst({
+  cacheTag(getInstructorHandleTag(handle));
+  const instructor = await db.query.InstructorTable.findFirst({
     where: eq(InstructorTable.handle, handle),
   });
+  if (instructor) cacheTag(getInstructorIdTag(instructor.id));
+  return instructor;
 }
 
 export async function upsertInstructor(
@@ -34,7 +42,12 @@ export async function upsertInstructor(
   if (!instructor) {
     throw new Error("Failed to save instructor profile");
   }
-  revalidateInstructorCache({ id: instructor.id, userId: instructor.userId });
+  // handle: the (possibly new) handle; the old one is covered by the id tag.
+  revalidateInstructorCache({
+    id: instructor.id,
+    userId: instructor.userId,
+    handle: instructor.handle,
+  });
   return instructor;
 }
 
@@ -47,7 +60,11 @@ export async function setInstructorVerified(id: string, isVerified: boolean) {
   if (!instructor) {
     throw new Error("Instructor not found");
   }
-  revalidateInstructorCache({ id: instructor.id, userId: instructor.userId });
+  revalidateInstructorCache({
+    id: instructor.id,
+    userId: instructor.userId,
+    handle: instructor.handle,
+  });
   return instructor;
 }
 
