@@ -7,6 +7,7 @@ import { actionToast } from "@/hooks/use-toast";
 import {
   requestLessonAssetUploadUrl,
   confirmLessonAssetUpload,
+  setLessonYouTubeVideo,
   removeLessonAsset,
   listLessonAssetsForEditor,
 } from "../actions/lessonAssets";
@@ -16,6 +17,7 @@ import {
   formatBytes,
   getUploadRule,
 } from "../lib/uploadRules";
+import { parseYouTubeVideoId, youtubeAllowedFor } from "../lib/youtube";
 
 // Matches the shape returned by getLessonAssetsForLesson (db/lessonAssets.ts) —
 // keep in sync if that query's columns change.
@@ -29,10 +31,34 @@ type LessonAsset = {
   status: "pending" | "ready";
 };
 
-export function LessonAssetManager({ lessonId }: { lessonId: string }) {
+export function LessonAssetManager({
+  lessonId,
+  lessonStatus,
+}: {
+  lessonId: string;
+  lessonStatus: string | null;
+}) {
   const [assets, setAssets] = useState<LessonAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+
+  async function handleSetYouTube() {
+    if (parseYouTubeVideoId(youtubeUrl) == null) {
+      actionToast({
+        actionData: { error: true, message: "That isn't a YouTube video link." },
+      });
+      return;
+    }
+    setUploading(true);
+    const result = await setLessonYouTubeVideo(lessonId, youtubeUrl);
+    actionToast({ actionData: result });
+    setUploading(false);
+    if (!result.error) {
+      setYoutubeUrl("");
+      await refresh();
+    }
+  }
 
   async function refresh() {
     setLoading(true);
@@ -192,6 +218,38 @@ export function LessonAssetManager({ lessonId }: { lessonId: string }) {
           }}
         />
       </div>
+
+      {lessonStatus != null && youtubeAllowedFor(lessonStatus) ? (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">
+            Or use a YouTube video (free previews only)
+          </label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="https://www.youtube.com/watch?v=…"
+              value={youtubeUrl}
+              disabled={uploading}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={uploading || !youtubeUrl.trim()}
+              onClick={handleSetYouTube}
+            >
+              Use video
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Replaces the lesson&apos;s current video or PDF.
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          YouTube videos can be used on free preview lessons only; paid
+          lessons need an uploaded MP4.
+        </p>
+      )}
 
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium">

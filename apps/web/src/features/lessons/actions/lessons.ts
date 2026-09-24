@@ -1,4 +1,8 @@
 "use server"
+import { and, eq } from "drizzle-orm"
+import { db } from "@/drizzle/db"
+import { LessonAssetTable } from "@/drizzle/schema"
+import { YOUTUBE_PREVIEW_ONLY_MESSAGE, youtubeAllowedFor } from "../lib/youtube"
 import { z } from "zod"
 import { lessonSchema } from "../schemas/lessons"
 import { getCurrentUser } from "@/services/auth"
@@ -46,6 +50,13 @@ export async function updateLesson(
   ) {
     return { error: true, message: "There was an error updating your lesson" }
   }
+  // A YouTube video is public, so it can only stay on a free preview.
+  if (!youtubeAllowedFor(data.status) && (await lessonHasYouTubeVideo(id))) {
+    return {
+      error: true,
+      message: `${YOUTUBE_PREVIEW_ONLY_MESSAGE} Upload an MP4 (or remove the YouTube video) before changing this lesson's status.`,
+    }
+  }
   await updateLessonDb(id, data)
   return { error: false, message: "Successfully updated your lesson" }
 }
@@ -69,4 +80,12 @@ export async function updateLessonOrders(lessonIds: string[]) {
   }
   await updateLessonOrdersDb(lessonIds)
   return { error: false, message: "Successfully reordered your lessons" }
+}
+
+async function lessonHasYouTubeVideo(lessonId: string) {
+  const asset = await db.query.LessonAssetTable.findFirst({
+    where: and(eq(LessonAssetTable.lessonId, lessonId), eq(LessonAssetTable.provider, "youtube")),
+    columns: { id: true },
+  })
+  return asset != null
 }

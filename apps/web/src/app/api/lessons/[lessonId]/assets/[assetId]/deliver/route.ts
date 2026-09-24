@@ -5,6 +5,7 @@ import { canAccessLessonContent } from "@/features/lessons/permissions/lessons";
 import { getDownloadUrl } from "@/services/storage/r2";
 import { getBunnyEmbedUrl } from "@/services/bunny/streamToken";
 import { captureEvent } from "@/lib/observability";
+import { youtubeAllowedFor } from "@/features/lessons/lib/youtube";
 import { routeError } from "@/lib/safeError";
 
 // Signed R2 URLs are the only thing guarding private files once issued,
@@ -47,6 +48,11 @@ async function handle(
     return json({ error: "Asset not found" }, 404);
   }
 
+  // YouTube is only ever for free previews (it's public anyway); a
+  // non-preview lesson never hands one out.
+  if (asset.provider === "youtube" && !youtubeAllowedFor(access.lesson.status)) {
+    return json({ error: "Asset not found" }, 404);
+  }
   if (asset.provider === "youtube") {
     return json({ type: "youtube", externalId: asset.externalId });
   }

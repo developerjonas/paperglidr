@@ -44,10 +44,11 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `confirmImageUpload` | signed-in | only the caller's own staging keys (exact key shape); checks size, type and file signature before copying to the public bucket | 🆕 fix/funnel |
 | `features/lessons/actions/lessonAssets.ts` | `requestLessonAssetUploadUrl` | owner | lesson's course author or admin; type and size per `uploadRules.ts` | ✅ (rules added in task 12) |
 | | `confirmLessonAssetUpload` | owner | lesson's course author or admin **and** the asset belongs to that lesson | 🆕 task 12 |
+| | `setLessonYouTubeVideo` | owner | lesson's course author or admin; lesson must be a free **preview**; valid YouTube link | 🆕 fix/money-ops |
 | | `removeLessonAsset` | owner | lesson's course author **and** the asset belongs to that lesson | 🔧 sweep: any asset ID could be deleted via a lesson the caller owned |
 | | `listLessonAssetsForEditor` | owner | lesson's course author or admin | ✅ |
 | `features/lessons/actions/lessons.ts` | `createLesson` | owner | caller authors the target section's course | ✅ |
-| | `updateLesson` | owner | caller authors the lesson **and** the target `sectionId` | 🔧 sweep: `sectionId` from the form was unchecked, so a lesson could be moved into another creator's course |
+| | `updateLesson` | owner | caller authors the lesson **and** the target `sectionId`; can't leave `preview` while it has a YouTube video | 🔧 sweep: `sectionId` from the form was unchecked, so a lesson could be moved into another creator's course |
 | | `deleteLesson` | owner | lesson's course author or admin | ✅ |
 | | `updateLessonOrders` | owner | **every** lesson ID is the caller's | 🔧 sweep: only the first ID was checked |
 | `features/lessons/actions/userLessonComplete.ts` | `updateLessonCompleteStatus` | owner | caller has access to the lesson's course; writes only the caller's progress | ✅ |

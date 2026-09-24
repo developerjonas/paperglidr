@@ -26,6 +26,11 @@ import {
   getUploadRule,
 } from "../lib/uploadRules";
 import { UserFacingError, actionError } from "@/lib/safeError";
+import {
+  YOUTUBE_PREVIEW_ONLY_MESSAGE,
+  parseYouTubeVideoId,
+  youtubeAllowedFor,
+} from "../lib/youtube";
 
 /**
  * Step 1 of upload: the instructor's client asks for a place to put the
@@ -162,6 +167,37 @@ async function checkStoredObject({
     return `That file isn't a valid ${rule.label}. Allowed: ${ALLOWED_MIME_TYPES[role].join(", ")}.`;
   }
   return null;
+}
+
+/**
+ * Sets a YouTube video as the lesson's content — free preview lessons
+ * only. Replaces the current primary asset (an uploaded file's R2 object
+ * is queued for deletion).
+ */
+export async function setLessonYouTubeVideo(lessonId: string, url: string) {
+  try {
+    const lesson = await canEditLessonAssets(lessonId); // throws if unauthorized
+    if (!youtubeAllowedFor(lesson.status)) {
+      throw new UserFacingError(YOUTUBE_PREVIEW_ONLY_MESSAGE);
+    }
+    const videoId = typeof url === "string" ? parseYouTubeVideoId(url) : null;
+    if (videoId == null) {
+      throw new UserFacingError("That isn't a YouTube video link (e.g. https://www.youtube.com/watch?v=…).");
+    }
+    const asset = await insertLessonAsset({
+      lessonId,
+      type: "youtube",
+      provider: "youtube",
+      role: "primary",
+      status: "pending",
+      externalId: videoId,
+      fileName: `YouTube ${videoId}`,
+    });
+    await markLessonAssetReady(asset.id);
+    return { error: false as const, message: "YouTube video set" };
+  } catch (error) {
+    return actionError(error, "setLessonYouTubeVideo", "Couldn't set the video.");
+  }
 }
 
 /**

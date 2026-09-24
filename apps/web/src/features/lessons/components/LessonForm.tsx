@@ -55,6 +55,11 @@ export function LessonForm({
   const [savedLessonId, setSavedLessonId] = useState<string | null>(
     lesson?.id ?? null
   )
+  // The status as saved on the server — what decides whether a YouTube
+  // video is allowed (free previews only).
+  const [savedStatus, setSavedStatus] = useState<LessonStatus | null>(
+    lesson?.status ?? null
+  )
 
   const form = useForm<z.infer<typeof lessonSchema>>({
     resolver: zodResolver(lessonSchema),
@@ -72,6 +77,7 @@ export function LessonForm({
     const data = await action(values)
     actionToast({ actionData: data })
     if (data.error) return
+    setSavedStatus(values.status)
 
     // createLesson's success payload needs to include the new id — adjust
     // `data.id` below to whatever field name it actually returns.
@@ -190,7 +196,7 @@ export function LessonForm({
       </Form>
 
       {savedLessonId ? (
-        <LessonAssetManager lessonId={savedLessonId} />
+        <LessonAssetManager lessonId={savedLessonId} lessonStatus={savedStatus} />
       ) : (
         <p className="text-sm text-muted-foreground">
           Save the lesson details first, then you&apos;ll be able to upload a PDF
