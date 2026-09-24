@@ -13,6 +13,9 @@ import { getProductIdTag } from "@/features/products/db/cache";
 import { and, asc, eq, or } from "drizzle-orm";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { notFound } from "next/navigation";
+import { z } from "zod";
+import { getCurrentUser } from "@/services/auth";
+import { canUpdateProducts } from "@/features/products/permissions/products";
 import { DiscountCodeTable } from "@/features/discounts/components/DiscountCodeTable";
 import { DiscountCodeTable as DbDiscountCodeTable } from "@/drizzle/schema";
 import Link from "next/link";
@@ -25,11 +28,22 @@ export default async function EditProductPage({
   params: Promise<{ productId: string }>;
 }) {
   const { productId } = await params;
+  const { userId, role, redirectToSignIn } = await getCurrentUser();
+  if (userId == null) return redirectToSignIn();
+  // Owner or admin only. This page had no check, so any signed-in user
+  // could open any product's editor, including private products and
+  // their discount codes.
+  if (
+    !z.string().uuid().safeParse(productId).success ||
+    !(await canUpdateProducts({ userId, role }, productId))
+  ) {
+    return notFound();
+  }
   const product = await getProduct(productId);
   if (product == null) return notFound();
 
   const [courses, categories, tags] = await Promise.all([
-    getCourses(),
+    getCourses(role === "admin" ? null : userId),
     getCategories(),
     getTags(),
   ]);
@@ -138,10 +152,14 @@ async function getDiscountCodesForProduct(productId: string, authorId: string) {
   });
 }
 
-async function getCourses() {
+// Only courses the viewer can bundle: their own (admins: every course).
+// Listing every creator's courses leaked other creators' course names,
+// drafts included.
+async function getCourses(authorId: string | null) {
   "use cache";
   cacheTag(getCourseGlobalTag());
   return db.query.CourseTable.findMany({
+    where: authorId == null ? undefined : eq(CourseTable.authorId, authorId),
     orderBy: asc(CourseTable.name),
     columns: { id: true, name: true },
   });
