@@ -17,8 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { reportCourse } from "../actions/reports";
+import { actionToast, useToast } from "@/hooks/use-toast";
+import { reportContent } from "../actions/reports";
+import type { ReportableTargetType } from "../schemas/reports";
 import { reportReasons } from "@/drizzle/schema/report";
 
 const REASON_LABELS: Record<(typeof reportReasons)[number], string> = {
@@ -29,7 +30,16 @@ const REASON_LABELS: Record<(typeof reportReasons)[number], string> = {
   other: "Other",
 };
 
-export function ReportButton({ courseId }: { courseId: string }) {
+const NOUN: Record<ReportableTargetType, string> = { product: "course", lesson: "lesson" };
+
+export function ReportButton({
+  targetType,
+  targetId,
+}: {
+  targetType: ReportableTargetType;
+  targetId: string;
+}) {
+  const noun = NOUN[targetType];
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<string>("");
   const [details, setDetails] = useState("");
@@ -43,19 +53,16 @@ export function ReportButton({ courseId }: { courseId: string }) {
     }
 
     setSubmitting(true);
-    const result = await reportCourse({
-      courseId,
+    const result = await reportContent({
+      targetType,
+      targetId,
       reason: reason as (typeof reportReasons)[number],
       details: details || undefined,
     });
     setSubmitting(false);
+    actionToast({ actionData: result });
+    if (result.error) return;
 
-    if (result?.error) {
-      toast({ title: result.error, variant: "destructive" });
-      return;
-    }
-
-    toast({ title: "Thanks — we'll take a look at this." });
     setOpen(false);
     setReason("");
     setDetails("");
@@ -65,17 +72,17 @@ export function ReportButton({ courseId }: { courseId: string }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm">
-          Report course
+          Report {noun}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Report this course</DialogTitle>
+          <DialogTitle>Report this {noun}</DialogTitle>
         </DialogHeader>
 
         <Select value={reason} onValueChange={setReason}>
           <SelectTrigger>
-            <SelectValue placeholder="Why are you reporting this course?" />
+            <SelectValue placeholder={`Why are you reporting this ${noun}?`} />
           </SelectTrigger>
           <SelectContent>
             {reportReasons.map((r) => (
@@ -89,6 +96,7 @@ export function ReportButton({ courseId }: { courseId: string }) {
         <Textarea
           placeholder="Any additional details (optional)"
           value={details}
+          maxLength={2000}
           onChange={(e) => setDetails(e.target.value)}
         />
 

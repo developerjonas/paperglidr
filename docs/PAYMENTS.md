@@ -40,7 +40,7 @@ Every gateway answer is appended to `payment_events`, which is the record to use
 | `PAYMENT_MODE` | Behaviour |
 |---|---|
 | `sandbox` | Env values override `SANDBOX_DEFAULTS`. eSewa works with nothing set (the public `EPAYTEST` merchant). Khalti needs `KHALTI_SECRET_KEY`, a per-merchant test key. Fonepay needs all its credentials. |
-| `live` | **Env values only.** A gateway with any value missing is disabled and hidden at checkout; it never falls back to sandbox. Any sandbox URL, `EPAYTEST` or the public eSewa test key stops the server at boot (`src/instrumentation.ts`). URLs must be https. |
+| `live` | **Env values only.** A gateway with any value missing is disabled and hidden at checkout; it never falls back to sandbox. Any sandbox URL, `EPAYTEST`, the public eSewa test key or a non-https URL **disables that gateway** and reports it at boot (`src/services/payments/bootCheck.ts`, Sentry tag `area=startup`, see `docs/OBSERVABILITY.md`). The site and correctly configured gateways keep working. |
 
 - `PAYMENT_ENABLED_GATEWAYS=esewa,khalti` is a kill switch: it can only switch gateways off.
 - The boot log line shows what's enabled and why the rest aren't, for example `[payments] mode=live enabled=esewa,khalti { fonepay: 'missing FONEPAY_MERCHANT_CODE, …' }`.
@@ -60,7 +60,11 @@ These are sent per request. Register or whitelist them where the gateway's dashb
 
 - `apps/web/vercel.json` runs `/api/cron/reconcile-payments` every 5 minutes. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
 - Any scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://paperglidr.com/api/cron/reconcile-payments`.
-- Without `CRON_SECRET` the endpoint refuses every request. It returns a summary such as `{"checked": 3, "outcomes": {"completed": 1, "pending": 2}}`.
+- Without `CRON_SECRET` the endpoint refuses every request. It returns a summary such as `{"checked": 3, "outcomes": {"completed": 1, "pending": 2}, "invoices": {...}}`.
+- The same run also does housekeeping, each step isolated so one failure doesn't stop the others:
+  - **Invoice retry.** Invoices whose PDF or email failed (`emailed_at` still null) are retried at most 5 times, at least 10 minutes apart, for 30 days. An atomic claim means the cron and the post-payment send never email the same invoice twice. After the 5th failure Sentry gets `area=invoices`, `invoice_event=gave_up`. The error is in `invoices.last_delivery_error`.
+  - **Upload cleanup.** Lesson uploads still `pending` after 24 hours (never confirmed) are deleted, both the R2 object and the row. The R2 objects of replaced or removed lesson files are deleted 4 hours later, via the `storage_deletions` queue. The delay is longer than any signed playback URL, so nobody's video stops mid-lesson.
+- The run is wrapped in a Sentry cron monitor (`reconcile-payments`). See `docs/OBSERVABILITY.md`.
 
 ## Tests
 

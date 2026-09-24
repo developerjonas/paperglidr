@@ -9,7 +9,23 @@ import { REF_COOKIE, REF_COOKIE_MAX_AGE_SECONDS } from "@/lib/referral"
 // /admin is deliberately absent: redirecting signed-out visitors to
 // sign-in would reveal the route exists. requireAdmin() in the admin layout,
 // pages and actions returns a 404 for everyone who isn't an admin.
-const protectedPrefixes = ["/account", "/certificates", "/purchases", "/teach"]
+//
+// Signed-out visitors to these are sent to /sign-in?redirectTo=<path>, so
+// they come back after signing in. Pages still do their own checks.
+// - prefixes: the path and everything under it
+// - exact: that path only. /courses is the signed-in "My courses" list,
+//   while /courses/<id> and its lessons stay public (free previews play
+//   signed out).
+const protectedPrefixes = ["/account", "/certificates", "/purchases", "/teach", "/support"]
+const protectedExactPaths = ["/courses"]
+
+function isProtected(pathname: string) {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname
+  return (
+    protectedExactPaths.includes(path) ||
+    protectedPrefixes.some(prefix => path === prefix || path.startsWith(`${prefix}/`))
+  )
+}
 
 // Presence of Better Auth's session cookie — the same names its
 // getSessionCookie checks (default "better-auth" prefix; "__Secure-" on
@@ -47,7 +63,7 @@ function captureReferral(request: NextRequest, response: NextResponse) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const isProtectedRoute = protectedPrefixes.some(prefix => pathname.startsWith(prefix))
+  const isProtectedRoute = isProtected(pathname)
 
   if (isProtectedRoute) {
     // Cookie-presence check only — cheap, edge-safe, no DB call. This blocks

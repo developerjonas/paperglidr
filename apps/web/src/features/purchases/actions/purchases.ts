@@ -12,6 +12,8 @@ import { recordPaymentEvent } from "../db/paymentEvents";
 import type { InitiatePaymentResult } from "@/services/payments/types";
 import { getReferringInstructorId } from "../db/referral";
 import { verifyAndFulfil } from "../lib/verifyAndFulfil";
+import { alreadyOwnsProduct } from "../lib/ownership";
+import { lockAndCheckDiscountLimits } from "@/features/discounts/db/discounts";
 import { enrollFree } from "../lib/freeEnrollment";
 import { wherePublicProducts } from "@/features/products/permissions/products";
 import { getGateway } from "@/services/payments/gateways";
@@ -19,8 +21,7 @@ import { isGatewayEnabled, type GatewayName } from "@/services/payments/config";
 import { getReturnUrls } from "@/services/payments/returnUrls";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { revokeUserCourseAccess } from "@/features/courses/db/userCourseAccess";
-import { reverseLedgerEntriesForPurchase } from "@/features/ledger/db/ledger";
+import { revokePurchaseInTransaction } from "../lib/revokePurchase";
 import { revalidateProductCache } from "@/features/products/db/cache";
 import { validateDiscountCode } from "@/features/discounts/lib/validateDiscountCode";
 import { getCurrentUser, requireAdmin } from "@/services/auth";
@@ -87,6 +88,12 @@ async function startCheckout({
   // Unpublished (private) products can't be bought.
   if (product == null) return fail("Product not found");
 
+  // Already bought (a completed purchase, or access to every course in it):
+  // don't take the money twice.
+  if (await alreadyOwnsProduct({ userId: session.user.id, productId: product.id })) {
+    return fail("You already own this course. Find it under My Courses.");
+  }
+
   let discountCodeId: string | null = null;
   let discountAmountPaisa = 0;
 
@@ -143,18 +150,31 @@ async function startCheckout({
   if (wiredGateway == null)
     return fail("Unsupported payment method");
 
-  const purchase = await insertPurchase({
-    userId: session.user.id,
-    productId,
-    productDetails,
-    pricePaidInPaisa,
-    gateway,
-    status: "pending",
-    gatewayCheckoutId: idempotencyKey,
-    idempotencyKey,
-    referredByInstructorId,
-    discountCodeId,
-    discountAmountPaisa,
+  // Discount limits are checked and the purchase is created in ONE
+  // transaction with the code row locked, like the free path: parallel
+  // checkouts can't all take a code's last use. The pending purchase holds
+  // the use (DISCOUNT_RESERVATION_MS); fulfilment records the redemption.
+  const userId = session.user.id;
+  const purchase = await db.transaction(async (trx) => {
+    if (discountCodeId != null) {
+      await lockAndCheckDiscountLimits({ discountCodeId, userId }, trx);
+    }
+    return insertPurchase(
+      {
+        userId,
+        productId,
+        productDetails,
+        pricePaidInPaisa,
+        gateway,
+        status: "pending",
+        gatewayCheckoutId: idempotencyKey,
+        idempotencyKey,
+        referredByInstructorId,
+        discountCodeId,
+        discountAmountPaisa,
+      },
+      trx,
+    );
   });
   if (purchase == null)
     return fail("Could not start purchase");
@@ -310,34 +330,19 @@ export async function revokeAccess({ purchaseId }: { purchaseId: string }) {
 }
 
 async function revokePurchase(purchaseId: string) {
-
-  const purchase = await db.query.PurchaseTable.findFirst({
-    where: eq(PurchaseTable.id, purchaseId),
-  });
-
-  if (purchase == null) {
+  const result = await db.transaction((trx) =>
+    revokePurchaseInTransaction(trx, purchaseId),
+  );
+  if (result.outcome === "not_found") {
     return { error: true, message: "Purchase not found" };
   }
 
-  await db.transaction(async (trx) => {
-    // Mark refunded first: revokeUserCourseAccess keeps access to any course
-    // the buyer still owns through another non-refunded purchase, so this
-    // purchase must no longer count as one.
-    const now = new Date();
-    await trx
-      .update(PurchaseTable)
-      .set({ status: "refunded", refundedAt: now, updatedAt: now })
-      .where(eq(PurchaseTable.id, purchaseId));
-
-    await revokeUserCourseAccess(
-      { userId: purchase.userId, productId: purchase.productId },
-      trx,
-    );
-
-    await reverseLedgerEntriesForPurchase(purchaseId, trx);
-  });
-
-  revalidateProductCache(purchase.productId);
-
-  return { error: false, message: "Access revoked successfully" };
+  revalidateProductCache(result.purchase.productId);
+  return {
+    error: false,
+    message:
+      result.outcome === "already_refunded"
+        ? "Purchase was already refunded"
+        : "Access revoked successfully",
+  };
 }

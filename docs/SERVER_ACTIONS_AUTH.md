@@ -44,27 +44,33 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `confirmImageUpload` | signed-in | only the caller's own staging keys (exact key shape); checks size, type and file signature before copying to the public bucket | 🆕 fix/funnel |
 | `features/lessons/actions/lessonAssets.ts` | `requestLessonAssetUploadUrl` | owner | lesson's course author or admin; type and size per `uploadRules.ts` | ✅ (rules added in task 12) |
 | | `confirmLessonAssetUpload` | owner | lesson's course author or admin **and** the asset belongs to that lesson | 🆕 task 12 |
+| | `setLessonYouTubeVideo` | owner | lesson's course author or admin; lesson must be a free **preview**; valid YouTube link | 🆕 fix/money-ops |
 | | `removeLessonAsset` | owner | lesson's course author **and** the asset belongs to that lesson | 🔧 sweep: any asset ID could be deleted via a lesson the caller owned |
 | | `listLessonAssetsForEditor` | owner | lesson's course author or admin | ✅ |
 | `features/lessons/actions/lessons.ts` | `createLesson` | owner | caller authors the target section's course | ✅ |
-| | `updateLesson` | owner | caller authors the lesson **and** the target `sectionId` | 🔧 sweep: `sectionId` from the form was unchecked, so a lesson could be moved into another creator's course |
+| | `updateLesson` | owner | caller authors the lesson **and** the target `sectionId`; can't leave `preview` while it has a YouTube video | 🔧 sweep: `sectionId` from the form was unchecked, so a lesson could be moved into another creator's course |
 | | `deleteLesson` | owner | lesson's course author or admin | ✅ |
 | | `updateLessonOrders` | owner | **every** lesson ID is the caller's | 🔧 sweep: only the first ID was checked |
 | `features/lessons/actions/userLessonComplete.ts` | `updateLessonCompleteStatus` | owner | caller has access to the lesson's course; writes only the caller's progress | ✅ |
-| `features/payouts/actions/payouts.ts` | `requestPayout` | signed-in | caller's own balance | ✅ (see Found list) |
+| `features/payouts/actions/payouts.ts` | `requestPayout` | signed-in | caller's own balance; verified phone required; only sales past the refund window count; check + insert in one transaction with the instructor row locked | 🔧 task 17: two concurrent requests could spend the same balance, fresh (still refundable) sales were withdrawable, and non-validation errors were returned raw |
 | | `approvePayout` | admin | `requireAdmin()` | 🔧 task 4: was a cached-role check |
 | | `denyPayout` | admin | `requireAdmin()` | 🔧 task 4: was a cached-role check |
-| | `getMyAvailableBalanceInRupees` | signed-in | caller's own balance | ✅ |
-| `features/products/actions/products.ts` | `createProduct` | signed-in | author = caller; **every bundled course is the caller's** | 🔧 sweep: any course could be bundled, so another creator's paid course could be sold at ₹0 / enrolled free |
+| | `getMyBalancesInRupees` | signed-in | caller's own available and held balance | ✅ (renamed in task 17) |
+| `features/products/actions/products.ts` | `createProduct` | signed-in | author = caller; **every bundled course is the caller's**; "publish" from a creator stores `pending_review` (the client can only send `private`/`public`) | 🔧 sweep: any course could be bundled, so another creator's paid course could be sold at ₹0 / enrolled free; task 18: moderation |
 | | `updateProduct` | owner | product owner **and** every bundled course is the caller's | 🔧 sweep: same bug as `createProduct` |
 | | `deleteProduct` | owner | product owner or admin | ✅ |
+| `features/products/actions/moderation.ts` | `approveProductReview` | admin | `requireAdmin()`; `pending_review` only (status-guarded) | 🆕 task 18 |
+| | `rejectProductReview` | admin | `requireAdmin()`; `pending_review` only; reason required | 🆕 task 18 |
 | `features/purchases/actions/purchases.ts` | `initiatePurchase` | signed-in | buys for the caller only | ✅ (see Found list) |
 | | `confirmPurchase` | owner | `purchase.userId` = caller | 🔧 task 5: had no check |
 | | `revokeAccess` | admin | `requireAdmin()` | 🔧 task 5: any signed-in user could revoke any purchase |
 | `app/(consumer)/products/[productId]/purchase/page.tsx` (inline) | `enrollInFreeProduct` | signed-in | public product **with price 0** | 🔧 sweep: price was never checked, so any public **paid** product could be enrolled for free by calling the action with its ID |
-| `features/refunds/actions/refunds.ts` | `checkMyRefundEligibility` | owner | `purchase.userId` = caller | ✅ |
-| | `requestRefund` | owner | `purchase.userId` = caller | ✅ |
-| `features/reports/actions/reports.ts` | `reportCourse` | signed-in | reporter = caller | ✅ |
+| `features/refunds/actions/refunds.ts` | `checkMyRefundEligibility` | owner | `purchase.userId` = caller | 🔧 fix/money-ops: read `session.user.id`, which `getCurrentUser()` never sets, so it always answered "Not signed in" |
+| | `requestRefund` | owner | `purchase.userId` = caller; eligibility recomputed server-side; one open request per purchase (unique index) | 🔧 fix/money-ops: same "Not signed in" bug; stored the product ID as the course ID |
+| | `approveRefund` | admin | `requireAdmin()`; request must be pending (row locked); revoke runs in the same transaction | 🆕 task 16 |
+| | `rejectRefund` | admin | `requireAdmin()`; pending only | 🆕 task 16 |
+| `features/reports/actions/reports.ts` | `reportContent` (was `reportCourse`) | signed-in | reporter = caller; target must be a public product or a lesson the caller can open; one open report per reporter and target | 🔧 task 18: read `session.user.id`, which `getCurrentUser()` never sets, so every report failed with "must be signed in" |
+| | `reviewReport` | admin | `requireAdmin()`; open reports only | 🆕 task 18 |
 | `features/reviews/actions/reviews.ts` | `createReview` | signed-in | ≥50% course completion; one per course | ✅ |
 | | `updateReview` | owner | review author | ✅ |
 | | `deleteReview` | owner | review author | ✅ |

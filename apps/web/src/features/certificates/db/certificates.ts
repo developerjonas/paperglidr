@@ -43,12 +43,6 @@ export async function getCertificate(id: string) {
 }
 
 // Public lookup for the verification page — keyed by the code embedded in the QR, not the DB id
-export async function getCertificateByCode(certificateCode: string) {
-  return db.query.CertificateTable.findFirst({
-    where: eq(CertificateTable.certificateCode, certificateCode),
-  });
-}
-
 /**
  * For the public /verify page: exactly what it displays. No internal ids,
  * no userId/courseId, and no revocation reason (only whether it's revoked).

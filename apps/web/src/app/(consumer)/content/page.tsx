@@ -94,10 +94,17 @@ export default function ContentPolicyPage() {
         </li>
       </ul>
       <p>
-        There is also a limit on how many products you can have on sale at
-        once, which rises when you verify your phone number. Meeting these
-        checks does not mean we have reviewed or approved a course; you
-        remain responsible for it.
+        There is also a limit on how many products you can have on sale (or
+        waiting for review) at once, which rises when you verify your phone
+        number.
+      </p>
+      <p>
+        When you choose to publish, the product is sent to our team for
+        review and goes on sale once approved. If we can&apos;t approve it, we
+        tell you why by email and in your dashboard, and you can fix it and
+        resubmit. A review is a check against this policy, not an endorsement
+        or a guarantee of quality: you remain responsible for your content,
+        and we may still remove it later.
       </p>
 
       <h2>4. What students may do with a course they bought</h2>
@@ -126,7 +133,8 @@ export default function ContentPolicyPage() {
 
       <h2>6. Reporting a problem</h2>
       <p>
-        To report a course that breaks this policy, open a{" "}
+        To report a course or lesson that breaks this policy, use the
+        &quot;Report&quot; button on its page, open a{" "}
         <Link href="/support/new">support ticket</Link> or email{" "}
         <a href={`mailto:${COMPANY.supportEmail}`}>{COMPANY.supportEmail}</a>{" "}
         with a link to the course and what is wrong. Copyright complaints

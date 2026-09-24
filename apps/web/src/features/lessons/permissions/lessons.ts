@@ -95,7 +95,7 @@ export async function canAccessLessonContent(
   { userId, role }: { userId: string | undefined; role: UserRole | undefined },
   lessonId: string,
 ): Promise<
-  | { allowed: true; lesson: { id: string; courseId: string } }
+  | { allowed: true; lesson: { id: string; courseId: string; status: LessonStatus } }
   | { allowed: false; reason: "not_found" | "sign_in_required" | "forbidden" }
 > {
   const lesson = await db.query.LessonTable.findFirst({
@@ -109,7 +109,10 @@ export async function canAccessLessonContent(
     },
   })
   if (lesson == null) return { allowed: false, reason: "not_found" }
-  const ok = { allowed: true as const, lesson: { id: lesson.id, courseId: lesson.section.course.id } }
+  const ok = {
+    allowed: true as const,
+    lesson: { id: lesson.id, courseId: lesson.section.course.id, status: lesson.status },
+  }
 
   if (role === "admin") return ok
   if (userId != null && lesson.section.course.authorId === userId) return ok

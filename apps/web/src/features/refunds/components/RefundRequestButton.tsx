@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import {
-  checkMyRefundEligibility,
-  requestRefund,
-} from "../actions/refunds";
+import { Textarea } from "@/components/ui/textarea";
+import { actionToast } from "@/hooks/use-toast";
+import { requestRefund } from "../actions/refunds";
 
 function formatTimeRemaining(ms: number) {
   if (ms <= 0) return "expired";
@@ -16,51 +14,67 @@ function formatTimeRemaining(ms: number) {
   return days > 0 ? `${days}d ${remHours}h left` : `${remHours}h left`;
 }
 
-export function RefundRequestButton({ purchaseId }: { purchaseId: string }) {
-  const [eligible, setEligible] = useState<boolean | null>(null);
-  const [msRemaining, setMsRemaining] = useState<number | null>(null);
-  const [completionPercent, setCompletionPercent] = useState<number | null>(
-    null,
-  );
+/**
+ * Rendered by the purchase page only when the server says the purchase is
+ * eligible. requestRefund re-checks everything server-side.
+ */
+export function RefundRequestButton({
+  purchaseId,
+  msRemaining,
+  completionPercent,
+}: {
+  purchaseId: string;
+  msRemaining: number;
+  completionPercent: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [requested, setRequested] = useState(false);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    checkMyRefundEligibility(purchaseId).then((result) => {
-      if ("eligibility" in result && result.eligibility) {
-        setEligible(result.eligibility.eligible);
-        setMsRemaining(result.eligibility.msRemaining);
-        setCompletionPercent(result.eligibility.completionPercent);
-      }
-    });
-  }, [purchaseId]);
 
   async function handleRequest() {
     setSubmitting(true);
-    const result = await requestRefund(purchaseId);
+    const result = await requestRefund(purchaseId, reason);
     setSubmitting(false);
-
-    if (result.error) {
-      toast({ title: result.error, variant: "destructive" });
-      return;
-    }
-
-    setRequested(true);
-    toast({ title: "Refund request submitted." });
+    actionToast({ actionData: result });
+    if (!result.error) setRequested(true);
   }
 
-  if (eligible === null) return null; // still loading
-  if (requested) return <p className="text-sm text-muted-foreground">Refund request submitted — we&apos;ll follow up by email.</p>;
-  if (!eligible) return null; // don't show the button at all once ineligible
+  if (requested) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Refund request submitted. We&apos;ll email you when it has been reviewed.
+      </p>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-1">
-      <Button onClick={handleRequest} disabled={submitting} variant="outline">
-        {submitting ? "Requesting..." : "Request refund"}
-      </Button>
+    <div className="flex w-full flex-col gap-2">
+      {open ? (
+        <>
+          <Textarea
+            placeholder="Why are you asking for a refund? (optional)"
+            value={reason}
+            maxLength={2000}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={submitting}
+          />
+          <div className="flex gap-2">
+            <Button onClick={handleRequest} disabled={submitting} variant="destructive">
+              {submitting ? "Requesting…" : "Confirm refund request"}
+            </Button>
+            <Button onClick={() => setOpen(false)} disabled={submitting} variant="outline">
+              Cancel
+            </Button>
+          </div>
+        </>
+      ) : (
+        <Button onClick={() => setOpen(true)} variant="outline" className="w-fit">
+          Request refund
+        </Button>
+      )}
       <p className="text-xs text-muted-foreground">
-        {formatTimeRemaining(msRemaining ?? 0)} in the refund window ·{" "}
+        {formatTimeRemaining(msRemaining)} in the refund window ·{" "}
         {completionPercent}% complete
       </p>
     </div>

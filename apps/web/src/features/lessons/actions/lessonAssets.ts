@@ -26,6 +26,11 @@ import {
   getUploadRule,
 } from "../lib/uploadRules";
 import { UserFacingError, actionError } from "@/lib/safeError";
+import {
+  YOUTUBE_PREVIEW_ONLY_MESSAGE,
+  parseYouTubeVideoId,
+  youtubeAllowedFor,
+} from "../lib/youtube";
 
 /**
  * Step 1 of upload: the instructor's client asks for a place to put the
@@ -165,10 +170,40 @@ async function checkStoredObject({
 }
 
 /**
- * Instructor removes an attachment or replaces a primary asset.
- * Does NOT delete the R2 object itself — add that as an explicit
- * background job if you want storage to actually shrink, rather than
- * risking an in-request delete racing a still-open signed download URL.
+ * Sets a YouTube video as the lesson's content — free preview lessons
+ * only. Replaces the current primary asset (an uploaded file's R2 object
+ * is queued for deletion).
+ */
+export async function setLessonYouTubeVideo(lessonId: string, url: string) {
+  try {
+    const lesson = await canEditLessonAssets(lessonId); // throws if unauthorized
+    if (!youtubeAllowedFor(lesson.status)) {
+      throw new UserFacingError(YOUTUBE_PREVIEW_ONLY_MESSAGE);
+    }
+    const videoId = typeof url === "string" ? parseYouTubeVideoId(url) : null;
+    if (videoId == null) {
+      throw new UserFacingError("That isn't a YouTube video link (e.g. https://www.youtube.com/watch?v=…).");
+    }
+    const asset = await insertLessonAsset({
+      lessonId,
+      type: "youtube",
+      provider: "youtube",
+      role: "primary",
+      status: "pending",
+      externalId: videoId,
+      fileName: `YouTube ${videoId}`,
+    });
+    await markLessonAssetReady(asset.id);
+    return { error: false as const, message: "YouTube video set" };
+  } catch (error) {
+    return actionError(error, "setLessonYouTubeVideo", "Couldn't set the video.");
+  }
+}
+
+/**
+ * Instructor removes an attachment or replaces a primary asset. The R2
+ * object is queued and deleted by the cron a few hours later (after any
+ * signed URL for it has expired), not in this request.
  */
 export async function removeLessonAsset(assetId: string, lessonId: string) {
   await canEditLessonAssets(lessonId); // throws if unauthorized

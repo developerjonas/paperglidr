@@ -29,6 +29,41 @@
       "when": 1790177768000,
       "tag": "0003_products_search_vector_gin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790215439708,
+      "tag": "0004_refund_request_open_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790215818738,
+      "tag": "0005_payout_details",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790216093467,
+      "tag": "0006_product_moderation",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790217861046,
+      "tag": "0007_invoice_delivery_retries",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790218128990,
+      "tag": "0008_storage_deletions",
+      "breakpoints": true
     }
   ]
 }

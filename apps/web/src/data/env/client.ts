@@ -27,12 +27,18 @@ export const env = createEnv({
             .every(host => /^[a-z0-9.-]+$/i.test(host)),
         "Comma-separated hostnames only, e.g. images.paperglidr.com,res.cloudinary.com",
       ),
+    // Sentry in the browser (optional; unset = no browser error reporting).
+    // Read directly by src/instrumentation-client.ts.
+    NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+    NEXT_PUBLIC_SENTRY_ENVIRONMENT: z.string().min(1).optional(),
   },
   // Next.js only inlines NEXT_PUBLIC_* when referenced literally
   experimental__runtimeEnv: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
     NEXT_PUBLIC_IMAGE_HOSTS: process.env.NEXT_PUBLIC_IMAGE_HOSTS,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    NEXT_PUBLIC_SENTRY_ENVIRONMENT: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 })

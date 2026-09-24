@@ -1,3 +1,5 @@
+import { youtubeAllowedFor } from "@/features/lessons/lib/youtube";
+import { ReportButton } from "@/features/reports/components/ReportButton";
 import { ActionButton } from "@/components/ActionButton";
 import { SkeletonButton } from "@/components/Skeleton";
 import { Button } from "@/components/ui/button";
@@ -92,9 +94,14 @@ async function SuspenseBoundary({
     lesson.id,
   );
 
-  const primaryAsset = canView
+  const storedPrimary = canView
     ? ((await getPrimaryLessonAsset(lesson.id)) ?? null)
     : null;
+  // YouTube only plays on free previews (see features/lessons/lib/youtube).
+  const primaryAsset =
+    storedPrimary?.provider === "youtube" && !youtubeAllowedFor(lesson.status)
+      ? null
+      : storedPrimary;
   const attachments = canView ? await getAttachmentLessonAssets(lesson.id) : [];
 
   return (
@@ -166,6 +173,11 @@ async function SuspenseBoundary({
             </div>
           </div>
 
+          {canView && (
+            <div className="-ml-3">
+              <ReportButton targetType="lesson" targetId={lesson.id} />
+            </div>
+          )}
           {canView ? (
             lesson.description && (
               <p className="text-sm text-muted-foreground">

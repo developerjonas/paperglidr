@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { ProductStatus } from "@/drizzle/schema"
 import { formatPlural, formatPrice } from "@/lib/formatters"
-import { EyeIcon, LockIcon, Trash2Icon } from "lucide-react"
+import { EyeIcon, HourglassIcon, LockIcon, Trash2Icon } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { deleteProduct } from "../actions/products"
@@ -72,7 +72,7 @@ export function ProductTable({
             <TableCell>{product.customersCount}</TableCell>
             <TableCell>
               <Badge className="inline-flex items-center gap-2">
-                {getStatusIcon(product.status)} {product.status}
+                {getStatusIcon(product.status)} {STATUS_LABELS[product.status]}
               </Badge>
             </TableCell>
             <TableCell>
@@ -97,10 +97,17 @@ export function ProductTable({
   )
 }
 
+const STATUS_LABELS: Record<ProductStatus, string> = {
+  public: "public",
+  private: "private",
+  pending_review: "in review",
+}
+
 function getStatusIcon(status: ProductStatus) {
   const Icon = {
     public: EyeIcon,
     private: LockIcon,
+    pending_review: HourglassIcon,
   }[status]
 
   return <Icon className="size-4" />

@@ -2,13 +2,16 @@ import { db } from "@/drizzle/db";
 import { CategoryTable, CourseTable, TagTable } from "@/drizzle/schema";
 import { getCourseGlobalTag } from "@/features/courses/db/cache/courses";
 import { ProductForm } from "@/features/products/components/ProductForm";
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
+import { getCurrentUser } from "@/services/auth";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default async function NewProductPage() {
+  const { userId, role, redirectToSignIn } = await getCurrentUser();
+  if (userId == null) return redirectToSignIn();
   const [courses, categories, tags] = await Promise.all([
-    getCourses(),
+    getCourses(role === "admin" ? null : userId),
     getCategories(),
     getTags(),
   ]);
@@ -41,10 +44,14 @@ export default async function NewProductPage() {
   );
 }
 
-async function getCourses() {
+// Only courses the viewer can bundle: their own (admins: every course).
+// Listing every creator's courses leaked other creators' course names,
+// drafts included.
+async function getCourses(authorId: string | null) {
   "use cache";
   cacheTag(getCourseGlobalTag());
   return db.query.CourseTable.findMany({
+    where: authorId == null ? undefined : eq(CourseTable.authorId, authorId),
     orderBy: asc(CourseTable.name),
     columns: { id: true, name: true },
   });

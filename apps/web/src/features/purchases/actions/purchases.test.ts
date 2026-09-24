@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { db } from "@/drizzle/db"
 import {
   CourseProductTable,
+  CourseTable,
   DiscountCodeTable,
   ProductTable,
   PurchaseTable,
@@ -16,14 +17,29 @@ import { createProduct, createUser, purchaseState } from "@/test/fixtures"
 // picking from the enabled list. initiatePurchase is called directly with
 // tampered input; only the session and cookie lookups are mocked.
 
-const session = vi.hoisted(() => ({ userId: null as string | null }))
-vi.mock("@/lib/auth", () => ({
-  auth: {
-    api: {
-      getSession: async () => (session.userId ? { user: { id: session.userId } } : null),
-    },
-  },
+// session.as(userId, fn) runs fn as that user, even when several calls
+// overlap (AsyncLocalStorage); otherwise the shared session.userId is used.
+const session = vi.hoisted(() => ({
+  userId: null as string | null,
+  current: undefined as undefined | (() => string | undefined),
+  as: undefined as unknown as <T>(userId: string, fn: () => Promise<T>) => Promise<T>,
 }))
+vi.mock("@/lib/auth", async () => {
+  const { AsyncLocalStorage } = await import("node:async_hooks")
+  const store = new AsyncLocalStorage<string>()
+  session.as = (userId, fn) => store.run(userId, fn)
+  session.current = () => store.getStore()
+  return {
+    auth: {
+      api: {
+        getSession: async () => {
+          const userId = session.current?.() ?? session.userId
+          return userId ? { user: { id: userId } } : null
+        },
+      },
+    },
+  }
+})
 vi.mock("next/headers", () => ({
   headers: async () => new Headers(),
   cookies: async () => ({ get: () => undefined }),
@@ -190,7 +206,12 @@ describe("100%-discount enrollments respect the code's limits under concurrency"
         .insert(ProductTable)
         .values({ name: `Extra ${crypto.randomUUID()}`, description: "d", imageUrl: "/x.png", priceInRupees: 999, status: "public", authorId: first.creator.id })
         .returning()
-      await db.insert(CourseProductTable).values({ courseId: first.course.id, productId: product!.id })
+      // A course of its own, so owning one product doesn't own the others.
+      const [course] = await db
+        .insert(CourseTable)
+        .values({ name: `Extra ${crypto.randomUUID()}`, description: "d", authorId: first.creator.id })
+        .returning()
+      await db.insert(CourseProductTable).values({ courseId: course!.id, productId: product!.id })
       products.push(product!)
     }
     return { creator: first.creator, products }
@@ -249,5 +270,103 @@ describe("100%-discount enrollments respect the code's limits under concurrency"
         .where(eq(UserCourseAccessTable.userId, users[i]!.id))
       expect(access).toHaveLength(outcome.status === "fulfilled" ? 1 : 0)
     }
+  })
+})
+
+describe("buying something you already own", () => {
+  it("is rejected after a completed purchase, and when course access already covers the product", async () => {
+    const owned = await createProduct({ priceInRupees: 999 })
+    await initiatePurchase({ productId: owned.product.id, gateway: "esewa", idempotencyKey: key("esewa") })
+    await db.update(PurchaseTable).set({ status: "completed" }).where(eq(PurchaseTable.userId, buyerId))
+
+    const again = await initiatePurchase({ productId: owned.product.id, gateway: "esewa", idempotencyKey: key("esewa") })
+    expect(again).toMatchObject({ error: true, message: expect.stringContaining("already own") })
+
+    // Access to every course in a product (e.g. from another bundle) counts too.
+    const viaAccess = await createProduct({ priceInRupees: 999 })
+    await db.insert(UserCourseAccessTable).values({ userId: buyerId, courseId: viaAccess.course.id })
+    const viaAccessResult = await initiatePurchase({ productId: viaAccess.product.id, gateway: "esewa", idempotencyKey: key("esewa") })
+    expect(viaAccessResult).toMatchObject({ error: true, message: expect.stringContaining("already own") })
+
+    // Only the one pending purchase from the first checkout exists.
+    expect(await purchasesOf(buyerId)).toHaveLength(1)
+  })
+
+  it("a refunded purchase doesn't count as owned", async () => {
+    const { product } = await createProduct({ priceInRupees: 999 })
+    const idempotencyKey = key("esewa")
+    await db.insert(PurchaseTable).values({
+      userId: buyerId,
+      productId: product.id,
+      productDetails: { name: "x", description: "d", imageUrl: "/x.png" },
+      pricePaidInPaisa: 99900,
+      gateway: "esewa",
+      status: "refunded",
+      refundedAt: new Date(),
+      gatewayCheckoutId: idempotencyKey,
+      idempotencyKey,
+    })
+    const result = await initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa") })
+    expect(result.error).toBe(false)
+  })
+})
+
+describe("paid checkouts respect a discount's limits under concurrency", () => {
+  it("maxRedemptions = 1: five users checking out at once -> one discounted checkout", async () => {
+    const { product, creator } = await createProduct({ priceInRupees: 1000 })
+    const code = `HALF${crypto.randomUUID().slice(0, 8)}`.toUpperCase()
+    const [discount] = await db
+      .insert(DiscountCodeTable)
+      .values({ code, creatorId: creator.id, scopeType: "storewide", discountType: "percentage", amount: 50, maxRedemptions: 1 })
+      .returning()
+    const users = await Promise.all([1, 2, 3, 4, 5].map(() => createUser("rush")))
+
+    // Force the race: a blocker lets every checkout validate the code and
+    // count its uses, but stops any of them inserting its purchase. Without
+    // the code row lock, all five would see 0 uses and get the discount.
+    const blocker = await db.$client.connect()
+    await blocker.query("begin")
+    await blocker.query("lock table purchases in share row exclusive mode")
+    const checkouts = users.map(user =>
+      session.as(user.id, () =>
+        initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa"), discountCode: code }),
+      ),
+    )
+    await new Promise(resolve => setTimeout(resolve, 500))
+    await blocker.query("commit")
+    blocker.release()
+    const results = await Promise.all(checkouts)
+
+    const withCode = await db.select().from(PurchaseTable).where(eq(PurchaseTable.discountCodeId, discount!.id))
+    expect(withCode).toHaveLength(1)
+    expect(users.map(u => u.id)).toContain(withCode[0]!.userId)
+    expect(withCode[0]!.pricePaidInPaisa).toBe(50000)
+    expect(results.filter(r => r.error)).toHaveLength(4)
+    for (const result of results.filter(r => r.error)) {
+      expect(result).toMatchObject({ message: "That code has reached its usage limit." })
+    }
+  })
+
+  it("a pending checkout holds the use only for the reservation window", async () => {
+    const { DISCOUNT_RESERVATION_MS } = await import("@/features/discounts/db/discounts")
+    const { product, creator } = await createProduct({ priceInRupees: 1000 })
+    const code = `ONE${crypto.randomUUID().slice(0, 8)}`.toUpperCase()
+    const [discount] = await db
+      .insert(DiscountCodeTable)
+      .values({ code, creatorId: creator.id, scopeType: "storewide", discountType: "percentage", amount: 50, maxRedemptions: 1 })
+      .returning()
+    expect((await initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa"), discountCode: code })).error).toBe(false)
+
+    session.userId = (await createUser("second")).id
+    const blocked = await initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa"), discountCode: code })
+    expect(blocked).toMatchObject({ error: true, message: "That code has reached its usage limit." })
+
+    // The first buyer abandoned the checkout long ago: the use is free again.
+    await db
+      .update(PurchaseTable)
+      .set({ createdAt: new Date(Date.now() - DISCOUNT_RESERVATION_MS - 60_000) })
+      .where(eq(PurchaseTable.discountCodeId, discount!.id))
+    const later = await initiatePurchase({ productId: product.id, gateway: "esewa", idempotencyKey: key("esewa"), discountCode: code })
+    expect(later.error).toBe(false)
   })
 })

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { db } from "@/drizzle/db";
 import {
+  type ProductStatus,
   CourseTable,
   ProductTable,
   CategoryTable,
@@ -12,6 +13,9 @@ import { getProductIdTag } from "@/features/products/db/cache";
 import { and, asc, eq, or } from "drizzle-orm";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { notFound } from "next/navigation";
+import { z } from "zod";
+import { getCurrentUser } from "@/services/auth";
+import { canUpdateProducts } from "@/features/products/permissions/products";
 import { DiscountCodeTable } from "@/features/discounts/components/DiscountCodeTable";
 import { DiscountCodeTable as DbDiscountCodeTable } from "@/drizzle/schema";
 import Link from "next/link";
@@ -24,11 +28,22 @@ export default async function EditProductPage({
   params: Promise<{ productId: string }>;
 }) {
   const { productId } = await params;
+  const { userId, role, redirectToSignIn } = await getCurrentUser();
+  if (userId == null) return redirectToSignIn();
+  // Owner or admin only. This page had no check, so any signed-in user
+  // could open any product's editor, including private products and
+  // their discount codes.
+  if (
+    !z.string().uuid().safeParse(productId).success ||
+    !(await canUpdateProducts({ userId, role }, productId))
+  ) {
+    return notFound();
+  }
   const product = await getProduct(productId);
   if (product == null) return notFound();
 
   const [courses, categories, tags] = await Promise.all([
-    getCourses(),
+    getCourses(role === "admin" ? null : userId),
     getCategories(),
     getTags(),
   ]);
@@ -48,6 +63,7 @@ export default async function EditProductPage({
       {/* ---------------- CONTENT ---------------- */}
       <section className="container mx-auto px-4 py-10">
         <div className="flex flex-col gap-10">
+          <ReviewStatus status={product.status} reviewNote={product.reviewNote} />
           <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
             <CardContent className="pt-6">
               <ProductForm
@@ -90,6 +106,36 @@ export default async function EditProductPage({
   );
 }
 
+function ReviewStatus({
+  status,
+  reviewNote,
+}: {
+  status: ProductStatus;
+  reviewNote: string | null;
+}) {
+  if (status === "pending_review") {
+    return (
+      <p className="rounded-md border px-4 py-3 text-sm">
+        <strong>Waiting for review.</strong> We check every product before it
+        goes on sale and will email you when it&apos;s approved or if something
+        needs to change.
+      </p>
+    );
+  }
+  if (status === "private" && reviewNote) {
+    return (
+      <div className="rounded-md border border-destructive/40 px-4 py-3 text-sm">
+        <strong>Not approved.</strong> Reason from our review:
+        <p className="mt-1 whitespace-pre-wrap">{reviewNote}</p>
+        <p className="mt-1 text-muted-foreground">
+          Fix the issue and choose &quot;Publish&quot; again to resubmit.
+        </p>
+      </div>
+    );
+  }
+  return null;
+}
+
 async function getDiscountCodesForProduct(productId: string, authorId: string) {
   "use cache";
   cacheTag(getDiscountCodeCreatorTag(authorId));
@@ -106,10 +152,14 @@ async function getDiscountCodesForProduct(productId: string, authorId: string) {
   });
 }
 
-async function getCourses() {
+// Only courses the viewer can bundle: their own (admins: every course).
+// Listing every creator's courses leaked other creators' course names,
+// drafts included.
+async function getCourses(authorId: string | null) {
   "use cache";
   cacheTag(getCourseGlobalTag());
   return db.query.CourseTable.findMany({
+    where: authorId == null ? undefined : eq(CourseTable.authorId, authorId),
     orderBy: asc(CourseTable.name),
     columns: { id: true, name: true },
   });
@@ -142,6 +192,7 @@ async function getProduct(id: string) {
       imageUrl: true,
       authorId: true,
       categoryId: true,
+      reviewNote: true,
     },
     where: eq(ProductTable.id, id),
     with: {

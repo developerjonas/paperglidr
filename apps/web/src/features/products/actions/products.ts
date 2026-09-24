@@ -17,7 +17,12 @@ import { productSchema } from "../schema/products";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/drizzle/db";
-import { UserTable } from "@/drizzle/schema";
+import {
+  ProductTable,
+  UserTable,
+  type ProductStatus,
+  type UserRole,
+} from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 
 async function getCurrentUserContext() {
@@ -55,8 +60,35 @@ export async function createProduct(unsafeData: z.infer<typeof productSchema>) {
     }
   }
 
-  await insertProduct({ ...data, authorId: user.userId! });
+  await insertProduct({
+    ...data,
+    ...moderationFields({ requested: data.status, current: null, role: user.role }),
+    authorId: user.userId!,
+  });
   redirect("/teach/products");
+}
+
+/**
+ * The stored status for what the creator asked for (task 18):
+ * - "private" -> private
+ * - "public" from a creator -> pending_review (an admin approves it at
+ *   /admin/products); a product that is already public stays public when
+ *   edited, and one already waiting stays waiting
+ * - "public" from an admin -> public (no review of your own queue)
+ */
+function moderationFields({
+  requested,
+  current,
+  role,
+}: {
+  requested: "private" | "public";
+  current: { status: ProductStatus } | null;
+  role: UserRole | undefined;
+}): Partial<typeof ProductTable.$inferInsert> {
+  if (requested === "private") return { status: "private" };
+  if (role === "admin" || current?.status === "public") return { status: "public" };
+  if (current?.status === "pending_review") return { status: "pending_review" };
+  return { status: "pending_review", submittedForReviewAt: new Date(), reviewNote: null };
 }
 
 export async function updateProduct(
@@ -91,7 +123,14 @@ export async function updateProduct(
     }
   }
 
-  await updateProductDb(id, data);
+  const current = await db.query.ProductTable.findFirst({
+    where: eq(ProductTable.id, id),
+    columns: { status: true },
+  });
+  await updateProductDb(id, {
+    ...data,
+    ...moderationFields({ requested: data.status, current: current ?? null, role: user.role }),
+  });
   redirect("/teach/products");
 }
 

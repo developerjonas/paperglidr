@@ -9,7 +9,7 @@ import {
 } from "@/drizzle/schema";
 import { addUserCourseAccess } from "@/features/courses/db/userCourseAccess";
 import { recordDiscountRedemption } from "@/features/discounts/db/discounts";
-import { generateAndSendInvoice } from "@/features/invoices/actions/generateAndSendInvoice";
+import { deliverInvoice } from "@/features/invoices/lib/deliverInvoice";
 import { createInvoiceForPurchase } from "@/features/invoices/db/invoices";
 import { createLedgerEntry } from "@/features/ledger/db/ledger";
 import { revalidateProductCache } from "@/features/products/db/cache";
@@ -26,6 +26,7 @@ import {
   markPurchaseFailed,
 } from "../db/purchases";
 import { recordPaymentEvent } from "../db/paymentEvents";
+import { captureError, captureEvent } from "@/lib/observability";
 
 /** Who asked — recorded with every verification. */
 export type FulfilSource = "return" | "poll" | "success_page" | "cron" | "admin";
@@ -57,7 +58,10 @@ export type FulfilDeps = {
 
 export const defaultFulfilDeps: FulfilDeps = {
   getVerifier: getGateway,
-  sendInvoice: generateAndSendInvoice,
+  // Counts as delivery attempt 1; the cron retries failures.
+  sendInvoice: async (invoiceId: string) => {
+    await deliverInvoice(invoiceId);
+  },
 };
 
 const UNIQUE_VIOLATION = "23505";
@@ -126,6 +130,12 @@ export async function verifyAndFulfil(
     console.warn(
       `[payments] ${source}: cannot verify purchase ${purchase.id}, gateway ${purchase.gateway} is not enabled`,
     );
+    captureEvent("Payment verification: gateway not enabled", {
+      area: "payments",
+      payment_event: "gateway_disabled",
+      gateway: purchase.gateway,
+      source,
+    }, { level: "warning", extra: { purchaseId: purchase.id } });
     await recordPaymentEvent({ ...event, outcome: "error", detail: { reason: "gateway not enabled" } });
     return { outcome: "error", purchase: ref };
   }
@@ -139,6 +149,7 @@ export async function verifyAndFulfil(
     });
   } catch (error) {
     console.error(`[payments] ${source}: verify failed for ${purchase.id}`, error);
+    captureError(error, { area: "payments", payment_event: "verify_error", gateway: purchase.gateway, source }, { purchaseId: purchase.id });
     await recordPaymentEvent({ ...event, outcome: "error", detail: { reason: "verify threw" } });
     return { outcome: "error", purchase: ref };
   }
@@ -154,6 +165,14 @@ export async function verifyAndFulfil(
       await recordPaymentEvent({ ...event, ...reported, outcome: "pending" });
       return { outcome: "pending", purchase: ref };
     case "error":
+      // The gateway didn't give a usable answer (network, 5xx, unexpected
+      // body). Nothing changes; the cron retries.
+      captureEvent("Payment verification: gateway error", {
+        area: "payments",
+        payment_event: "gateway_error",
+        gateway: purchase.gateway,
+        source,
+      }, { level: "warning", extra: { purchaseId: purchase.id, gatewayStatus: verification.gatewayStatus } });
       await recordPaymentEvent({ ...event, ...reported, outcome: "error", detail: verification.raw });
       return { outcome: "error", purchase: ref };
     case "not_found":
@@ -192,6 +211,18 @@ export async function verifyAndFulfil(
     console.error(
       `[payments] ${source}: amount mismatch for ${purchase.id}: expected ${purchase.pricePaidInPaisa}, gateway reported ${verification.amountInPaisa}`,
     );
+    captureEvent("Payment verification: amount mismatch", {
+      area: "payments",
+      payment_event: "amount_mismatch",
+      gateway: purchase.gateway,
+      source,
+    }, {
+      extra: {
+        purchaseId: purchase.id,
+        expectedAmountInPaisa: purchase.pricePaidInPaisa,
+        reportedAmountInPaisa: verification.amountInPaisa,
+      },
+    });
     await markPurchaseDisputed({ id: purchase.id, rawGatewayResponse: verification.raw });
     revalidatePurchaseCache(purchase);
     await recordPaymentEvent({
@@ -213,6 +244,12 @@ export async function verifyAndFulfil(
       console.error(
         `[payments] ${source}: transaction ${verification.gatewayTransactionId} already used — disputing ${purchase.id}`,
       );
+      captureEvent("Payment verification: transaction id already used", {
+        area: "payments",
+        payment_event: "reused_transaction",
+        gateway: purchase.gateway,
+        source,
+      }, { extra: { purchaseId: purchase.id, gatewayTransactionId: verification.gatewayTransactionId } });
       await markPurchaseDisputed({ id: purchase.id, rawGatewayResponse: verification.raw });
       revalidatePurchaseCache(purchase);
       await recordPaymentEvent({
@@ -224,6 +261,7 @@ export async function verifyAndFulfil(
       return { outcome: "disputed", purchase: ref };
     }
     console.error(`[payments] ${source}: fulfilment failed for ${purchase.id}`, error);
+    captureError(error, { area: "payments", payment_event: "fulfilment_error", gateway: purchase.gateway, source }, { purchaseId: purchase.id });
     await recordPaymentEvent({ ...event, ...reported, outcome: "error", detail: { reason: "fulfilment failed" } });
     return { outcome: "error", purchase: ref };
   }
@@ -239,8 +277,8 @@ export async function verifyAndFulfil(
 
   // Fire-and-forget, deliberately outside the transaction: PDF rendering
   // and email delivery are external I/O and must never roll back a
-  // purchase that's already committed. invoice.pdfR2Key/emailedAt staying
-  // null is the retry signal.
+  // purchase that's already committed. invoice.emailedAt staying null is
+  // the retry signal: the reconciliation cron retries (deliverInvoice).
   deps.sendInvoice(fulfilled.invoiceId).catch(error => {
     console.error(`Invoice generation/send failed for purchase ${fulfilled.id}`, error);
   });

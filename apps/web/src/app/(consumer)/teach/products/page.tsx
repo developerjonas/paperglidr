@@ -9,10 +9,13 @@ import {
 } from "@/drizzle/schema";
 import { asc, countDistinct, eq } from "drizzle-orm";
 import { getProductGlobalTag } from "@/features/products/db/cache";
+import { getCurrentUser } from "@/services/auth";
 import { ProductTable } from "@/features/products/components/ProductTable";
 
 export default async function ProductsPage() {
-  const products = await getProducts();
+  const { userId, redirectToSignIn } = await getCurrentUser();
+  if (userId == null) return redirectToSignIn();
+  const products = await getProducts(userId);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -41,7 +44,9 @@ export default async function ProductsPage() {
   );
 }
 
-async function getProducts() {
+// The creator's own products only. This listed every creator's products,
+// drafts and customer counts included.
+async function getProducts(authorId: string) {
   "use cache";
   cacheTag(getProductGlobalTag());
   return db
@@ -61,6 +66,7 @@ async function getProducts() {
       CourseProductTable,
       eq(CourseProductTable.productId, DbProductTable.id),
     )
+    .where(eq(DbProductTable.authorId, authorId))
     .orderBy(asc(DbProductTable.name))
     .groupBy(DbProductTable.id);
 }

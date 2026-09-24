@@ -1,5 +1,6 @@
 import { db } from "@/drizzle/db";
 import { LessonAssetTable } from "@/drizzle/schema/lessonAsset";
+import { StorageDeletionTable } from "@/drizzle/schema/storageDeletion";
 import { and, desc, eq, ne } from "drizzle-orm";
 import {
   getLessonAssetLessonIdTag,
@@ -74,11 +75,35 @@ export async function getAttachmentLessonAssets(lessonId: string) {
   });
 }
 
+// Longer than any signed URL the deliver route hands out (videos: at most
+// 3 hours), so a file that's still being watched isn't pulled mid-lesson.
+export const STORAGE_DELETION_DELAY_MS = 4 * 60 * 60 * 1000;
+
+type Tx = Omit<typeof db, "$client">;
+
+async function queueStorageDeletion(
+  rows: { storageKey: string | null }[],
+  reason: "replaced" | "removed",
+  trx: Tx,
+) {
+  const keys = rows.map((row) => row.storageKey).filter((key): key is string => key != null);
+  if (keys.length === 0) return;
+  const deleteAfter = new Date(Date.now() + STORAGE_DELETION_DELAY_MS);
+  await trx
+    .insert(StorageDeletionTable)
+    .values(keys.map((storageKey) => ({ storageKey, reason, deleteAfter })));
+}
+
+/** Deletes the row; its R2 object is queued for deletion (see above). */
 export async function deleteLessonAsset(id: string) {
-  const [deleted] = await db
-    .delete(LessonAssetTable)
-    .where(eq(LessonAssetTable.id, id))
-    .returning();
+  const deleted = await db.transaction(async (trx) => {
+    const [row] = await trx
+      .delete(LessonAssetTable)
+      .where(eq(LessonAssetTable.id, id))
+      .returning();
+    if (row) await queueStorageDeletion([row], "removed", trx);
+    return row;
+  });
 
   if (deleted) {
     revalidateLessonAssetCache({ id: deleted.id, lessonId: deleted.lessonId });
@@ -88,8 +113,8 @@ export async function deleteLessonAsset(id: string) {
 
 /**
  * A confirmed upload goes live. A lesson shows one primary asset, so a new
- * ready primary replaces the previous ones (rows only — see removeLessonAsset
- * for why R2 objects aren't deleted in-request).
+ * ready primary replaces the previous ones. Their R2 objects are queued
+ * for deletion after STORAGE_DELETION_DELAY_MS, not deleted in-request.
  */
 export async function markLessonAssetReady(id: string) {
   const ready = await db.transaction(async (tx) => {
@@ -101,7 +126,7 @@ export async function markLessonAssetReady(id: string) {
     if (asset == null) return null;
 
     if (asset.role === "primary") {
-      await tx
+      const replaced = await tx
         .delete(LessonAssetTable)
         .where(
           and(
@@ -110,7 +135,9 @@ export async function markLessonAssetReady(id: string) {
             eq(LessonAssetTable.status, "ready"),
             ne(LessonAssetTable.id, asset.id)
           )
-        );
+        )
+        .returning({ storageKey: LessonAssetTable.storageKey });
+      await queueStorageDeletion(replaced, "replaced", tx);
     }
     return asset;
   });

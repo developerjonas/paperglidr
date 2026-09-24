@@ -3,6 +3,7 @@ import { createdAt, updatedAt } from "../schemaHelpers";
 import { relations } from "drizzle-orm";
 import { UserTable } from "./user";
 import { CourseTable } from "./course";
+import { ProductTable } from "./product";
 
 // Kept generic on purpose: today it's only used for courses, but "report the
 // instructor" / "report a specific lesson" are one enum value away, no migration needed.
@@ -23,7 +24,7 @@ export const reportStatuses = [
 ] as const;
 export const reportStatusEnum = pgEnum("report_status", reportStatuses);
 
-export const reportTargetTypes = ["course", "instructor", "lesson"] as const;
+export const reportTargetTypes = ["course", "instructor", "lesson", "product"] as const;
 export const reportTargetTypeEnum = pgEnum(
   "report_target_type",
   reportTargetTypes,
@@ -40,6 +41,8 @@ export const ReportTable = pgTable("reports", {
   // context checks stay a single indexed lookup instead of a join through
   // targetId. Fine while targetType is almost always "course".
   courseId: uuid().references(() => CourseTable.id, { onDelete: "cascade" }),
+  // Set for product reports (the product page's report button).
+  productId: uuid("product_id").references(() => ProductTable.id, { onDelete: "cascade" }),
   reason: reportReasonEnum().notNull(),
   details: text(),
   status: reportStatusEnum().notNull().default("pending"),
@@ -58,6 +61,10 @@ export const ReportRelationships = relations(ReportTable, ({ one }) => ({
   course: one(CourseTable, {
     fields: [ReportTable.courseId],
     references: [CourseTable.id],
+  }),
+  product: one(ProductTable, {
+    fields: [ReportTable.productId],
+    references: [ProductTable.id],
   }),
   reviewer: one(UserTable, {
     fields: [ReportTable.reviewedBy],

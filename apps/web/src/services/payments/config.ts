@@ -69,6 +69,16 @@ export type PaymentConfig = {
   fonepay: FonepayConfig | null;
   /** Human-readable reasons a gateway is disabled — for logs/admin only. */
   disabledReasons: Partial<Record<GatewayName, string>>;
+  /**
+   * Gateways switched off because their live configuration is wrong (a
+   * sandbox URL or test credential, or a non-https URL). Unlike a gateway
+   * that simply isn't set up, this is a deploy mistake: reported at boot
+   * (instrumentation.ts → Sentry, area=startup). The rest of the site, and
+   * any correctly configured gateway, keep working.
+   */
+  misconfigured: Partial<Record<GatewayName, string>>;
+  /** Config problems that aren't tied to one gateway (e.g. typos in the allow-list). */
+  warnings: string[];
 };
 
 export type PaymentEnv = {
@@ -94,10 +104,20 @@ export class PaymentConfigError extends Error {
 const blank = (value: string | undefined) =>
   value == null || value.trim() === "" ? undefined : value.trim();
 
+const GATEWAY_OF_KEY: Record<string, GatewayName> = {
+  ESEWA_: "esewa",
+  KHALTI_: "khalti",
+  FONEPAY_: "fonepay",
+};
+const gatewayOfKey = (key: string) =>
+  Object.entries(GATEWAY_OF_KEY).find(([prefix]) => key.startsWith(prefix))?.[1];
+
 /**
- * Pure: env in, config out. Throws PaymentConfigError for a live
- * configuration that contains any sandbox URL or test credential — that is
- * a deploy mistake, not a missing feature, so it must be loud.
+ * Pure: env in, config out. In live mode, a gateway whose configuration
+ * contains any sandbox URL or test credential, or a non-https URL, is
+ * DISABLED and listed in `misconfigured` — never used, never a fallback.
+ * The app stays up; only an invalid PAYMENT_MODE throws (the env schema
+ * already rejects that).
  */
 export function resolvePaymentConfig(raw: PaymentEnv): PaymentConfig {
   const mode = raw.PAYMENT_MODE;
@@ -111,12 +131,20 @@ export function resolvePaymentConfig(raw: PaymentEnv): PaymentConfig {
     Object.entries(raw).map(([key, value]) => [key, blank(value)]),
   ) as PaymentEnv;
 
+  const misconfigured: PaymentConfig["misconfigured"] = {};
+  const warnings: string[] = [];
+  const flag = (gateway: GatewayName, reason: string) => {
+    misconfigured[gateway] ??= reason;
+  };
+
   if (live) {
     for (const [key, value] of Object.entries(e)) {
-      if (key === "PAYMENT_MODE" || value == null) continue;
+      const gateway = gatewayOfKey(key);
+      if (gateway == null || value == null) continue;
       const marker = SANDBOX_MARKERS.find(m => value.includes(m));
       if (marker != null) {
-        throw new PaymentConfigError(
+        flag(
+          gateway,
           `PAYMENT_MODE=live but ${key} contains a sandbox value (${marker === SANDBOX_DEFAULTS.esewa.secretKey ? "the public eSewa test key" : marker})`,
         );
       }
@@ -182,33 +210,47 @@ export function resolvePaymentConfig(raw: PaymentEnv): PaymentConfig {
       };
 
   if (live) {
-    for (const [name, url] of [
-      ["ESEWA_FORM_URL", esewa?.formUrl],
-      ["ESEWA_STATUS_URL", esewa?.statusUrl],
-      ["KHALTI_BASE_URL", khalti?.baseUrl],
-      ["FONEPAY_BASE_URL", fonepay?.baseUrl],
+    for (const [gateway, name, url] of [
+      ["esewa", "ESEWA_FORM_URL", esewa?.formUrl],
+      ["esewa", "ESEWA_STATUS_URL", esewa?.statusUrl],
+      ["khalti", "KHALTI_BASE_URL", khalti?.baseUrl],
+      ["fonepay", "FONEPAY_BASE_URL", fonepay?.baseUrl],
     ] as const) {
       if (url != null && !url.startsWith("https://")) {
-        throw new PaymentConfigError(`PAYMENT_MODE=live requires ${name} to be https`);
+        flag(gateway, `PAYMENT_MODE=live requires ${name} to be https`);
       }
     }
   }
 
-  const config: PaymentConfig = { mode, esewa, khalti, fonepay, disabledReasons };
+  const config: PaymentConfig = {
+    mode,
+    esewa,
+    khalti,
+    fonepay,
+    disabledReasons,
+    misconfigured,
+    warnings,
+  };
+  for (const gateway of GATEWAY_NAMES) {
+    const reason = misconfigured[gateway];
+    if (reason != null) {
+      config[gateway] = null;
+      disabledReasons[gateway] = `misconfigured: ${reason}`;
+    }
+  }
 
   // Optional allow-list: can only switch configured gateways OFF, never on.
   if (e.PAYMENT_ENABLED_GATEWAYS != null) {
     const allowed = e.PAYMENT_ENABLED_GATEWAYS.split(",")
       .map(name => name.trim())
       .filter(Boolean);
+    // A typo only ever switches gateways OFF (fail closed); it's reported.
     const unknown = allowed.filter(name => !isGatewayName(name));
     if (unknown.length > 0) {
-      throw new PaymentConfigError(
-        `PAYMENT_ENABLED_GATEWAYS has unknown gateways: ${unknown.join(", ")}`,
-      );
+      warnings.push(`PAYMENT_ENABLED_GATEWAYS has unknown gateways: ${unknown.join(", ")}`);
     }
     for (const gateway of GATEWAY_NAMES) {
-      if (!allowed.includes(gateway) && config[gateway] != null) {
+      if (!allowed.includes(gateway) && config[gateway] != null && misconfigured[gateway] == null) {
         config[gateway] = null;
         disabledReasons[gateway] = "not in PAYMENT_ENABLED_GATEWAYS";
       }

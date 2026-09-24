@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import {
   getInstructorHandleTag,
   getInstructorIdTag,
+  getInstructorUserTag,
   revalidateInstructorCache,
 } from "./cache/instructors";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
@@ -12,6 +13,9 @@ import { and } from "drizzle-orm"
 
 export async function getInstructorByUserId(userId: string) {
   "use cache";
+  // Tagged so phone verification and profile edits show up immediately
+  // (the payout gate reads phoneVerifiedAt from here).
+  cacheTag(getInstructorUserTag(userId));
   return db.query.InstructorTable.findFirst({
     where: eq(InstructorTable.userId, userId),
   });

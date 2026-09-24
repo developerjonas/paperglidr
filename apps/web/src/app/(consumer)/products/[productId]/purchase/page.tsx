@@ -14,6 +14,7 @@ import { getProductIdTag } from "@/features/products/db/cache"
 import { userOwnsProduct } from "@/features/products/db/products"
 import { wherePublicProducts } from "@/features/products/permissions/products"
 import { enrollFree } from "@/features/purchases/lib/freeEnrollment"
+import { alreadyOwnsProduct } from "@/features/purchases/lib/ownership"
 import { safeErrorMessage } from "@/lib/safeError"
 import { PurchaseCheckoutCard } from "@/features/purchases/components/PurchaseCheckoutCard"
 import { getEnabledGateways, getPaymentConfig } from "@/services/payments/config"
@@ -115,7 +116,7 @@ async function enrollInFreeProduct(productId: string) {
     redirect(`/products/${productId}/purchase`)
   }
 
-  if (await userOwnsProduct({ userId: user.id, productId })) {
+  if (await alreadyOwnsProduct({ userId: user.id, productId })) {
     redirect("/courses")
   }
 

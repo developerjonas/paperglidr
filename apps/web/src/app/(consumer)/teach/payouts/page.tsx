@@ -8,7 +8,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentUser } from "@/services/auth";
-import { getMyAvailableBalanceInRupees } from "@/features/payouts/actions/payouts";
+import { getMyBalancesInRupees } from "@/features/payouts/actions/payouts";
+import { getInstructorByUserId } from "@/features/instructors/db/instructors";
+import { POLICY_TERMS } from "@/config/policyTerms";
+import Link from "next/link";
 import { getInstructorPayoutHistory } from "@/features/payouts/db/payouts";
 import { PayoutRequestForm } from "@/features/payouts/components/PayoutRequestForm";
 import { formatPrice } from "@/lib/formatters";
@@ -24,10 +27,12 @@ export default async function TeachPayoutsPage() {
   const { userId, redirectToSignIn } = await getCurrentUser();
   if (userId == null) return redirectToSignIn();
 
-  const [availableBalanceInRupees, history] = await Promise.all([
-    getMyAvailableBalanceInRupees(),
+  const [balances, history, instructor] = await Promise.all([
+    getMyBalancesInRupees(),
     getInstructorPayoutHistory(userId),
+    getInstructorByUserId(userId),
   ]);
+  const phoneVerified = instructor?.phoneVerifiedAt != null;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -47,9 +52,31 @@ export default async function TeachPayoutsPage() {
           <div className="max-w-md">
             <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
               <CardContent className="pt-6">
-                <PayoutRequestForm
-                  availableBalanceInRupees={availableBalanceInRupees}
-                />
+                {POLICY_TERMS.payoutRequiresVerifiedPhone && !phoneVerified ? (
+                  <div className="flex flex-col gap-2 text-sm">
+                    <p>
+                      Available to withdraw:{" "}
+                      <strong>NPR {balances.available.toFixed(2)}</strong>
+                      {" · "}On hold: NPR {balances.held.toFixed(2)}
+                    </p>
+                    <p className="text-muted-foreground">
+                      Verify your phone number to request payouts.
+                    </p>
+                    <Link
+                      href="/instructors/onboarding#verify"
+                      className="font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      Verify your phone
+                    </Link>
+                  </div>
+                ) : (
+                  <PayoutRequestForm
+                    availableBalanceInRupees={balances.available}
+                    heldBalanceInRupees={balances.held}
+                    holdDays={POLICY_TERMS.payoutHoldDays}
+                    minimumPayout={POLICY_TERMS.minimumPayout}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>

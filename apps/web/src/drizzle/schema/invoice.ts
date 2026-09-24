@@ -45,6 +45,11 @@ export const InvoiceTable = pgTable("invoices", {
   status: invoiceStatusEnum().notNull().default("issued"),
   pdfR2Key: text(), // nullable until the PDF job succeeds
   emailedAt: timestamp({ withTimezone: true }),
+  // Delivery (PDF + email) retries — features/invoices/lib/deliverInvoice.ts.
+  // emailedAt null + attempts < max = the cron tries again.
+  deliveryAttempts: integer("delivery_attempts").notNull().default(0),
+  lastDeliveryAttemptAt: timestamp("last_delivery_attempt_at", { withTimezone: true }),
+  lastDeliveryError: text("last_delivery_error"),
   createdAt,
 });
 
