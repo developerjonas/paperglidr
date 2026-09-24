@@ -69,6 +69,7 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `requestRefund` | owner | `purchase.userId` = caller; eligibility recomputed server-side; one open request per purchase (unique index) | 🔧 fix/money-ops: same "Not signed in" bug; stored the product ID as the course ID |
 | | `approveRefund` | admin | `requireAdmin()`; request must be pending (row locked); revoke runs in the same transaction | 🆕 task 16 |
 | | `rejectRefund` | admin | `requireAdmin()`; pending only | 🆕 task 16 |
+| | `markRefundMoneyReturned` | admin | `requireAdmin()`; approved only (status-guarded), records who and when | 🆕 fix/polish |
 | `features/reports/actions/reports.ts` | `reportContent` (was `reportCourse`) | signed-in | reporter = caller; target must be a public product or a lesson the caller can open; one open report per reporter and target | 🔧 task 18: read `session.user.id`, which `getCurrentUser()` never sets, so every report failed with "must be signed in" |
 | | `reviewReport` | admin | `requireAdmin()`; open reports only | 🆕 task 18 |
 | `features/reviews/actions/reviews.ts` | `createReview` | signed-in | ≥50% course completion; one per course | ✅ |

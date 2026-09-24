@@ -22,7 +22,7 @@ vi.mock("@/services/email/resend", () => ({
   },
 }))
 
-const { approveRefundRequest, rejectRefundRequest } = await import("./reviewRefund")
+const { approveRefundRequest, markRefundProcessed, rejectRefundRequest } = await import("./reviewRefund")
 const { revokePurchaseInTransaction } = await import("@/features/purchases/lib/revokePurchase")
 const { getRefundEligibility } = await import("./eligibility")
 
@@ -130,6 +130,37 @@ describe("refund approval", () => {
     expect(reviewed!.adminNote).toBe("Completed offline")
     expect(await count(eq(UserCourseAccessTable.userId, buyer.id), UserCourseAccessTable)).toBe(1)
     expect(sent.map(e => e.to)).toEqual([buyer.email])
+  })
+})
+
+describe("marking the money returned", () => {
+  it("approved -> processed with who and when; only once, and only after approval", async () => {
+    const { purchase, buyer, courseIds } = await createCompletedPurchase()
+    const admin = await createUser("admin")
+    const request = await openRequest(purchase.id, buyer.id, courseIds[0]!)
+
+    // Still pending: can't be marked returned yet.
+    expect((await markRefundProcessed({ requestId: request.id, adminId: admin.id })).outcome).toBe("not_approved")
+
+    await approveRefundRequest({ requestId: request.id, adminId: admin.id })
+    const bookkeeper = await createUser("bookkeeper")
+    expect((await markRefundProcessed({ requestId: request.id, adminId: bookkeeper.id })).outcome).toBe("processed")
+    const [row] = await db.select().from(RefundRequestTable).where(eq(RefundRequestTable.id, request.id))
+    expect(row).toMatchObject({ status: "processed", processedBy: bookkeeper.id, reviewedBy: admin.id })
+    expect(row!.processedAt).not.toBeNull()
+
+    // A second click changes nothing.
+    expect((await markRefundProcessed({ requestId: request.id, adminId: admin.id })).outcome).toBe("not_approved")
+    const [again] = await db.select().from(RefundRequestTable).where(eq(RefundRequestTable.id, request.id))
+    expect(again!.processedBy).toBe(bookkeeper.id)
+  })
+
+  it("a rejected request can't be marked returned", async () => {
+    const { purchase, buyer, courseIds } = await createCompletedPurchase()
+    const admin = await createUser("admin")
+    const request = await openRequest(purchase.id, buyer.id, courseIds[0]!)
+    await rejectRefundRequest({ requestId: request.id, adminId: admin.id, reason: "no" })
+    expect((await markRefundProcessed({ requestId: request.id, adminId: admin.id })).outcome).toBe("not_approved")
   })
 })
 

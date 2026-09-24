@@ -40,6 +40,7 @@ export async function getRefundRequestsForAdmin() {
   const withDetails = {
     user: { columns: { name: true, email: true } },
     reviewer: { columns: { name: true, email: true } },
+    processor: { columns: { name: true, email: true } },
     purchase: {
       columns: {
         id: true,

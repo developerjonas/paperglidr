@@ -8,7 +8,10 @@ import {
 } from "@/components/ui/table"
 import { PageHeader } from "@/components/PageHeader"
 import { getRefundRequestsForAdmin } from "@/features/refunds/db/refunds"
-import { RefundRowActions } from "@/features/refunds/components/RefundRowActions"
+import {
+  MarkMoneyReturnedButton,
+  RefundRowActions,
+} from "@/features/refunds/components/RefundRowActions"
 import { requireAdmin } from "@/services/auth"
 
 const npr = (paisa: number) => `NPR ${(paisa / 100).toLocaleString("en-IN")}`
@@ -130,6 +133,18 @@ export default async function AdminRefundsPage() {
                   {row.reviewer?.name ?? row.reviewer?.email ?? "—"} · {when(row.reviewedAt)}
                   {row.adminNote && (
                     <p className="whitespace-pre-wrap text-muted-foreground">{row.adminNote}</p>
+                  )}
+                  {row.status === "approved" && (
+                    <div className="mt-2 flex flex-col gap-1">
+                      <span className="text-muted-foreground">Money not yet marked as returned.</span>
+                      <MarkMoneyReturnedButton requestId={row.id} />
+                    </div>
+                  )}
+                  {row.status === "processed" && (
+                    <p className="mt-1">
+                      <strong>Money returned</strong> · marked by{" "}
+                      {row.processor?.name ?? row.processor?.email ?? "—"} · {when(row.processedAt)}
+                    </p>
                   )}
                 </TableCell>
               </TableRow>

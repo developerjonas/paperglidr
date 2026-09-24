@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { actionToast } from "@/hooks/use-toast"
-import { approveRefund, rejectRefund } from "../actions/refunds"
+import { approveRefund, markRefundMoneyReturned, rejectRefund } from "../actions/refunds"
 
 export function RefundRowActions({ requestId }: { requestId: string }) {
   const [rejecting, setRejecting] = useState(false)
@@ -55,5 +55,23 @@ export function RefundRowActions({ requestId }: { requestId: string }) {
         Reject
       </Button>
     </div>
+  )
+}
+
+/** For an approved refund: after returning the money in the gateway dashboard. */
+export function MarkMoneyReturnedButton({ requestId }: { requestId: string }) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleClick() {
+    if (!confirm("Have you returned the money to the buyer in the gateway's merchant dashboard?")) return
+    setLoading(true)
+    actionToast({ actionData: await markRefundMoneyReturned(requestId) })
+    setLoading(false)
+  }
+
+  return (
+    <Button size="sm" variant="outline" onClick={handleClick} disabled={loading}>
+      Mark money returned
+    </Button>
   )
 }

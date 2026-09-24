@@ -41,6 +41,10 @@ export const RefundRequestTable = pgTable("refund_requests", {
   reviewedBy: uuid().references(() => UserTable.id, { onDelete: "set null" }),
   reviewedAt: timestamp({ withTimezone: true }),
   adminNote: text(),
+  // "Mark money returned" on /admin/refunds: the admin who refunded the
+  // money in the gateway dashboard, and when (status approved -> processed).
+  processedBy: uuid("processed_by").references(() => UserTable.id, { onDelete: "set null" }),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
   createdAt,
   updatedAt,
 }, table => [
@@ -68,6 +72,10 @@ export const RefundRequestRelationships = relations(
     }),
     reviewer: one(UserTable, {
       fields: [RefundRequestTable.reviewedBy],
+      references: [UserTable.id],
+    }),
+    processor: one(UserTable, {
+      fields: [RefundRequestTable.processedBy],
       references: [UserTable.id],
     }),
   }),

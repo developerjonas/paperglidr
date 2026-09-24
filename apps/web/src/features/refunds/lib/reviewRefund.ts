@@ -115,3 +115,18 @@ export async function rejectRefundRequest({
   }
   return { outcome: "rejected" as const }
 }
+
+/**
+ * After the money has been returned by hand in the gateway dashboard:
+ * approved -> processed, recording who and when. Status-guarded, so it
+ * happens once and only after approval.
+ */
+export async function markRefundProcessed({ requestId, adminId }: { requestId: string; adminId: string }) {
+  const now = new Date()
+  const [request] = await db
+    .update(RefundRequestTable)
+    .set({ status: "processed", processedBy: adminId, processedAt: now, updatedAt: now })
+    .where(and(eq(RefundRequestTable.id, requestId), eq(RefundRequestTable.status, "approved")))
+    .returning()
+  return request == null ? { outcome: "not_approved" as const } : { outcome: "processed" as const }
+}

@@ -7,7 +7,11 @@ import { db } from "@/drizzle/db";
 import { PurchaseTable } from "@/drizzle/schema/purchase";
 import { getRefundEligibility } from "../lib/eligibility";
 import { getOpenRefundRequest, insertRefundRequest } from "../db/refunds";
-import { approveRefundRequest, rejectRefundRequest } from "../lib/reviewRefund";
+import {
+  approveRefundRequest,
+  markRefundProcessed,
+  rejectRefundRequest,
+} from "../lib/reviewRefund";
 import { getCurrentUser, requireAdmin } from "@/services/auth";
 import { POLICY_TERMS } from "@/config/policyTerms";
 import { UserFacingError, actionError } from "@/lib/safeError";
@@ -125,5 +129,22 @@ export async function rejectRefund(requestId: string, reason: string) {
     return { error: false as const, message: "Refund request rejected" };
   } catch (error) {
     return actionError(error, "rejectRefund");
+  }
+}
+
+export async function markRefundMoneyReturned(requestId: string) {
+  const { userId: adminId } = await requireAdmin();
+  try {
+    if (!z.string().uuid().safeParse(requestId).success) {
+      throw new UserFacingError("Refund request not found");
+    }
+    const result = await markRefundProcessed({ requestId, adminId });
+    if (result.outcome === "not_approved") {
+      throw new UserFacingError("Only an approved refund can be marked as returned");
+    }
+    revalidatePath("/admin/refunds");
+    return { error: false as const, message: "Marked as money returned" };
+  } catch (error) {
+    return actionError(error, "markRefundMoneyReturned");
   }
 }
