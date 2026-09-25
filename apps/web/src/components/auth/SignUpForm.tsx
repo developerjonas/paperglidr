@@ -12,7 +12,7 @@ import {
   USERNAME_MIN_LENGTH,
   USERNAME_PATTERN,
   checkPassword,
-} from "@/lib/passwordPolicy"
+} from "@repo/password-policy"
 
 type UsernameState = "idle" | "checking" | "available" | "taken"
 

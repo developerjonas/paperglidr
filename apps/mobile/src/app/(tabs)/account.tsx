@@ -1,3 +1,4 @@
+import { AccountSession } from '@/components/account-session';
 import { PlaceholderScreen } from '@/components/placeholder-screen';
 
 export default function AccountScreen() {
@@ -15,8 +16,8 @@ export default function AccountScreen() {
         { label: "Contact us", href: "/contact" },
         { label: "Terms and policies", href: "/legal" },
         { label: "Verify a certificate", href: "/verify" },
-        { label: "Sign in", href: "/sign-in" },
-      ]}
-    />
+      ]}>
+      <AccountSession />
+    </PlaceholderScreen>
   );
 }

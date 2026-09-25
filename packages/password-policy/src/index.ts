@@ -1,6 +1,7 @@
 /**
- * The password rules — one module for the sign-up form (live checklist and
- * generator) and the server (lib/auth.ts rejects anything that fails).
+ * The password rules — one module for the web sign-up form (live checklist
+ * and generator), the web server (apps/web/src/lib/auth.ts rejects anything
+ * that fails) and the mobile app's forms.
  * Breached passwords are also rejected server-side by the haveIBeenPwned
  * plugin; that check can't run in the browser.
  */

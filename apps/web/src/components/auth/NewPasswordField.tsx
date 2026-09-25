@@ -10,7 +10,7 @@ import {
   checkPassword,
   generateStrongPassword,
   type PasswordContext,
-} from "@/lib/passwordPolicy"
+} from "@repo/password-policy"
 
 const STRENGTH = [
   { label: "Too weak", bar: "bg-destructive" },

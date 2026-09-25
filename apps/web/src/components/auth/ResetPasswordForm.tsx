@@ -6,7 +6,7 @@ import { CheckCircle2, Loader2 } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { NewPasswordField } from "@/components/auth/NewPasswordField"
-import { checkPassword } from "@/lib/passwordPolicy"
+import { checkPassword } from "@repo/password-policy"
 
 /**
  * Sets a new password from an emailed reset link. The server also checks

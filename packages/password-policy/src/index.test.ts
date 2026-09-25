@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { checkPassword, generateStrongPassword } from "./passwordPolicy"
+import { checkPassword, generateStrongPassword } from "./index"
 
 const failures = (password: string, context = {}) =>
   checkPassword(password, context).checks.filter(c => !c.ok).map(c => c.id)

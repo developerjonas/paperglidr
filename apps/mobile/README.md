@@ -30,6 +30,16 @@ In code: call `api.*` from [src/api/v1.ts](src/api/v1.ts) through TanStack
 Query with the keys in [src/api/keys.ts](src/api/keys.ts). Errors are
 `ApiError` with the server's message, safe to show.
 
+## Signing in
+
+Optional everywhere: browsing works signed out. [src/auth](src/auth) holds
+the session — the token in the Keychain/Keystore (expo-secure-store),
+restored at launch, sent as `Authorization: Bearer`, dropped on a 401.
+Screens that need an account wrap themselves in `RequireAuth`, which shows
+a sign-in prompt instead of redirecting. Email-or-username sign-in,
+sign-up (same password rules as the website, from `@repo/password-policy`)
+and forgot password; the reset itself happens on the website.
+
 ## Layout
 
 - `src/app/` — every file is a screen (Expo Router). `(tabs)` holds the five
@@ -40,5 +50,6 @@ Query with the keys in [src/api/keys.ts](src/api/keys.ts). Errors are
 
 ## Status
 
-Step 2: every screen is still a placeholder; the typed API client is in
-place and Home checks the connection. Payments and checkout are not in the app.
+Step 3: sign-in, sign-up and forgot password work; the rest are still
+placeholders. Google sign-in needs a development build (native module) and
+comes later. Payments and checkout are not in the app.

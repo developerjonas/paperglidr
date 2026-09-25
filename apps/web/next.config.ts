@@ -3,7 +3,8 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 import { allowedImageHosts } from "./src/lib/imageHosts";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Workspace packages ship TypeScript source.
+  transpilePackages: ["@repo/password-policy"],
   experimental: {
     // dynamicIO: true,
     // authInterrupts: true,

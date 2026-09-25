@@ -17,7 +17,7 @@ import {
   USERNAME_MIN_LENGTH,
   USERNAME_PATTERN,
   checkPassword,
-} from "@/lib/passwordPolicy";
+} from "@repo/password-policy";
 
 const trustedOrigins = (env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
   .split(",")
