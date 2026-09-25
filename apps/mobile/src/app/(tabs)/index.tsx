@@ -1,3 +1,4 @@
+import { ApiStatus } from '@/components/api-status';
 import { PlaceholderScreen } from '@/components/placeholder-screen';
 
 export default function HomeScreen() {
@@ -12,7 +13,8 @@ export default function HomeScreen() {
         { label: "Verify a certificate", href: "/verify" },
         { label: "Sign in", href: "/sign-in" },
       ]}
-      headerShown={false}
-    />
+      headerShown={false}>
+      <ApiStatus />
+    </PlaceholderScreen>
   );
 }

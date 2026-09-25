@@ -15,6 +15,21 @@ pnpm check-types    # TypeScript
 pnpm lint           # ESLint
 ```
 
+## Connecting to the API
+
+The app talks to the web app's `/api/v1` ([src/api](src/api)).
+
+- **Development:** run the web app too (`pnpm dev` in `apps/web`, port 3000)
+  with `MOBILE_API_ENABLED=true` in `apps/web/.env.local`. The app finds it at
+  your computer's LAN address automatically, so a phone on the same Wi-Fi
+  works. Home shows an "API connection" card while this is being built.
+- **Anything else:** set `EXPO_PUBLIC_API_URL` (see `.env.example`).
+- **Release builds:** `https://chiyali.com`.
+
+In code: call `api.*` from [src/api/v1.ts](src/api/v1.ts) through TanStack
+Query with the keys in [src/api/keys.ts](src/api/keys.ts). Errors are
+`ApiError` with the server's message, safe to show.
+
 ## Layout
 
 - `src/app/` — every file is a screen (Expo Router). `(tabs)` holds the five
@@ -25,5 +40,5 @@ pnpm lint           # ESLint
 
 ## Status
 
-Step 1: every screen exists as a placeholder showing its name, what it will
-show and the API it will use. Payments and checkout are not in the app.
+Step 2: every screen is still a placeholder; the typed API client is in
+place and Home checks the connection. Payments and checkout are not in the app.

@@ -13,7 +13,17 @@ export const GET = v1Route("me", async () => {
 
   const user = await db.query.UserTable.findFirst({
     where: eq(UserTable.id, gate.user.userId),
-    columns: { id: true, name: true, email: true, emailVerified: true, image: true, role: true, createdAt: true },
+    columns: {
+      id: true,
+      name: true,
+      username: true,
+      displayUsername: true,
+      email: true,
+      emailVerified: true,
+      image: true,
+      role: true,
+      createdAt: true,
+    },
   })
   if (!user) return apiError(401, "Sign in to continue")
 

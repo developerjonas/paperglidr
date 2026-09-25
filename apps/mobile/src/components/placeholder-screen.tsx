@@ -1,4 +1,5 @@
 import { Link, type Href, Stack } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -19,12 +20,15 @@ export function PlaceholderScreen({
   api,
   links = [],
   headerShown = true,
+  children,
 }: {
   title: string;
   description: string;
   api?: string;
   links?: PlaceholderLink[];
   headerShown?: boolean;
+  /** Extra content under the description, e.g. a live API check. */
+  children?: ReactNode;
 }) {
   const theme = useTheme();
 
@@ -43,6 +47,7 @@ export function PlaceholderScreen({
               <ThemedText type="code">{api}</ThemedText>
             </ThemedView>
           ) : null}
+          {children}
 
           {links.length > 0 ? (
             <View style={styles.links}>
