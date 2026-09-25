@@ -1,4 +1,4 @@
-// Destination: apps/web/src/app/(consumer)/support/[ticketId]/page.tsx
+// Destination: apps/web/src/app/(consumer)/(support)/support/[ticketId]/page.tsx
 import { redirect, notFound } from "next/navigation";
 import { getCurrentUser } from "@/services/auth";
 import { getTicketWithMessages } from "@/features/support/db/supportTickets";

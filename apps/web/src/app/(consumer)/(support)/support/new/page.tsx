@@ -1,4 +1,4 @@
-// Destination: apps/web/src/app/(consumer)/support/new/page.tsx
+// Destination: apps/web/src/app/(consumer)/(support)/support/new/page.tsx
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getCurrentUser } from "@/services/auth";
