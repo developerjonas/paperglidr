@@ -45,7 +45,7 @@ Every payment event also carries `gateway` (esewa / khalti / fonepay) and `sourc
 
 ## Steps: Sentry
 
-1. Create a Sentry account (the free Developer plan is enough) and a project. Platform: **Next.js**. Name: `paperglidr-web`.
+1. Create a Sentry account (the free Developer plan is enough) and a project. Platform: **Next.js**. Name: `chiyali-web`.
 2. Project settings → Client Keys (DSN): copy the DSN.
 3. In Vercel, under Project → Settings → Environment Variables, add for **Production** (and Preview if you want preview errors too):
    ```
@@ -58,7 +58,7 @@ Every payment event also carries `gateway` (esewa / khalti / fonepay) and `sourc
    ```
    SENTRY_AUTH_TOKEN=<Settings → Auth Tokens → Create, scope project:releases + org:read>
    SENTRY_ORG=<org slug>
-   SENTRY_PROJECT=paperglidr-web
+   SENTRY_PROJECT=chiyali-web
    ```
 4. Redeploy. `NEXT_PUBLIC_SENTRY_DSN` is inlined at build time.
 5. Check it works. On a preview deployment with the DSN set, open `/api/lessons/00000000-0000-0000-0000-000000000000/assets/x/deliver`. It returns a 404, so nothing is sent. To force a test event, use Sentry → Project → "Send a test event", or temporarily set a wrong `R2_BUCKET_NAME` on a preview and play an uploaded lesson. That produces an `area=deliver` error.
@@ -96,11 +96,11 @@ Send every alert to email, and to the phone app or Slack if you have them. Use t
 Use any external checker. Examples use Better Stack (free tier: 10 monitors, 3-minute checks); UptimeRobot works the same way.
 
 1. **Home page**
-   - URL: `https://paperglidr.com/`, method GET, every 3 minutes (1 minute if your plan allows).
-   - Expect: status 200 **and** the body contains `PaperGlidr`.
+   - URL: `https://chiyali.com/`, method GET, every 3 minutes (1 minute if your plan allows).
+   - Expect: status 200 **and** the body contains `Chiyali`.
    - Alert after 2 failed checks, from at least 2 regions. Include a Kathmandu-near region (e.g. Singapore or India) if offered.
 2. **Cron endpoint is reachable**
-   - URL: `https://paperglidr.com/api/cron/reconcile-payments`, method GET, **no** Authorization header, every 5 minutes.
+   - URL: `https://chiyali.com/api/cron/reconcile-payments`, method GET, **no** Authorization header, every 5 minutes.
    - Expect: status **401**. Don't store `CRON_SECRET` in a third-party checker.
    - This proves the route is deployed and answering. Whether the cron actually *runs* is covered by the Sentry cron monitor (alert 3) and by Vercel → Project → Settings → Cron Jobs, where you can see recent invocations.
    - A 404 means the route is missing from the deployment. A 5xx means the app is broken. Either way, alert.

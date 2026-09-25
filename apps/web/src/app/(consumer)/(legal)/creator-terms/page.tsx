@@ -19,7 +19,7 @@ const {
 export const metadata: Metadata = pageMetadata({
   title: "Creator Terms",
   description:
-    "The terms for publishing and selling courses on PaperGlidr: content rights, prohibited content, the platform fee, payouts, refunds and takedowns.",
+    "The terms for publishing and selling courses on Chiyali: content rights, prohibited content, the platform fee, payouts, refunds and takedowns.",
   path: "/creator-terms",
 })
 

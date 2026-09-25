@@ -14,7 +14,7 @@ import { pageMetadata } from "@/lib/site";
 export const metadata: Metadata = pageMetadata({
   title: "Browse courses",
   description:
-    "Browse every course on PaperGlidr — Loksewa, entrance prep, languages, programming, accounting and more, from Nepali instructors, priced in NPR.",
+    "Browse every course on Chiyali — Loksewa, entrance prep, languages, programming, accounting and more, from Nepali instructors, priced in NPR.",
   path: "/browse",
 });
 

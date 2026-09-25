@@ -226,7 +226,7 @@ export default function AccountPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Security</CardTitle>
                 <CardDescription>
-                  How you sign in to PaperGlidr.
+                  How you sign in to Chiyali.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -284,7 +284,7 @@ export default function AccountPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Log out</CardTitle>
                 <CardDescription>
-                  Sign out of PaperGlidr on this device.
+                  Sign out of Chiyali on this device.
                 </CardDescription>
               </CardHeader>
               <CardContent>

@@ -29,7 +29,7 @@ export default async function InstructorOnboardingPage() {
             Set up your creator profile
           </h1>
           <p className="mt-2 max-w-lg text-sm text-muted-foreground sm:text-base">
-            A few details before you can start teaching on Paperglidr.
+            A few details before you can start teaching on Chiyali.
           </p>
         </div>
       </section>

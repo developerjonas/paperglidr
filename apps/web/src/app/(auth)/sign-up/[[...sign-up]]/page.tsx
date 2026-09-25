@@ -39,7 +39,7 @@ export default function SignUpPage({
             Create an account
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Get started with paperglidr in a few seconds
+            Get started with Chiyali in a few seconds
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">

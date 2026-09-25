@@ -17,8 +17,8 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: z.string().min(1).optional(),
     GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
     // Extra origins allowed to call the auth API, comma-separated, e.g.
-    // "https://www.paperglidr.com,paperglidr://". BETTER_AUTH_URL's own
-    // origin (https://paperglidr.com) is always trusted. Parsed in lib/auth.ts.
+    // "https://www.chiyali.com,chiyali://". BETTER_AUTH_URL's own
+    // origin (https://chiyali.com) is always trusted. Parsed in lib/auth.ts.
     BETTER_AUTH_TRUSTED_ORIGINS: z
       .string()
       .optional()
@@ -30,10 +30,10 @@ export const env = createEnv({
             .map(origin => origin.trim())
             .filter(Boolean)
             .every(origin => /^[a-z][a-z0-9+.-]*:\/\//i.test(origin)),
-        "Each origin must start with a scheme, e.g. https:// or paperglidr://",
+        "Each origin must start with a scheme, e.g. https:// or chiyali://",
       ),
     // Parent domain for a cookie shared across subdomains. Not needed while
-    // everything is served from paperglidr.com — leave unset (host-only).
+    // everything is served from chiyali.com — leave unset (host-only).
     AUTH_COOKIE_DOMAIN: z.string().min(1).optional(),
 
     // --- R2 (object storage) ---
@@ -43,7 +43,7 @@ export const env = createEnv({
     R2_ACCOUNT_ID: z.string().min(1),
     // Public bucket for product thumbnails and instructor photos, served
     // from a custom domain (R2_PUBLIC_BASE_URL, e.g.
-    // https://images.paperglidr.com). Lesson files never go here.
+    // https://images.chiyali.com). Lesson files never go here.
     R2_PUBLIC_BUCKET_NAME: z.string().min(1),
     R2_PUBLIC_BASE_URL: z
       .string()

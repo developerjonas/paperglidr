@@ -1,5 +1,6 @@
 import { InvoiceTable, InvoiceSequenceTable } from "@/drizzle/schema";
 import { sql } from "drizzle-orm";
+import { COMPANY } from "@/config/company";
 import type { Trx } from "@/drizzle/types"; // adjust to whatever your transaction type alias is
 
 /**
@@ -61,7 +62,7 @@ export async function createInvoiceForPurchase(
       buyerUserId: buyer.id,
       buyerName: buyer.name,
       buyerEmail: buyer.email,
-      sellerName: "Paperglidr Technology Pvt. Ltd.",
+      sellerName: COMPANY.legalName,
       lineItems,
       subtotalPaisa: purchase.pricePaidInPaisa,
       vatRatePercent: null, // flip once VAT-registered

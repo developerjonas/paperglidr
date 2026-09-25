@@ -50,9 +50,9 @@ export async function generateAndSendInvoice(invoiceId: string) {
     .where(eq(InvoiceTable.id, invoice.id));
 
   await sendEmail({
-    from: env.INVOICE_FROM_EMAIL, // e.g. "Paperglidr <billing@paperglidr.com>" — domain must be verified in Resend
+    from: env.INVOICE_FROM_EMAIL, // e.g. "Chiyali <billing@chiyali.com>" — domain must be verified in Resend
     to: invoice.buyerEmail,
-    subject: `Your Paperglidr invoice ${invoice.invoiceNumber}`,
+    subject: `Your Chiyali invoice ${invoice.invoiceNumber}`,
     html: `
       <p>Hi ${invoice.buyerName},</p>
       <p>Thanks for your purchase. Your invoice <strong>${invoice.invoiceNumber}</strong> is attached.</p>

@@ -7,7 +7,7 @@ import { pageMetadata } from "@/lib/site"
 
 export const metadata: Metadata = pageMetadata({
   title: "Content Policy",
-  description: "What creators may and may not publish on PaperGlidr, and what students may do with courses they buy.",
+  description: "What creators may and may not publish on Chiyali, and what students may do with courses they buy.",
   path: "/content",
 })
 

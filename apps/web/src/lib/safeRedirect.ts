@@ -2,7 +2,7 @@
 // "/courses?x=1" yes; "https://evil.example", "//evil.example",
 // "/\evil.example", "javascript:..." no (open-redirect protection).
 // Plain function, safe to use on the client, the server and in middleware.
-const PLACEHOLDER_ORIGIN = "https://paperglidr.invalid";
+const PLACEHOLDER_ORIGIN = "https://chiyali.invalid";
 
 export function safeRedirectPath(
   value: string | string[] | null | undefined,

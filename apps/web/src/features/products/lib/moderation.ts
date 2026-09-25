@@ -82,7 +82,7 @@ export async function approveProduct({ productId, adminId }: { productId: string
   revalidateProductCache(product.id)
   await emailCreator(
     product.authorId,
-    `"${product.name}" is live on PaperGlidr`,
+    `"${product.name}" is live on Chiyali`,
     [`Your product "${product.name}" was approved and is now on sale.`],
     { href: `${clientEnv.NEXT_PUBLIC_APP_URL}/products/${product.id}`, label: "View it" },
   )

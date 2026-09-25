@@ -6,7 +6,7 @@ import { pageMetadata } from "@/lib/site"
 
 export const metadata: Metadata = pageMetadata({
   title: "DMCA & Takedown Policy",
-  description: "How to report content that infringes your copyright, and how PaperGlidr responds.",
+  description: "How to report content that infringes your copyright, and how Chiyali responds.",
   path: "/dmca",
 })
 

@@ -13,7 +13,7 @@ export function Logo({
   return (
     <Link
       href="/"
-      aria-label="PaperGlidr home"
+      aria-label="Chiyali home"
       className={cn("flex shrink-0 items-center gap-2 text-primary", className)}
     >
       <svg
@@ -30,7 +30,7 @@ export function Logo({
         <path d="M11 13.5 21.5 3" />
       </svg>
       <span className="text-[19px] font-bold italic tracking-[-0.03em]">
-        PaperGlidr
+        Chiyali
       </span>
       {children}
     </Link>

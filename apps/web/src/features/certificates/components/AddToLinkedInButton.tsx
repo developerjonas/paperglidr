@@ -12,7 +12,7 @@ export function AddToLinkedInButton({
   const params = new URLSearchParams({
     startTask: "CERTIFICATION_NAME",
     name: courseTitle,
-    organizationName: "PaperGlidr",
+    organizationName: "Chiyali",
     issueYear: String(issuedAt.getFullYear()),
     issueMonth: String(issuedAt.getMonth() + 1),
     certUrl: `${clientEnv.NEXT_PUBLIC_APP_URL}/verify/${certificateCode}`,

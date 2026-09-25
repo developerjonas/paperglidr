@@ -1,6 +1,6 @@
 # Legal review checklist
 
-For the lawyer reviewing PaperGlidr's policies before launch. The pages are written as complete drafts for a Nepal-based course marketplace. Nothing on the site is marked as a draft; review status is tracked **only here**.
+For the lawyer reviewing Chiyali's policies before launch. The pages are written as complete drafts for a Nepal-based course marketplace. Nothing on the site is marked as a draft; review status is tracked **only here**.
 
 **Last updated in code:** `LEGAL_LAST_UPDATED` in `apps/web/src/config/company.ts`.
 
@@ -33,7 +33,7 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
 5. **Consumer Protection Act, 2075.** Confirm that the refund policy doesn't conflict with statutory consumer rights. The draft says the policy does not limit them.
 6. **Tax.**
    - How long must purchase, invoice and payout records be kept? The privacy policy says "as long as Nepal's tax and accounting laws require" without a number.
-   - Must PaperGlidr withhold tax (TDS) on creator payouts?
+   - Must Chiyali withhold tax (TDS) on creator payouts?
    - When does VAT registration apply? Invoices currently show no VAT and no PAN.
 7. **Governing courts.** The ToS says "competent courts of Nepal". Decide whether to name a court (for example the Lalitpur District Court) and whether to add arbitration.
 8. **Minimum age.** The drafts use 18, with under-18s allowed only with a parent or guardian, and creators 18+ only. Confirm this, and what "consent" requires in practice.
@@ -45,7 +45,7 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
 - **Assumed:** acceptance is clickwrap. It also assumes that access continues if a creator stops selling a course; the code does keep access.
 - **Assumed:** a new liability cap: "the amount you paid us in the six months before the claim". Confirm or change.
 - **Decide:** the suspension and termination wording, including closing accounts without notice for serious breaches.
-- **Changed: product-page access claim.** The product page used to promise "Full lifetime access". It now says "Access for as long as PaperGlidr operates", because accounts can be closed, courses removed for policy breaches, or the platform shut down. That was the only place the phrase appeared. **Confirm** the new wording, and that "Certificate of completion" (also on that page) is acceptable.
+- **Changed: product-page access claim.** The product page used to promise "Full lifetime access". It now says "Access for as long as Chiyali operates", because accounts can be closed, courses removed for policy breaches, or the platform shut down. That was the only place the phrase appeared. **Confirm** the new wording, and that "Certificate of completion" (also on that page) is acceptable.
 - **Changed: marketing claims.** The home page used to say "No approval queue… no reviewer deciding if your course is good enough" and "no reviewer in the loop". Those lines are removed, because the policies reserve the right to remove content and task 18 may add review before publishing. The home page now says only that there is no application or waitlist to sign up.
 
 ### Privacy Policy (`/privacy`)
@@ -86,7 +86,7 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
   - payouts are manual, by bank transfer or to an eSewa/Khalti wallet, to the details the creator enters;
   - **new (fix/money-ops):** earnings from a sale are withdrawable only after that sale's refund window (7 days) closes, and a payout needs a verified mobile number;
   - a refunded sale is deducted from the creator's balance even after payout.
-- **Decide:** the licence scope granted to PaperGlidr (hosting, streaming, and promotion using previews, titles and the creator's name). Should it survive after a creator leaves?
+- **Decide:** the licence scope granted to Chiyali (hosting, streaming, and promotion using previews, titles and the creator's name). Should it survive after a creator leaves?
 - **Decide:** who bears gateway fees. The code doesn't deduct them from creators, so the platform absorbs them. Confirm whether this should be stated.
 - **Decide:** payout timing. None is promised. Add a service level, for example within 7 working days of a request?
 - **Changed:** earnings from a sale are now held until its refund window closes (task 17), and payouts require a verified mobile number. The Creator Terms and the onboarding page say so; both read the rule from code. **Confirm** the wording.
@@ -106,7 +106,7 @@ For the lawyer reviewing PaperGlidr's policies before launch. The pages are writ
 - **Decide:** whether a designated agent must be named.
 
 ### Contact and Legal index (`/contact`, `/legal`)
-- Support: support@paperglidr.com. Legal, copyright and privacy: legal@paperglidr.com. Registered office: Lalitpur Metropolitan City, Ward No. 22, Lalitpur, Nepal.
+- Support: support@chiyali.com. Legal, copyright and privacy: legal@chiyali.com. Registered office: Lalitpur Metropolitan City, Ward No. 22, Lalitpur, Nepal.
 - **Decide:** whether a phone number, office hours or a named grievance officer must be listed. See decision 2 above.
 
 ## Where the product and the policies still differ

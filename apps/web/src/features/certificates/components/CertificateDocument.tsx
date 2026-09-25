@@ -73,7 +73,7 @@ export function CertificateDocument({
           {/* ---- Header ---- */}
           <div className="z-10 flex flex-col items-center gap-1">
             <div className="text-[10px] font-semibold uppercase tracking-[0.35em] text-muted-foreground sm:text-xs">
-              PaperGlidr
+              Chiyali
             </div>
             <div
               className="mt-2 text-xs font-medium uppercase tracking-[0.25em] sm:text-sm"

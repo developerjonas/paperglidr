@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     path: "/",
   }),
-  // The home title stands alone (no "· PaperGlidr" suffix).
+  // The home title stands alone (no "· Chiyali" suffix).
   title: { absolute: `${SITE_NAME} — Learn from Nepali instructors, pay in NPR` },
 };
 

@@ -251,7 +251,7 @@ export default async function ProductPage({
                 <ul className="flex flex-col gap-2 border-t border-border pt-4 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
-                    Access for as long as PaperGlidr operates
+                    Access for as long as Chiyali operates
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
@@ -448,7 +448,7 @@ async function getPublicProduct(id: string) {
     priceInRupees: other.priceInRupees,
     imageUrl: other.imageUrl,
     author: {
-      name: authorRow?.name ?? "PaperGlidr instructor",
+      name: authorRow?.name ?? "Chiyali instructor",
       instructor:
         authorRow?.handle != null && authorRow.instructorName != null
           ? {

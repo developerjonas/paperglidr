@@ -42,7 +42,7 @@ export async function generateFonepayQr(
 ): Promise<InitiatePaymentResult> {
   const prn = purchaseId
   const remarks1 = productName.slice(0, 160) // Fonepay's R1 field has a max length
-  const remarks2 = "Paperglidr purchase"
+  const remarks2 = "Chiyali purchase"
   const { amount, signature } = buildFonepayQrSignature(config, {
     amountInPaisa,
     prn,

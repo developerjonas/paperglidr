@@ -8,7 +8,7 @@ import { pageMetadata } from "@/lib/site"
 export const metadata: Metadata = pageMetadata({
   title: "Privacy Policy",
   description:
-    "What personal information PaperGlidr collects, why, who we share it with, how long we keep it, and your rights under Nepal's Individual Privacy Act, 2075.",
+    "What personal information Chiyali collects, why, who we share it with, how long we keep it, and your rights under Nepal's Individual Privacy Act, 2075.",
   path: "/privacy",
 })
 

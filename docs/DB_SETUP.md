@@ -1,6 +1,6 @@
 # Database setup
 
-How the PaperGlidr database schema is managed, and how to bootstrap a fresh production database. Commands run from `apps/web/`.
+How the Chiyali database schema is managed, and how to bootstrap a fresh production database. Commands run from `apps/web/`.
 
 ## The rule: migrations only, `db:push` is local-only
 
@@ -47,11 +47,11 @@ pnpm db:migrate
 Any Postgres 15+ works. With Docker:
 
 ```sh
-docker run -d --name paperglidr-pg -p 5432:5432 \
-  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=paperglidr postgres:17
+docker run -d --name chiyali-pg -p 5432:5432 \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=chiyali postgres:17
 ```
 
-`.env.local`: `DB_HOST=localhost DB_USER=postgres DB_PASSWORD=postgres DB_NAME=paperglidr DB_SSL=false`, then `pnpm db:migrate && pnpm db:seed`.
+`.env.local`: `DB_HOST=localhost DB_USER=postgres DB_PASSWORD=postgres DB_NAME=chiyali DB_SSL=false`, then `pnpm db:migrate && pnpm db:seed`.
 
 ## Bootstrapping a fresh production database
 

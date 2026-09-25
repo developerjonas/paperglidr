@@ -12,7 +12,7 @@ import { pageMetadata } from "@/lib/site"
 
 export const metadata: Metadata = pageMetadata({
   title: "Terms of Service",
-  description: "The terms that govern using PaperGlidr as a student or a creator.",
+  description: "The terms that govern using Chiyali as a student or a creator.",
   path: "/tos",
 })
 

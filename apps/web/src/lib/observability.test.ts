@@ -46,7 +46,7 @@ describe("scrubbing", () => {
       exception: {
         values: [{ type: "DrizzleQueryError", value: 'Failed query: insert into "payouts" ...\nparams: 9800000000,Ram Bahadur' }],
       },
-      request: { url: "https://paperglidr.com/x", cookies: { a: "b" }, headers: { cookie: "a=b" }, data: "x" },
+      request: { url: "https://chiyali.com/x", cookies: { a: "b" }, headers: { cookie: "a=b" }, data: "x" },
       breadcrumbs: [
         {
           category: "console",
@@ -58,7 +58,7 @@ describe("scrubbing", () => {
     expect(event.breadcrumbs![0]!.message).toBe("[requestPayout] Failed query: insert ...\nparams: [scrubbed]")
     expect(event.breadcrumbs![0]!.data).toBeUndefined()
     expect(event.exception!.values![0]!.value).toBe('Failed query: insert into "payouts" ...\nparams: [scrubbed]')
-    expect(event.request).toEqual({ url: "https://paperglidr.com/x" })
+    expect(event.request).toEqual({ url: "https://chiyali.com/x" })
   })
 })
 

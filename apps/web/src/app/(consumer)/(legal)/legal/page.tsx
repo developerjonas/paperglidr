@@ -7,7 +7,7 @@ import { LEGAL_PAGES } from "@/config/legalPages"
 
 export const metadata: Metadata = pageMetadata({
   title: "Legal",
-  description: "All of PaperGlidr's terms and policies in one place.",
+  description: "All of Chiyali's terms and policies in one place.",
   path: "/legal",
 })
 

@@ -1,6 +1,6 @@
 # Payments
 
-How money moves through PaperGlidr, how to configure it, and how to test it.
+How money moves through Chiyali, how to configure it, and how to test it.
 
 ## How a purchase completes
 
@@ -51,16 +51,16 @@ These are sent per request. Register or whitelist them where the gateway's dashb
 
 | Gateway | URL |
 |---|---|
-| eSewa success | `https://paperglidr.com/api/payments/esewa/return/*` |
-| eSewa failure | `https://paperglidr.com/api/payments/esewa/failure/*` |
-| Khalti `return_url` | `https://paperglidr.com/api/payments/khalti/return/*` (`website_url`: `https://paperglidr.com`) |
+| eSewa success | `https://chiyali.com/api/payments/esewa/return/*` |
+| eSewa failure | `https://chiyali.com/api/payments/esewa/failure/*` |
+| Khalti `return_url` | `https://chiyali.com/api/payments/khalti/return/*` (`website_url`: `https://chiyali.com`) |
 | Fonepay | none: QR plus status polling. Ask Fonepay whether they whitelist server IPs. |
 
 ### Cron
 
 - `apps/web/vercel.json` runs `/api/cron/reconcile-payments` once a day (18:15 UTC, midnight in Nepal). Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
 - **TODO:** the Vercel Hobby plan only allows daily crons. Go back to every 5 minutes (`*/5 * * * *` in `vercel.json` and `CRON_SCHEDULE` in the route) after upgrading, or point an external scheduler at the route every 5 minutes. Until then a closed-tab purchase can wait up to a day for access, and a run checks at most 50 purchases.
-- Any scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://paperglidr.com/api/cron/reconcile-payments`.
+- Any scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://chiyali.com/api/cron/reconcile-payments`.
 - Without `CRON_SECRET` the endpoint refuses every request. It returns a summary such as `{"checked": 3, "outcomes": {"completed": 1, "pending": 2}, "invoices": {...}}`.
 - The same run also does housekeeping, each step isolated so one failure doesn't stop the others:
   - **Invoice retry.** Invoices whose PDF or email failed (`emailed_at` still null) are retried at most 5 times, at least 10 minutes apart, for 30 days. An atomic claim means the cron and the post-payment send never email the same invoice twice. After the 5th failure Sentry gets `area=invoices`, `invoice_event=gave_up`. The error is in `invoices.last_delivery_error`.

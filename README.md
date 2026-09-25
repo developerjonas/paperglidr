@@ -1,1 +1,1 @@
-paperglidr is the udemy for nepal
+Chiyali is the udemy for nepal

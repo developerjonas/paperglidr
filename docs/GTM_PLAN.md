@@ -1,4 +1,4 @@
-# PaperGlidr Go-To-Market Plan
+# Chiyali Go-To-Market Plan
 
 _Companion to [`REPO_AUDIT.md`](./REPO_AUDIT.md), dated 2026-09-23. Section numbers in the form "Audit §N" refer to that doc._
 
@@ -99,7 +99,7 @@ Do this **one gateway at a time**. Khalti first, because onboarding is usually f
 
 **Before switching any gateway**
 - [ ] Legal entity registered; PAN obtained; business bank account open (all three gateways require them for merchant KYC).
-- [ ] Production domain live on HTTPS: `https://paperglidr.com` (the single canonical domain; `www.` and `app.paperglidr.com` redirect to it).
+- [ ] Production domain live on HTTPS: `https://chiyali.com` (the single canonical domain; `www.` and `app.chiyali.com` redirect to it).
 - [ ] `PAYMENT_MODE=live` set in **Vercel Production only**. Preview deployments stay on `sandbox`.
 - [ ] `CRON_SECRET` set; the Vercel Cron job shows successful runs.
 - [ ] Admin "Re-check payment" button tested in sandbox.
@@ -108,7 +108,7 @@ Do this **one gateway at a time**. Khalti first, because onboarding is usually f
 |---|---|---|---|
 | Get credentials from | Khalti merchant dashboard (live secret key) after KYC approval | eSewa merchant onboarding (live product code / merchant ID + secret key) | Acquiring bank / Fonepay merchant onboarding |
 | Env vars to set | `KHALTI_SECRET_KEY` (live), `KHALTI_BASE_URL=https://khalti.com/api/v2` | `ESEWA_PRODUCT_CODE`, `ESEWA_SECRET_KEY`, `ESEWA_FORM_URL=https://epay.esewa.com.np/api/epay/main/v2/form`, `ESEWA_STATUS_URL=https://epay.esewa.com.np/api/epay/transaction/status/` | `FONEPAY_MERCHANT_CODE`, `FONEPAY_SECRET_KEY`, `FONEPAY_USERNAME`, `FONEPAY_PASSWORD`, `FONEPAY_BASE_URL=<live URL from Fonepay>` |
-| URLs to register / whitelist | Website URL `https://paperglidr.com`; return URL pattern `https://paperglidr.com/api/payments/khalti/return/*` (sent per request; register it if the dashboard asks) | Success `https://paperglidr.com/api/payments/esewa/return/*`; failure `https://paperglidr.com/api/payments/esewa/failure/*` (sent per request in the form; give the domain to eSewa if they whitelist) | None (QR + status polling). Whitelist the server's egress IP if Fonepay requires it. On Vercel that needs a static-egress add-on or a proxy, so **ask Fonepay early** |
+| URLs to register / whitelist | Website URL `https://chiyali.com`; return URL pattern `https://chiyali.com/api/payments/khalti/return/*` (sent per request; register it if the dashboard asks) | Success `https://chiyali.com/api/payments/esewa/return/*`; failure `https://chiyali.com/api/payments/esewa/failure/*` (sent per request in the form; give the domain to eSewa if they whitelist) | None (QR + status polling). Whitelist the server's egress IP if Fonepay requires it. On Vercel that needs a static-egress add-on or a proxy, so **ask Fonepay early** |
 | Live URL values | Confirm against the live docs at go-live; the values above are the documented pattern, not verified here | Same | Provided by Fonepay |
 
 **Smoke test after switching each gateway** (a real ₹10–₹50 test product, published — private products can't be bought — and unpublished again afterwards):

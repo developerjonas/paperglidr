@@ -10,7 +10,7 @@ import { pageMetadata } from "@/lib/site"
 
 export const metadata: Metadata = pageMetadata({
   title: "Contact",
-  description: "How to reach PaperGlidr: support tickets, support and legal email, and our registered office.",
+  description: "How to reach Chiyali: support tickets, support and legal email, and our registered office.",
   path: "/contact",
 })
 

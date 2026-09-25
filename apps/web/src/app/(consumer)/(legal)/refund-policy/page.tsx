@@ -9,7 +9,7 @@ const { refundWindowDays, refundWindowHours, refundCompletionThresholdPercent } 
 
 export const metadata: Metadata = pageMetadata({
   title: "Refund Policy",
-  description: `When you can get a refund on a PaperGlidr course (within ${refundWindowDays} days and less than ${refundCompletionThresholdPercent}% completed), how to ask, and how the money comes back.`,
+  description: `When you can get a refund on a Chiyali course (within ${refundWindowDays} days and less than ${refundCompletionThresholdPercent}% completed), how to ask, and how the money comes back.`,
   path: "/refund-policy",
 })
 
@@ -74,7 +74,7 @@ export default function RefundPolicyPage() {
       <ol>
         <li>
           Open a support ticket at{" "}
-          <Link href="/support/new">paperglidr.com/support/new</Link> (choose
+          <Link href="/support/new">chiyali.com/support/new</Link> (choose
           &quot;Billing &amp; Payments&quot;), or email{" "}
           <a href={`mailto:${COMPANY.supportEmail}`}>{COMPANY.supportEmail}</a>{" "}
           from the email address on your account.

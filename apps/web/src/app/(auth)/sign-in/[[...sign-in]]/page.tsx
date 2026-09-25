@@ -39,7 +39,7 @@ export default function SignInPage({
             Welcome back
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Sign in to your paperglidr account to continue
+            Sign in to your Chiyali account to continue
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">

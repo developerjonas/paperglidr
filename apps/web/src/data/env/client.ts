@@ -6,7 +6,7 @@ import { z } from "zod"
 // Safe to import from both server and client code.
 export const env = createEnv({
   client: {
-    // Canonical public URL of the site, https://paperglidr.com in production (no trailing slash)
+    // Canonical public URL of the site, https://chiyali.com in production (no trailing slash)
     NEXT_PUBLIC_APP_URL: z.string().url(),
     // Better Auth endpoint the browser talks to — normally the same as NEXT_PUBLIC_APP_URL
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),
@@ -25,7 +25,7 @@ export const env = createEnv({
             .map(host => host.trim())
             .filter(Boolean)
             .every(host => /^[a-z0-9.-]+$/i.test(host)),
-        "Comma-separated hostnames only, e.g. images.paperglidr.com,res.cloudinary.com",
+        "Comma-separated hostnames only, e.g. images.chiyali.com,res.cloudinary.com",
       ),
     // Sentry in the browser (optional; unset = no browser error reporting).
     // Read directly by src/instrumentation-client.ts.

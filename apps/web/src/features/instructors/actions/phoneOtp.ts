@@ -49,7 +49,7 @@ export async function requestInstructorPhoneOtp(
   const code = generateOtpCode()
   const smsResult = await sendSms({
     phoneNumber: data.phoneNumber,
-    message: `Your paperglidr verification code is ${code}. It expires in 10 minutes.`,
+    message: `Your Chiyali verification code is ${code}. It expires in 10 minutes.`,
   })
   if (!smsResult.success) {
     return { error: true, message: "Could not send verification code. Try again shortly." }
