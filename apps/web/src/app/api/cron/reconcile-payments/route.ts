@@ -12,7 +12,13 @@ import { cleanUpUploads } from "@/features/lessons/lib/uploadCleanup";
 export const maxDuration = 60;
 
 // Must match apps/web/vercel.json.
-const CRON_SCHEDULE = "*/5 * * * *";
+// TODO(cron): back to every 5 minutes ("*/5 * * * *") once off the Vercel
+// Hobby plan, which only allows daily crons. Until then a paid-but-closed-tab
+// purchase can wait up to a day for access, and each run checks at most 50
+// purchases. Stopgap: any external scheduler can call this route every 5
+// minutes with the Bearer CRON_SECRET (docs/PAYMENTS.md).
+// Daily at 18:15 UTC = midnight in Nepal (UTC+5:45).
+const CRON_SCHEDULE = "15 18 * * *";
 
 // Constant-time compare that doesn't leak the secret's length.
 function secretMatches(presented: string, secret: string) {

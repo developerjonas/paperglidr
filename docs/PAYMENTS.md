@@ -17,7 +17,7 @@ How money moves through PaperGlidr, how to configure it, and how to test it.
    | `/api/payments/khalti/return/[purchaseId]` | the buyer's browser returns from Khalti |
    | `/api/payments/fonepay/status/[purchaseId]` | the QR page polls every 3 seconds (owner only) |
    | the success page | as it loads |
-   | `/api/cron/reconcile-payments` | every 5 minutes |
+   | `/api/cron/reconcile-payments` | daily (TODO: every 5 minutes, see Cron) |
    | **Admin → Purchases → "Re-check payment"** | by hand |
 
    Any number of these can run at once; exactly one completes the purchase.
@@ -58,7 +58,8 @@ These are sent per request. Register or whitelist them where the gateway's dashb
 
 ### Cron
 
-- `apps/web/vercel.json` runs `/api/cron/reconcile-payments` every 5 minutes. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
+- `apps/web/vercel.json` runs `/api/cron/reconcile-payments` once a day (18:15 UTC, midnight in Nepal). Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
+- **TODO:** the Vercel Hobby plan only allows daily crons. Go back to every 5 minutes (`*/5 * * * *` in `vercel.json` and `CRON_SCHEDULE` in the route) after upgrading, or point an external scheduler at the route every 5 minutes. Until then a closed-tab purchase can wait up to a day for access, and a run checks at most 50 purchases.
 - Any scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://paperglidr.com/api/cron/reconcile-payments`.
 - Without `CRON_SECRET` the endpoint refuses every request. It returns a summary such as `{"checked": 3, "outcomes": {"completed": 1, "pending": 2}, "invoices": {...}}`.
 - The same run also does housekeeping, each step isolated so one failure doesn't stop the others:
@@ -89,7 +90,7 @@ The stub gateway lives in `src/test/` only. A test fails if any app file imports
 3. Buy a real ₹10–50 test product and confirm:
    - you land on the success page with access granted, and the purchase row is `completed`;
    - there is one ledger row and one invoice row, and the invoice email arrives.
-4. **Closed-tab test:** pay, then close the tab before the redirect. Access should appear within 5 minutes via the cron.
+4. **Closed-tab test:** pay, then close the tab before the redirect. Access should appear after the next cron run (daily for now; within 5 minutes once the TODO above is done).
 5. **Replay test:** reload the return URL. The purchase stays completed with one ledger row.
 6. **Cancel test:** cancel at the gateway. You reach the failure page, and the purchase later becomes `failed`.
 7. Refund the test payment in the merchant dashboard, then use Admin → revoke to remove access and reverse the ledger.

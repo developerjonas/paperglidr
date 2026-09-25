@@ -5,7 +5,8 @@
 
 
 -- 1. Purchases stuck in "pending" for more than 1 hour.
---    Should be ~0: the reconciliation cron re-checks every 5 minutes.
+--    Should be ~0 once the cron runs every 5 minutes. While it runs daily
+--    (TODO, see docs/PAYMENTS.md) rows can sit here until the next run.
 --    Anything here means paid-but-no-access risk: open /admin/purchases
 --    and use "Re-check payment".
 SELECT p.id, p.gateway, p."pricePaidInPaisa" / 100.0 AS npr, p."createdAt",

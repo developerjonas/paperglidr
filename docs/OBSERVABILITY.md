@@ -35,7 +35,7 @@ What the app reports, and the steps to set up alerts and uptime checks by hand. 
 
 Every payment event also carries `gateway` (esewa / khalti / fonepay) and `source` (return / poll / cron / admin / success_page), plus the purchase ID as extra data.
 
-**Cron monitor:** `/api/cron/reconcile-payments` checks in to a Sentry cron monitor named `reconcile-payments` (schedule `*/5 * * * *`, 5-minute margin). The monitor is created on the first check-in.
+**Cron monitor:** `/api/cron/reconcile-payments` checks in to a Sentry cron monitor named `reconcile-payments` (schedule `15 18 * * *` — daily while on the Vercel Hobby plan, TODO back to `*/5 * * * *` — 5-minute margin). The monitor is created on the first check-in.
 
 **Privacy.**
 - `sendDefaultPii` is off: no IPs, cookies or user details.
