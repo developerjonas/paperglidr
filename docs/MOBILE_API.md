@@ -38,13 +38,17 @@ iOS keeps cookies from responses automatically. Once a cookie is present, Better
 
 | Action | Request | Notes |
 | --- | --- | --- |
-| Sign up | `POST /api/auth/sign-up/email` `{ name, email, password }` | Token is in the `set-auth-token` response header |
+| Sign up | `POST /api/auth/sign-up/email` `{ name, username, email, password }` | Token is in the `set-auth-token` response header. `username` is required: 3-30 letters, numbers, `.` or `_` |
+| Username free? | `POST /api/auth/is-username-available` `{ username }` | `{ available }` |
 | Sign in (email) | `POST /api/auth/sign-in/email` `{ email, password }` | Token is in the `set-auth-token` response header |
+| Sign in (username) | `POST /api/auth/sign-in/username` `{ username, password }` | Same response as email sign-in |
 | Sign in (Google) | `POST /api/auth/sign-in/social` `{ provider: "google", idToken: { token } }` | `token` = the ID token from native Google Sign-In |
 | Current session | `GET /api/auth/get-session` | `null` when the token is invalid |
 | Update name / photo | `POST /api/auth/update-user` `{ name?, image? }` | |
 | Change password | `POST /api/auth/change-password` `{ currentPassword, newPassword }` | |
 | Sign out | `POST /api/auth/sign-out` | Then delete the stored token |
+
+**Password rules:** sign-up and password changes are rejected (400, with the reason in `message`) unless the password has 12-128 characters with a lowercase letter, an uppercase letter, a number and a symbol. It also can't contain the user's name, username or email, or common words, repeats (`aaa`) or runs (`1234`). Passwords found in known data breaches are rejected too. The rules are in `apps/web/src/lib/passwordPolicy.ts`. Mirror them in the app's form, and offer the platform password manager: `textContentType="newPassword"` on iOS, `autoComplete="password-new"` on Android.
 
 **Google on mobile:** Better Auth checks that the ID token's audience is the configured `GOOGLE_CLIENT_ID`. Request the ID token for that web client ID: `webClientId` in `@react-native-google-signin/google-signin`. The Android and iOS client IDs only sign the user in on the device.
 

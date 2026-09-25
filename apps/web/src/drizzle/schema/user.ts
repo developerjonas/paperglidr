@@ -17,6 +17,11 @@ export const UserTable = pgTable("user", {
   id: id(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
+  // Better Auth username plugin. Unique, stored lowercase; displayUsername
+  // keeps the casing the user typed. Null for accounts made with Google or
+  // GitHub before usernames existed — email sign-up always sets one.
+  username: text("username").unique(),
+  displayUsername: text("display_username"),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   role: userRoleEnum("role").notNull().default("user"), // Custom field for permissions
