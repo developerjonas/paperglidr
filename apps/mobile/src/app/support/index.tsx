@@ -1,0 +1,15 @@
+import { PlaceholderScreen } from '@/components/placeholder-screen';
+
+export default function SupportScreen() {
+  return (
+    <PlaceholderScreen
+      title="Support"
+      description="Your support tickets."
+      api="GET /api/v1/support"
+      links={[
+        { label: "New ticket", href: "/support/new" },
+        { label: "A ticket", href: "/support/sample" },
+      ]}
+    />
+  );
+}
