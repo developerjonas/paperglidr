@@ -1,25 +1,15 @@
 // apps/web/src/app/api/v1/purchases/route.ts
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { getPurchasesForUser } from "@/features/purchases/db/purchases";
-import { mobileApiDisabled } from "@/lib/mobileApi"
+import { apiJson, requireApiUser, v1Route } from "@/lib/api/v1"
+import { getPurchasesForUser } from "@/features/purchases/db/purchases"
 
-export async function GET() {
-  const disabled = mobileApiDisabled()
-  if (disabled) return disabled
+// The user's purchases, newest first. Detail: GET /api/v1/purchases/[id].
+export const GET = v1Route("purchases", async () => {
+  const gate = await requireApiUser()
+  if (!gate.ok) return gate.response
 
-  // auth.api.getSession reads both the cookie (web) and the Authorization
-  // bearer header (mobile) — same check either client uses.
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-
-  const purchases = await getPurchasesForUser(session.user.id);
-
-  return NextResponse.json(
-    purchases.map((p) => ({
+  const purchases = await getPurchasesForUser(gate.user.userId)
+  return apiJson(
+    purchases.map(p => ({
       id: p.id,
       status: p.status,
       gateway: p.gateway,
@@ -29,6 +19,7 @@ export async function GET() {
       imageUrl: p.productDetails.imageUrl,
       pricePaidInPaisa: p.pricePaidInPaisa,
       createdAt: p.createdAt,
+      refundedAt: p.refundedAt,
     })),
-  );
-}
+  )
+})

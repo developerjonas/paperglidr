@@ -7,7 +7,7 @@ import {
   SupportTicketCategory,
   SupportTicketStatus,
 } from "@/drizzle/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import {
   revalidateSupportTicketCache,
@@ -142,21 +142,6 @@ export async function getTicketWithMessages(id: string) {
   });
 }
 
-export async function apiGetTicketsForUser(userId: string) {
-  return db
-    .select({
-      id: SupportTicketTable.id,
-      subject: SupportTicketTable.subject,
-      category: SupportTicketTable.category,
-      status: SupportTicketTable.status,
-      lastMessageAt: SupportTicketTable.lastMessageAt,
-      createdAt: SupportTicketTable.createdAt,
-    })
-    .from(SupportTicketTable)
-    .where(eq(SupportTicketTable.userId, userId))
-    .orderBy(desc(SupportTicketTable.lastMessageAt))
-}
-
 export async function getTicketForUser({
   ticketId,
   userId,
@@ -176,58 +161,4 @@ export async function getTicketForUser({
     .orderBy(SupportTicketMessageTable.createdAt)
 
   return { ...ticket, messages }
-}
-
-export async function apiCreateTicket({
-  userId,
-  subject,
-  category,
-  message,
-}: {
-  userId: string
-  subject: string
-  category: (typeof SupportTicketTable.$inferInsert)["category"]
-  message: string
-}) {
-  const [ticket] = await db
-    .insert(SupportTicketTable)
-    .values({ userId, subject, category })
-    .returning()
-  if (!ticket) throw new Error("Failed to create ticket")
-
-  await db.insert(SupportTicketMessageTable).values({
-    ticketId: ticket.id,
-    authorId: userId,
-    isAdminReply: false,
-    content: message,
-  })
-
-  return ticket
-}
-
-/** Ownership check happens in the route (ticket must belong to userId)
- *  before this is called — kept out of here since it's shared by both
- *  a user reply and (eventually) an admin reply. */
-export async function apiAddMessage({
-  ticketId,
-  authorId,
-  content,
-  isAdminReply = false,
-}: {
-  ticketId: string
-  authorId: string
-  content: string
-  isAdminReply?: boolean
-}) {
-  const [message] = await db
-    .insert(SupportTicketMessageTable)
-    .values({ ticketId, authorId, content, isAdminReply })
-    .returning()
-
-  await db
-    .update(SupportTicketTable)
-    .set({ lastMessageAt: new Date() })
-    .where(eq(SupportTicketTable.id, ticketId))
-
-  return message
 }

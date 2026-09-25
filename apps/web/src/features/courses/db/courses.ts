@@ -56,9 +56,14 @@ export async function getPublicCourseListings({
       reviewCount: count(CourseReviewTable.id),
     })
     .from(ProductTable)
+    // Reviews belong to courses; a product's rating covers every course in it.
+    .leftJoin(CourseProductTable, eq(CourseProductTable.productId, ProductTable.id))
     .leftJoin(
       CourseReviewTable,
-      eq(CourseReviewTable.courseId, ProductTable.id),
+      and(
+        eq(CourseReviewTable.courseId, CourseProductTable.courseId),
+        eq(CourseReviewTable.isHidden, false),
+      ),
     )
     .where(eq(ProductTable.status, "public"))
     .groupBy(ProductTable.id);

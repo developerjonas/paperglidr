@@ -1,15 +1,16 @@
 // apps/web/src/app/api/v1/courses/[courseId]/route.ts
-import { NextResponse } from "next/server";
-import { getPublicCourseDetail } from "@/features/courses/db/courses";
+import { apiError, apiJson, isUuid, v1Route } from "@/lib/api/v1"
+import { getPublicCourseDetail } from "@/features/courses/db/courses"
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ courseId: string }> },
-) {
-  const { courseId } = await params;
-  const course = await getPublicCourseDetail(courseId);
-  if (!course) {
-    return NextResponse.json({ message: "Course not found" }, { status: 404 });
-  }
-  return NextResponse.json(course);
-}
+/**
+ * Public. A course's outline as the product page shows it (public sections,
+ * public and preview lessons). A learner's outline with progress:
+ * GET /api/v1/me/courses/[courseId].
+ */
+export const GET = v1Route<{ courseId: string }>("course", async (_req, { params }) => {
+  const { courseId } = await params
+  if (!isUuid(courseId)) return apiError(404, "Course not found")
+  const course = await getPublicCourseDetail(courseId)
+  if (!course) return apiError(404, "Course not found")
+  return apiJson(course)
+})

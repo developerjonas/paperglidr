@@ -1,18 +1,10 @@
 // apps/web/src/app/api/v1/me/courses/route.ts
-import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
+import { apiJson, requireApiUser, v1Route } from "@/lib/api/v1"
 import { getCoursesForUser } from "@/features/courses/db/courses"
-import { mobileApiDisabled } from "@/lib/mobileApi"
 
-export async function GET() {
-  const disabled = mobileApiDisabled()
-  if (disabled) return disabled
-
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-  }
-  const courses = await getCoursesForUser(session.user.id)
-  return NextResponse.json(courses)
-}
+// Courses the user has access to, with lesson progress.
+export const GET = v1Route("my courses", async () => {
+  const gate = await requireApiUser()
+  if (!gate.ok) return gate.response
+  return apiJson(await getCoursesForUser(gate.user.userId))
+})

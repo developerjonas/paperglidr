@@ -9,6 +9,7 @@ import {
   PurchaseTable,
   CourseReviewTable,
   CourseTable,
+  InstructorTable,
 } from "@/drizzle/schema";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { wherePublicProducts } from "../permissions/products";
@@ -198,7 +199,15 @@ export async function getPublicProductListings({ limit }: { limit?: number } = {
       reviewCount: count(CourseReviewTable.id),
     })
     .from(ProductTable)
-    .leftJoin(CourseReviewTable, eq(CourseReviewTable.courseId, ProductTable.id))
+    // Reviews belong to courses; a product's rating covers every course in it.
+    .leftJoin(CourseProductTable, eq(CourseProductTable.productId, ProductTable.id))
+    .leftJoin(
+      CourseReviewTable,
+      and(
+        eq(CourseReviewTable.courseId, CourseProductTable.courseId),
+        eq(CourseReviewTable.isHidden, false),
+      ),
+    )
     .where(eq(ProductTable.status, "public"))
     .groupBy(ProductTable.id)
 
@@ -218,10 +227,24 @@ export async function getPublicProductDetail(productId: string) {
       imageUrl: true,
       priceInRupees: true,
       categoryId: true,
+      authorId: true,
     },
     where: and(eq(ProductTable.id, productId), wherePublicProducts),
   })
   if (!product) return null
+  const { authorId, ...shown } = product
+
+  // The public instructor profile only — never the user id or phone.
+  const [instructor] = await db
+    .select({
+      handle: InstructorTable.handle,
+      name: InstructorTable.name,
+      profileImageUrl: InstructorTable.profileImageUrl,
+      isVerified: InstructorTable.isVerified,
+    })
+    .from(InstructorTable)
+    .where(eq(InstructorTable.userId, authorId))
+    .limit(1)
 
   const courses = await db
     .select({
@@ -232,5 +255,5 @@ export async function getPublicProductDetail(productId: string) {
     .innerJoin(CourseTable, eq(CourseTable.id, CourseProductTable.courseId))
     .where(eq(CourseProductTable.productId, productId))
 
-  return { ...product, courses }
+  return { ...shown, instructor: instructor ?? null, courses }
 }

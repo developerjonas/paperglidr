@@ -1,41 +1,24 @@
-import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
-import { getTicketForUser, apiAddMessage } from "@/features/support/db/supportTickets"
-import { mobileApiDisabled } from "@/lib/mobileApi"
+import { apiError, apiJson, isUuid, readJson, requireApiUser, v1Route } from "@/lib/api/v1"
+import { getTicketForUser } from "@/features/support/db/supportTickets"
+import { replyToSupportTicket } from "@/features/support/actions/supportTickets"
+import { replySchema } from "@/features/support/schemas/supportTickets"
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ ticketId: string }> },
-) {
-  const disabled = mobileApiDisabled()
-  if (disabled) return disabled
-
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-  }
-
+/** Reply on one of your tickets. Body: { content } (1-5000). Returns the updated ticket. */
+export const POST = v1Route<{ ticketId: string }>("reply to support ticket", async (req, { params }) => {
+  const gate = await requireApiUser()
+  if (!gate.ok) return gate.response
   const { ticketId } = await params
+  if (!isUuid(ticketId)) return apiError(404, "Ticket not found")
 
-  // Confirms ownership before allowing a reply — a user can't post into
-  // someone else's ticket by guessing an id.
-  const ticket = await getTicketForUser({ ticketId, userId: session.user.id })
-  if (!ticket) {
-    return NextResponse.json({ message: "Ticket not found" }, { status: 404 })
+  // Ownership first: someone else's ticket id is a 404, not a 403.
+  if ((await getTicketForUser({ ticketId, userId: gate.user.userId })) == null) {
+    return apiError(404, "Ticket not found")
   }
 
-  const { content } = await req.json()
-  if (!content?.trim()) {
-    return NextResponse.json({ message: "content is required" }, { status: 400 })
-  }
+  const input = await readJson(req, replySchema)
+  if (!input.ok) return input.response
 
-  const message = await apiAddMessage({
-    ticketId,
-    authorId: session.user.id,
-    content: content.trim(),
-    isAdminReply: false,
-  })
-
-  return NextResponse.json(message, { status: 201 })
-}
+  const result = await replyToSupportTicket(ticketId, input.data)
+  if (result.error) return apiError(403, result.message)
+  return apiJson(await getTicketForUser({ ticketId, userId: gate.user.userId }), 201)
+})

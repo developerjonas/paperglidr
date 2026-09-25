@@ -1,33 +1,19 @@
 // apps/web/src/app/api/v1/certificates/[certificateId]/route.ts
-import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
+import { apiError, apiJson, isUuid, requireApiUser, v1Route } from "@/lib/api/v1"
 import { getCertificateForUser } from "@/features/certificates/db/certificates"
-import { mobileApiDisabled } from "@/lib/mobileApi"
+import { SITE_URL } from "@/lib/site"
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ certificateId: string }> },
-) {
-  const disabled = mobileApiDisabled()
-  if (disabled) return disabled
-
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-  }
-
+/** One of the user's certificates. */
+export const GET = v1Route<{ certificateId: string }>("certificate", async (_req, { params }) => {
+  const gate = await requireApiUser()
+  if (!gate.ok) return gate.response
   const { certificateId } = await params
-  const certificate = await getCertificateForUser({
-    certificateId,
-    userId: session.user.id,
-  })
+  if (!isUuid(certificateId)) return apiError(404, "Certificate not found")
 
-  if (!certificate) {
-    return NextResponse.json({ message: "Certificate not found" }, { status: 404 })
-  }
+  const certificate = await getCertificateForUser({ certificateId, userId: gate.user.userId })
+  if (!certificate) return apiError(404, "Certificate not found")
 
-  return NextResponse.json({
+  return apiJson({
     id: certificate.id,
     certificateCode: certificate.certificateCode,
     courseId: certificate.courseId,
@@ -38,5 +24,6 @@ export async function GET(
     issuedAt: certificate.issuedAt,
     revokedAt: certificate.revokedAt,
     revokedReason: certificate.revokedReason,
+    verifyUrl: `${SITE_URL}/verify/${certificate.certificateCode}`,
   })
-}
+})

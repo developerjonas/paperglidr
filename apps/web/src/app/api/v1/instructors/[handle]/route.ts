@@ -1,15 +1,11 @@
 // apps/web/src/app/api/v1/instructors/[handle]/route.ts
-import { NextResponse } from "next/server"
+import { apiError, apiJson, v1Route } from "@/lib/api/v1"
 import { getPublicInstructorByHandle } from "@/features/instructors/db/instructors"
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ handle: string }> }
-) {
+// Public. An instructor's profile and their public products.
+export const GET = v1Route<{ handle: string }>("instructor", async (_req, { params }) => {
   const { handle } = await params
   const instructor = await getPublicInstructorByHandle(handle)
-  if (!instructor) {
-    return NextResponse.json({ message: "Instructor not found" }, { status: 404 })
-  }
-  return NextResponse.json(instructor)
-}
+  if (!instructor) return apiError(404, "Instructor not found")
+  return apiJson(instructor)
+})

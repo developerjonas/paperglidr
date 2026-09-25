@@ -1,6 +1,6 @@
 import { db } from "@/drizzle/db";
-import { CourseReviewTable, UserRole } from "@/drizzle/schema";
-import { and, avg, count, eq } from "drizzle-orm";
+import { CourseProductTable, CourseReviewTable, UserRole, UserTable } from "@/drizzle/schema";
+import { and, avg, count, desc, eq } from "drizzle-orm";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { revalidateCourseReviewCache, getCourseReviewCourseTag } from "./cache";
 
@@ -143,4 +143,55 @@ export async function getReviewsForInstructor({
   return isAdmin
     ? reviews
     : reviews.filter((r) => r.course.authorId === userId);
+}
+
+const PRODUCT_REVIEWS_PAGE_SIZE = 20;
+
+/**
+ * Visible reviews of every course in a product (GET /api/v1/products/[id]/reviews),
+ * newest first, with the average and count across all of them. Reviewers
+ * are shown by name and photo only.
+ */
+export async function getProductReviews(productId: string, page = 1) {
+  const visibleForProduct = and(
+    eq(CourseProductTable.productId, productId),
+    eq(CourseReviewTable.isHidden, false),
+  );
+
+  const [summary] = await db
+    .select({
+      averageRating: avg(CourseReviewTable.rating),
+      reviewCount: count(CourseReviewTable.id),
+    })
+    .from(CourseReviewTable)
+    .innerJoin(CourseProductTable, eq(CourseProductTable.courseId, CourseReviewTable.courseId))
+    .where(visibleForProduct);
+
+  const reviews = await db
+    .select({
+      id: CourseReviewTable.id,
+      courseId: CourseReviewTable.courseId,
+      rating: CourseReviewTable.rating,
+      content: CourseReviewTable.content,
+      instructorReply: CourseReviewTable.instructorReply,
+      instructorReplyAt: CourseReviewTable.instructorReplyAt,
+      createdAt: CourseReviewTable.createdAt,
+      reviewerName: UserTable.name,
+      reviewerImage: UserTable.image,
+    })
+    .from(CourseReviewTable)
+    .innerJoin(CourseProductTable, eq(CourseProductTable.courseId, CourseReviewTable.courseId))
+    .innerJoin(UserTable, eq(UserTable.id, CourseReviewTable.userId))
+    .where(visibleForProduct)
+    .orderBy(desc(CourseReviewTable.createdAt))
+    .limit(PRODUCT_REVIEWS_PAGE_SIZE)
+    .offset((page - 1) * PRODUCT_REVIEWS_PAGE_SIZE);
+
+  return {
+    averageRating: summary?.averageRating ? Number(summary.averageRating) : null,
+    reviewCount: summary?.reviewCount ?? 0,
+    page,
+    pageSize: PRODUCT_REVIEWS_PAGE_SIZE,
+    reviews,
+  };
 }

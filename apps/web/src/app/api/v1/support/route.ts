@@ -1,48 +1,35 @@
 // apps/web/src/app/api/v1/support/route.ts
-import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
-import { getTicketsForUser, createTicket } from "@/features/support/db/supportTickets"
-import { supportTicketCategories } from "@/drizzle/schema"
-import { mobileApiDisabled } from "@/lib/mobileApi"
+import { apiError, apiJson, readJson, requireApiUser, v1Route } from "@/lib/api/v1"
+import { getTicketForUser, getTicketsForUser } from "@/features/support/db/supportTickets"
+import { createSupportTicket } from "@/features/support/actions/supportTickets"
+import { newTicketSchema } from "@/features/support/schemas/supportTickets"
 
-export async function GET() {
-  const disabled = mobileApiDisabled()
-  if (disabled) return disabled
+/** The user's support tickets, most recently active first. */
+export const GET = v1Route("support tickets", async () => {
+  const gate = await requireApiUser()
+  if (!gate.ok) return gate.response
+  return apiJson(await getTicketsForUser(gate.user.userId))
+})
 
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+// category is optional here ("other" by default); the rest as on the web form.
+const ticketSchema = newTicketSchema.extend({
+  category: newTicketSchema.shape.category.default("other"),
+})
+
+/**
+ * Open a ticket. Body: { subject (3-150), message (10-5000), category? }.
+ * Returns the ticket with its first message.
+ */
+export const POST = v1Route("create support ticket", async req => {
+  const gate = await requireApiUser()
+  if (!gate.ok) return gate.response
+
+  const input = await readJson(req, ticketSchema)
+  if (!input.ok) return input.response
+
+  const result = await createSupportTicket(input.data)
+  if (result.error || result.ticketId == null) {
+    return apiError(400, result.message ?? "Couldn't open the ticket")
   }
-  const tickets = await getTicketsForUser(session.user.id)
-  return NextResponse.json(tickets)
-}
-
-export async function POST(req: Request) {
-  const disabled = mobileApiDisabled()
-  if (disabled) return disabled
-
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-  }
-
-  const body = await req.json()
-  const { subject, category, message } = body
-
-  if (!subject?.trim() || !message?.trim()) {
-    return NextResponse.json({ message: "subject and message are required" }, { status: 400 })
-  }
-  if (category && !supportTicketCategories.includes(category)) {
-    return NextResponse.json({ message: "Invalid category" }, { status: 400 })
-  }
-
-  const ticket = await createTicket({
-    userId: session.user.id,
-    subject: subject.trim(),
-    category: category ?? "other",
-    message: message.trim(),
-  })
-
-  return NextResponse.json(ticket, { status: 201 })
-}
+  return apiJson(await getTicketForUser({ ticketId: result.ticketId, userId: gate.user.userId }), 201)
+})

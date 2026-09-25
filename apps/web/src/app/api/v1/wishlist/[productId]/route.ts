@@ -1,22 +1,14 @@
 // apps/web/src/app/api/v1/wishlist/[productId]/route.ts
-import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
+import { apiError, apiJson, isUuid, requireApiUser, v1Route } from "@/lib/api/v1"
 import { removeFromWishlist } from "@/features/wishlist/db/wishlist"
-import { mobileApiDisabled } from "@/lib/mobileApi"
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ productId: string }> },
-) {
-  const disabled = mobileApiDisabled()
-  if (disabled) return disabled
-
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-  }
+/** Remove a saved product. Removing one that isn't saved is fine. */
+export const DELETE = v1Route<{ productId: string }>("remove from wishlist", async (_req, { params }) => {
+  const gate = await requireApiUser()
+  if (!gate.ok) return gate.response
   const { productId } = await params
-  await removeFromWishlist({ userId: session.user.id, productId })
-  return NextResponse.json({ ok: true })
-}
+  if (!isUuid(productId)) return apiError(404, "Product not found")
+
+  await removeFromWishlist({ userId: gate.user.userId, productId })
+  return apiJson({ ok: true, wishlisted: false })
+})

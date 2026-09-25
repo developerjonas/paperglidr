@@ -1,22 +1,15 @@
 // apps/web/src/app/api/v1/certificates/route.ts
-import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
+import { apiJson, requireApiUser, v1Route } from "@/lib/api/v1"
 import { getCertificatesForUser } from "@/features/certificates/db/certificates"
-import { mobileApiDisabled } from "@/lib/mobileApi"
+import { SITE_URL } from "@/lib/site"
 
-export async function GET() {
-  const disabled = mobileApiDisabled()
-  if (disabled) return disabled
+/** The user's certificates. `verifyUrl` is the public page a QR code points to. */
+export const GET = v1Route("certificates", async () => {
+  const gate = await requireApiUser()
+  if (!gate.ok) return gate.response
 
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-  }
-
-  const certificates = await getCertificatesForUser(session.user.id)
-
-  return NextResponse.json(
+  const certificates = await getCertificatesForUser(gate.user.userId)
+  return apiJson(
     certificates.map(c => ({
       id: c.id,
       certificateCode: c.certificateCode,
@@ -27,6 +20,7 @@ export async function GET() {
       issuedAt: c.issuedAt,
       revokedAt: c.revokedAt,
       revokedReason: c.revokedReason,
+      verifyUrl: `${SITE_URL}/verify/${c.certificateCode}`,
     })),
   )
-}
+})
