@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
@@ -65,9 +66,14 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
       </div>
 
       <div className="grid gap-2">
-        <label htmlFor="signin-password" className="text-sm font-medium">
-          Password
-        </label>
+        <div className="flex items-center justify-between gap-2">
+          <label htmlFor="signin-password" className="text-sm font-medium">
+            Password
+          </label>
+          <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <div className="relative">
           <Input
             id="signin-password"

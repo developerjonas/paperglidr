@@ -31,7 +31,9 @@ export function NewPasswordField({
   onChange,
   context,
   disabled,
+  label = "Password",
 }: {
+  label?: string
   value: string
   onChange: (value: string) => void
   context: PasswordContext
@@ -64,7 +66,7 @@ export function NewPasswordField({
     <div className="grid gap-2">
       <div className="flex items-center justify-between gap-2">
         <label htmlFor={id} className="text-sm font-medium">
-          Password
+          {label}
         </label>
         <button
           type="button"
