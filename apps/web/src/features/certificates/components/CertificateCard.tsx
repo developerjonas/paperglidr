@@ -17,7 +17,7 @@ export function CertificateCard({
   return (
     <Link
       href={`/certificates/${certificate.id}`}
-      className="group relative block overflow-hidden rounded-2xl border border-white/30 bg-white/50 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/5 dark:border-white/10 dark:bg-white/[0.03]"
+      className="group relative block overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/5"
     >
       {/* ---- Ribbon strip: diagonal texture evoking an embossed certificate header ---- */}
       <div
@@ -67,7 +67,7 @@ export function CertificateCard({
           </h3>
         </div>
 
-        <div className="flex items-center justify-between border-t border-white/20 pt-3 dark:border-white/10">
+        <div className="flex items-center justify-between border-t border-border pt-3">
           <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
             <span>
               Issued{" "}

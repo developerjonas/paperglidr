@@ -65,7 +65,7 @@ export default async function AdminPurchasesPage({
             href={`/admin/purchases?status=${filter}`}
             aria-current={filter === status ? "page" : undefined}
             className={cn(
-              "rounded-[5px] border px-3 py-1 text-sm capitalize",
+              "rounded-lg border px-3 py-1 text-sm capitalize",
               filter === status
                 ? "border-primary bg-primary text-primary-foreground"
                 : "hover:bg-muted",

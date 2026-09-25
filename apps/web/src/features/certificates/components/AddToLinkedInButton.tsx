@@ -24,7 +24,7 @@ export function AddToLinkedInButton({
       href={`https://www.linkedin.com/profile/add?${params.toString()}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 rounded-[5px] bg-[#0A66C2] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#0958A8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A66C2]"
+      className="inline-flex items-center gap-2 rounded-lg bg-[#0A66C2] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#0958A8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A66C2]"
     >
       <svg
         viewBox="0 0 24 24"

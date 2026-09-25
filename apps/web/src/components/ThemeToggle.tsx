@@ -3,53 +3,95 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Monitor } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+function useMounted() {
   const [mounted, setMounted] = useState(false);
-
   useEffect(() => setMounted(true), []);
+  return mounted;
+}
 
-  if (!mounted) {
-    return (
-      <div
-        aria-hidden
-        className="h-9 w-full rounded-full border border-white/30 bg-white/40 backdrop-blur-md dark:border-white/10 dark:bg-white/5"
-      />
-    );
-  }
+/** Header pill: sun / moon, highlighting whichever theme is showing. */
+export function ThemeSwitch({ className }: { className?: string }) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const mounted = useMounted();
+  const isDark = mounted && resolvedTheme === "dark";
 
   const options = [
-    { value: "light", icon: Sun, label: "Light mode" },
-    { value: "dark", icon: Moon, label: "Dark mode" },
-    { value: "system", icon: Monitor, label: "System mode" },
+    { value: "light", icon: Sun, label: "Light mode", active: mounted && !isDark },
+    { value: "dark", icon: Moon, label: "Dark mode", active: isDark },
   ] as const;
 
   return (
-    <div className="relative flex h-9 items-center rounded-full border border-white/30 bg-white/40 p-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)] backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]">
+    <div
+      role="group"
+      aria-label="Colour theme"
+      className={cn(
+        "flex h-9 items-center gap-0.5 rounded-full bg-secondary p-1",
+        className,
+      )}
+    >
+      {options.map(({ value, icon: Icon, label, active }) => (
+        <button
+          key={value}
+          type="button"
+          onClick={() => setTheme(value)}
+          aria-label={label}
+          aria-pressed={active}
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-full transition-all duration-200",
+            active
+              ? "bg-background shadow-sm ring-1 ring-black/5 dark:bg-accent dark:ring-white/10"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Icon
+            className={cn(
+              "h-4 w-4",
+              active && value === "light" && "text-amber-500",
+              active && value === "dark" && "text-primary",
+            )}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Full control with labels and a System option — drawer and account menu. */
+export function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const mounted = useMounted();
+
+  const options = [
+    { value: "light", icon: Sun, label: "Light" },
+    { value: "dark", icon: Moon, label: "Dark" },
+    { value: "system", icon: Monitor, label: "System" },
+  ] as const;
+
+  return (
+    <div
+      role="group"
+      aria-label="Colour theme"
+      className="grid h-10 grid-cols-3 gap-1 rounded-full bg-secondary p-1"
+    >
       {options.map(({ value, icon: Icon, label }) => {
-        const isActive = theme === value;
+        const isActive = mounted && theme === value;
         return (
           <button
             key={value}
             type="button"
             onClick={() => setTheme(value)}
-            aria-label={label}
-            className={`relative flex h-7 flex-1 items-center justify-center rounded-full text-xs transition-colors duration-200 ${
+            aria-pressed={isActive}
+            className={cn(
+              "flex items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-all duration-200",
               isActive
-                ? "bg-white text-foreground shadow-sm shadow-black/10 dark:bg-neutral-800"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+                ? "bg-background text-foreground shadow-sm ring-1 ring-black/5 dark:bg-accent dark:ring-white/10"
+                : "text-muted-foreground hover:text-foreground",
+            )}
           >
-            <Icon
-              className={`h-4 w-4 ${
-                value === "light" && isActive
-                  ? "text-amber-500"
-                  : value === "dark"
-                    ? "text-slate-700 dark:text-slate-200"
-                    : ""
-              }`}
-            />
+            <Icon className="h-3.5 w-3.5" />
+            {label}
           </button>
         );
       })}

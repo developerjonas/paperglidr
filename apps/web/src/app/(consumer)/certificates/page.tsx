@@ -15,13 +15,12 @@ export default async function CertificatesPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
-        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
 
         <div className="container mx-auto px-4 text-center">
           <Badge
             variant="secondary"
-            className="mb-4 inline-flex items-center gap-1.5 border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary backdrop-blur-md"
+            className="mb-4 inline-flex items-center gap-1.5 border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary"
           >
             <Award className="h-3.5 w-3.5" />
             Your Achievements
@@ -59,7 +58,7 @@ export default async function CertificatesPage() {
             ))}
           </div>
         ) : (
-          <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-2xl border border-dashed border-white/20 bg-muted/20 p-12 text-center">
+          <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-muted/20 p-12 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Sparkles className="h-6 w-6" />
             </div>

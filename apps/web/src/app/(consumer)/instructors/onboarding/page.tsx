@@ -22,11 +22,10 @@ export default async function InstructorOnboardingPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
-        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
 
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+          <h1 className="heading-display text-3xl sm:text-4xl">
             Set up your creator profile
           </h1>
           <p className="mt-2 max-w-lg text-sm text-muted-foreground sm:text-base">
@@ -41,7 +40,7 @@ export default async function InstructorOnboardingPage() {
           {/* ---- Creator profile ---- */}
           <Card
             id="profile"
-            className="scroll-mt-24 border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40"
+            className="scroll-mt-24 border-border bg-card shadow-sm"
           >
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -72,7 +71,7 @@ export default async function InstructorOnboardingPage() {
           {instructor && (
             <Card
               id="verify"
-              className="scroll-mt-24 border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40"
+              className="scroll-mt-24 border-border bg-card shadow-sm"
             >
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -81,14 +80,14 @@ export default async function InstructorOnboardingPage() {
                   {instructor.phoneVerifiedAt ? (
                     <Badge
                       variant="secondary"
-                      className="rounded-[4px] px-1.5 py-0 text-[9px]"
+                      className="rounded-md px-1.5 py-0 text-[9px]"
                     >
                       Verified
                     </Badge>
                   ) : (
                     <Badge
                       variant="secondary"
-                      className="rounded-[4px] px-1.5 py-0 text-[9px]"
+                      className="rounded-md px-1.5 py-0 text-[9px]"
                     >
                       {POLICY_TERMS.payoutRequiresVerifiedPhone
                         ? "Required for payouts"

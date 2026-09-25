@@ -19,7 +19,7 @@ export default async function VerifyCertificatePage({
   if (certificate == null) {
     return (
       <div className="flex flex-col min-h-screen">
-        <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-destructive/5 via-background to-background py-14 md:py-20">
+        <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-destructive/5 via-background to-background py-14 md:py-20">
           <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-destructive/10 blur-[120px]" />
           <div className="container mx-auto px-4">
             <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
@@ -31,7 +31,7 @@ export default async function VerifyCertificatePage({
               </h1>
               <p className="text-sm text-muted-foreground">
                 No certificate matches code{" "}
-                <code className="rounded-[4px] bg-white/40 px-1.5 py-0.5 text-xs dark:bg-white/10">
+                <code className="rounded-md bg-secondary/60 px-1.5 py-0.5 text-xs">
                   {certificateCode}
                 </code>
                 . Double check it was copied correctly.
@@ -49,7 +49,7 @@ export default async function VerifyCertificatePage({
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
       <section
-        className={`relative overflow-hidden border-b border-white/10 bg-gradient-to-b py-14 md:py-20 ${
+        className={`relative overflow-hidden border-b border-border bg-gradient-to-b py-14 md:py-20 ${
           isRevoked
             ? "from-destructive/5 via-background to-background"
             : "from-emerald-500/5 via-background to-background"
@@ -89,7 +89,7 @@ export default async function VerifyCertificatePage({
       {/* ---------------- CONTENT ---------------- */}
       <section className="container mx-auto px-4 py-10">
         <div className="mx-auto flex max-w-2xl flex-col items-center gap-6">
-          <Card className="w-full overflow-hidden border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
+          <Card className="w-full overflow-hidden border-border bg-card shadow-sm">
             <CardContent className="p-6">
               <CertificateDocument
                 certificate={certificate}

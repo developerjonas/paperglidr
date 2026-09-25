@@ -15,7 +15,7 @@ export async function CertificateQRCode({
       "NEXT_PUBLIC_APP_URL is not set — cannot generate a valid certificate verification QR code.",
     );
     return (
-      <div className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-[5px] border border-dashed border-muted-foreground/40 bg-background/80 p-1 text-center">
+      <div className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-muted-foreground/40 bg-background/80 p-1 text-center">
         <span className="text-[9px] text-muted-foreground">QR unavailable</span>
       </div>
     );
@@ -32,7 +32,7 @@ export async function CertificateQRCode({
 
   if (!svg) {
     return (
-      <div className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-[5px] border border-dashed border-muted-foreground/40 bg-background/80 p-1 text-center">
+      <div className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-muted-foreground/40 bg-background/80 p-1 text-center">
         <span className="text-[9px] text-muted-foreground">QR unavailable</span>
       </div>
     );
@@ -40,7 +40,7 @@ export async function CertificateQRCode({
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="rounded-[5px] border border-muted-foreground/20 bg-white p-1.5 shadow-sm">
+      <div className="rounded-lg border border-muted-foreground/20 bg-white p-1.5 shadow-sm">
         <div
           className="h-16 w-16 sm:h-20 sm:w-20 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: svg }}

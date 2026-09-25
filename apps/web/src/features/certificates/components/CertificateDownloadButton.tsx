@@ -65,7 +65,7 @@ export function CertificateDownloadButton({
     <Button
       onClick={handleDownload}
       disabled={status === "downloading"}
-      className="gap-2 rounded-[5px]"
+      className="gap-2 rounded-lg"
     >
       {status === "downloading" ? (
         <>

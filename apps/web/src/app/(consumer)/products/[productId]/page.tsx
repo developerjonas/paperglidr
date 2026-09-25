@@ -97,12 +97,11 @@ export default async function ProductPage({
   return (
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
-        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
 
         <div className="container mx-auto px-4">
           <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl text-balance">
+            <h1 className="heading-display text-3xl sm:text-4xl text-balance">
               {product.name}
             </h1>
             <p className="max-w-2xl text-sm text-muted-foreground sm:text-base leading-relaxed text-pretty">
@@ -145,7 +144,7 @@ export default async function ProductPage({
               {product.courses.map((course) => (
                 <Card
                   key={course.id}
-                  className="overflow-hidden border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40"
+                  className="overflow-hidden border-border bg-card shadow-sm"
                 >
                   <CardHeader>
                     <CardTitle className="text-lg">{course.name}</CardTitle>
@@ -173,7 +172,7 @@ export default async function ProductPage({
                         <AccordionItem
                           key={section.id}
                           value={section.id}
-                          className="border-white/20 dark:border-white/10"
+                          className="border-border"
                         >
                           <AccordionTrigger className="flex gap-2 px-2 hover:no-underline">
                             <div className="flex flex-col flex-grow text-left">
@@ -192,7 +191,7 @@ export default async function ProductPage({
                             {section.lessons.map((lesson) => (
                               <div
                                 key={lesson.id}
-                                className="flex items-center gap-2.5 rounded-[5px] px-2 py-1.5 text-sm text-muted-foreground"
+                                className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground"
                               >
                                 <VideoIcon className="size-4 shrink-0" />
                                 {lesson.status === "preview" ? (
@@ -221,7 +220,7 @@ export default async function ProductPage({
 
           {/* ─── Sticky purchase card ─────────────────────── */}
           <div className="order-1 lg:order-2 lg:sticky lg:top-24">
-            <Card className="overflow-hidden border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40 py-0 gap-0">
+            <Card className="overflow-hidden border-border bg-card shadow-sm py-0 gap-0">
               <div className="relative aspect-video w-full">
                 <Image
                   src={product.imageUrl}
@@ -249,7 +248,7 @@ export default async function ProductPage({
                   </Suspense>
                 </div>
 
-                <ul className="flex flex-col gap-2 border-t border-white/20 pt-4 text-sm text-muted-foreground dark:border-white/10">
+                <ul className="flex flex-col gap-2 border-t border-border pt-4 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
                     Access for as long as PaperGlidr operates
@@ -279,7 +278,7 @@ async function PurchaseButton({ productId }: { productId: string }) {
 
   if (alreadyOwnsProduct) {
     return (
-      <div className="flex items-center gap-2 rounded-[5px] border border-white/30 bg-white/40 px-4 py-3 text-sm font-medium backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary/60 px-4 py-3 text-sm font-medium">
         <CheckCircle2Icon className="size-4 text-primary" />
         You already own this course
       </div>
@@ -346,7 +345,7 @@ function InstructorBlock({ author }: { author: ProductAuthor }) {
           className="h-11 w-11 rounded-full object-cover"
         />
       ) : (
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-sm font-bold text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-sm font-bold text-primary-foreground">
           {initials}
         </div>
       )}
@@ -359,7 +358,7 @@ function InstructorBlock({ author }: { author: ProductAuthor }) {
     </>
   );
   const className =
-    "group mt-2 flex w-fit items-center gap-3 rounded-[5px] border border-white/30 bg-white/40 px-4 py-3 backdrop-blur-md transition-colors dark:border-white/10 dark:bg-white/[0.03]";
+    "group mt-2 flex w-fit items-center gap-3 rounded-lg border border-border bg-secondary/60 px-4 py-3 transition-colors";
 
   // Products authored by an account without an instructor profile (e.g. an
   // admin) have no public profile page to link to.
@@ -369,7 +368,7 @@ function InstructorBlock({ author }: { author: ProductAuthor }) {
   return (
     <Link
       href={`/instructors/${author.instructor.handle}`}
-      className={`${className} hover:bg-white/60 dark:hover:bg-white/[0.07]`}
+      className={`${className} hover:bg-accent`}
     >
       {content}
     </Link>

@@ -29,13 +29,20 @@ export function SearchBar({
 
   // FIX: Using ReturnType<typeof setTimeout> resolves browser/Node type conflict
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The query the URL already reflects. Only typing something different
+  // navigates — otherwise every page load would redirect to /browse.
+  const syncedValueRef = useRef(value);
 
   useEffect(() => {
-    if (onResultsPage) setValue(searchParams.get("q") ?? "");
+    if (!onResultsPage) return;
+    const q = searchParams.get("q") ?? "";
+    syncedValueRef.current = q;
+    setValue(q);
   }, [searchParams, onResultsPage]);
 
   function navigateNow() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    syncedValueRef.current = value;
     const params = new URLSearchParams(
       onResultsPage ? searchParams.toString() : "",
     );
@@ -53,6 +60,7 @@ export function SearchBar({
   }
 
   useEffect(() => {
+    if (value === syncedValueRef.current) return;
     timeoutRef.current = setTimeout(navigateNow, 350);
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -62,7 +70,7 @@ export function SearchBar({
 
   return (
     <div className={`relative w-full ${className ?? ""}`}>
-      <SearchIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500 transition-colors group-hover:text-neutral-700 dark:text-neutral-400 dark:group-hover:text-neutral-200" />
+      <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
       <Input
         autoFocus={autoFocus}
@@ -71,20 +79,20 @@ export function SearchBar({
         onKeyDown={(e) => {
           if (e.key === "Enter") navigateNow();
         }}
-        placeholder="Search courses by title..."
-        className="h-10 rounded-full border border-neutral-300 bg-white/80 pl-10 pr-10 text-sm text-neutral-900 placeholder:text-neutral-500 shadow-sm backdrop-blur-md transition-all duration-200 hover:border-neutral-400 focus-visible:border-neutral-900 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-neutral-900 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-100 dark:placeholder:text-neutral-400 dark:hover:border-neutral-700 dark:focus-visible:border-neutral-400 dark:focus-visible:bg-neutral-900 dark:focus-visible:ring-neutral-400"
+        placeholder="Search courses…"
+        className="h-10 rounded-full border-transparent bg-secondary pl-10 pr-10 text-sm text-foreground shadow-none transition-colors placeholder:text-muted-foreground hover:bg-accent focus-visible:border-primary/40 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/15"
       />
 
       <div className="absolute right-3.5 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
         {isPending && (
-          <Loader2Icon className="size-4 animate-spin text-neutral-400 dark:text-neutral-500" />
+          <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
         )}
 
         {value && (
           <button
             type="button"
             onClick={() => setValue("")}
-            className="rounded-full p-0.5 text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className="rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             aria-label="Clear search"
           >
             <XIcon className="size-3.5" />

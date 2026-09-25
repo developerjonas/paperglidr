@@ -1,28 +1,22 @@
 import Link from "next/link";
+import { eq } from "drizzle-orm";
+import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentUser } from "@/services/auth";
 import { canAccessAdminPages } from "@/permissions/general";
 import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
 import { COMPANY, companyRegistrationDisplay } from "@/config/company";
 import { LEGAL_PAGES } from "@/config/legalPages";
-import {
-  GraduationCap,
-  Shield,
-  User,
-  FileText,
-  Scale,
-  MessageSquareWarning,
-  Presentation,
-  BookOpen,
-  Wallet,
-} from "lucide-react";
 
 type FooterProps = {
   isAdminPage?: boolean;
 };
 
+type FooterColumn = {
+  title: string;
+  links: { href: string; label: string; tone?: "admin" }[];
+};
 
 export async function Footer({ isAdminPage = false }: FooterProps) {
   const currentYear = new Date().getFullYear();
@@ -39,31 +33,70 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
     isInstructor = instructor != null;
   }
 
+  // The teaching column mirrors the navbar's role logic.
+  const teachColumn: FooterColumn = isAdmin
+    ? {
+        title: "Admin",
+        links: [{ href: "/admin", label: "Admin Dashboard", tone: "admin" }],
+      }
+    : isInstructor
+      ? {
+          title: "Teach",
+          links: [
+            { href: "/teach/courses", label: "Course Studio" },
+            { href: "/teach/sales", label: "Sales" },
+            { href: "/teach/payouts", label: "Payouts" },
+          ],
+        }
+      : {
+          title: "Teach",
+          links: [
+            { href: "/instructors/onboarding", label: "Become a Tutor" },
+            { href: "/#how-it-works", label: "How it works" },
+          ],
+        };
+
+  const columns: FooterColumn[] = [
+    {
+      title: "Learn",
+      links: [
+        { href: "/browse", label: "Browse Courses" },
+        { href: "/courses", label: "My Courses" },
+        { href: "/certificates", label: "My Certificates" },
+        { href: "/account", label: "Account Settings" },
+      ],
+    },
+    teachColumn,
+    {
+      title: "Legal & Support",
+      links: [
+        ...LEGAL_PAGES.map((page) => ({ href: page.href, label: page.title })),
+        { href: "/legal", label: "All policies" },
+        { href: "/contact", label: "Contact Us" },
+      ],
+    },
+  ];
+
   return (
-    <footer className="w-full border-t border-white/20 bg-white/40 shadow-[0_-1px_0_0_rgba(255,255,255,0.4)_inset] backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/30 dark:shadow-[0_-1px_0_0_rgba(255,255,255,0.05)_inset]">
-      <div className="container mx-auto px-4 py-10 sm:px-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
-          {/* ---------------- Brand & Identity ---------------- */}
-          <div className="space-y-3 md:col-span-1">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-lg font-extrabold tracking-tight"
-            >
-              PAPERGLIDR
+    <footer className="section-muted w-full border-t">
+      <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-14 sm:px-6 sm:pt-16 lg:px-8">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-12">
+          <div className="col-span-2 space-y-4 md:col-span-5">
+            <Logo>
               {isAdminPage && (
                 <Badge
                   variant="secondary"
-                  className="rounded-[5px] border border-amber-500/30 bg-amber-500/10 text-xs text-amber-600 backdrop-blur-sm"
+                  className="rounded-full border border-amber-500/30 bg-amber-500/10 text-[10px] not-italic text-amber-600"
                 >
                   STUDIO
                 </Badge>
               )}
-            </Link>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Empowering lifelong learning and course creation. High-quality
-              structured content for students and tutors across Nepal.
+            </Logo>
+            <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
+              Online courses from Nepali instructors, priced in rupees and
+              paid with the wallets students already use.
             </p>
-            <address className="pt-1 text-[11px] not-italic leading-relaxed text-muted-foreground">
+            <address className="text-xs not-italic leading-relaxed text-muted-foreground/80">
               {COMPANY.legalName}
               <br />
               {COMPANY.registeredAddress}
@@ -72,139 +105,39 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
             </address>
           </div>
 
-          {/* ---------------- Learning ---------------- */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-              Learning
-            </h4>
-            <ul className="space-y-2 text-sm font-medium text-muted-foreground">
-              <li>
-                <Link
-                  href="/browse"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                >
-                  <BookOpen className="h-3.5 w-3.5" />
-                  Browse Courses
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/courses"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                >
-                  <GraduationCap className="h-3.5 w-3.5" />
-                  My Courses
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/certificates"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  My Certificates
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/account"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                >
-                  <User className="h-3.5 w-3.5" />
-                  Account Settings
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* ---------------- Teaching (mirrors navbar's role logic) ---------------- */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-              {isAdmin ? "Admin" : "Instructors"}
-            </h4>
-            <ul className="space-y-2 text-sm font-medium text-muted-foreground">
-              {isAdmin ? (
-                <li>
-                  <Link
-                    href="/admin"
-                    className="inline-flex items-center gap-1.5 font-semibold text-amber-600 transition-colors hover:text-amber-500"
-                  >
-                    <Shield className="h-3.5 w-3.5" />
-                    Admin Dashboard
-                  </Link>
-                </li>
-              ) : isInstructor ? (
-                <>
-                  <li>
+          {columns.map((column, i) => (
+            <div
+              key={column.title}
+              className={
+                i === columns.length - 1
+                  ? "col-span-2 sm:col-span-1 md:col-span-3"
+                  : "md:col-span-2"
+              }
+            >
+              <h4 className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                {column.title}
+              </h4>
+              <ul className="mt-4 space-y-3 text-sm">
+                {column.links.map((link) => (
+                  <li key={link.href}>
                     <Link
-                      href="/teach/courses"
-                      className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+                      href={link.href}
+                      className={
+                        link.tone === "admin"
+                          ? "font-medium text-amber-600 transition-colors hover:text-amber-500 dark:text-amber-400"
+                          : "text-foreground/75 transition-colors hover:text-foreground"
+                      }
                     >
-                      <BookOpen className="h-3.5 w-3.5" />
-                      Course Studio
+                      {link.label}
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      href="/teach/payouts"
-                      className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                    >
-                      <Wallet className="h-3.5 w-3.5" />
-                      Payouts
-                    </Link>
-                  </li>
-                </>
-              ) : (
-                <li>
-                  <Link
-                    href="/instructors/onboarding"
-                    className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                  >
-                    <Presentation className="h-3.5 w-3.5" />
-                    Become a Tutor
-                  </Link>
-                </li>
-              )}
-            </ul>
-          </div>
-
-          {/* ---------------- Legal & Support ---------------- */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-              Legal & Support
-            </h4>
-            <ul className="space-y-2 text-sm font-medium text-muted-foreground">
-              {LEGAL_PAGES.map(page => (
-                <li key={page.href}>
-                  <Link href={page.href} className="transition-colors hover:text-foreground">
-                    {page.title}
-                  </Link>
-                </li>
-              ))}
-              <li>
-                <Link
-                  href="/legal"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-                >
-                  <Scale className="h-3.5 w-3.5" />
-                  All policies
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center gap-1.5 font-semibold text-foreground/90 transition-colors hover:text-primary"
-                >
-                  <MessageSquareWarning className="h-3.5 w-3.5" />
-                  Contact Us
-                </Link>
-              </li>
-            </ul>
-          </div>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* ---------------- Bottom Bar ---------------- */}
-        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-center sm:flex-row sm:text-left dark:border-white/5">
+        <div className="mt-12 border-t pt-6">
           <p className="text-xs text-muted-foreground">
             &copy; {currentYear} {COMPANY.legalName}. All rights reserved.
           </p>

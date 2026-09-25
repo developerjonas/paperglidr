@@ -37,7 +37,7 @@ export function ProductCard({
   const hasRating = avgRating !== undefined && !!reviewCount && reviewCount > 0;
 
   return (
-    <Card className="group overflow-hidden flex flex-col w-full max-w-[500px] mx-auto border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 transition-transform hover:-translate-y-0.5 dark:border-white/10 dark:bg-black/40 pt-0 gap-0">
+    <Card className="group overflow-hidden flex flex-col w-full max-w-[500px] mx-auto border-border bg-card shadow-sm transition-transform hover:-translate-y-0.5 pt-0 gap-0">
       <div className="relative aspect-video w-full overflow-hidden">
         <Image
           src={imageUrl}
@@ -48,7 +48,7 @@ export function ProductCard({
         <WishlistButton
           productId={id}
           initialIsWishlisted={isWishlisted}
-          className="absolute top-2 right-2 rounded-full border border-white/30 bg-white/70 backdrop-blur-md hover:bg-white/90 dark:border-white/10 dark:bg-black/50 dark:hover:bg-black/70"
+          className="absolute top-2 right-2 rounded-full border border-border bg-card hover:bg-accent"
         />
       </div>
 
@@ -60,7 +60,7 @@ export function ProductCard({
             </Suspense>
           </CardDescription>
           {hasRating && (
-            <div className="flex items-center gap-1 rounded-[4px] bg-white/40 px-1.5 py-0.5 text-xs text-muted-foreground dark:bg-white/[0.05]">
+            <div className="flex items-center gap-1 rounded-md bg-secondary/60 px-1.5 py-0.5 text-xs text-muted-foreground">
               <StarIcon className="size-3.5 fill-amber-400 text-amber-400" />
               <span className="font-medium text-foreground">
                 {avgRating.toFixed(1)}

@@ -45,7 +45,7 @@ export function CoursePageClient({
         <AccordionItem
           key={section.id}
           value={section.id}
-          className="border-white/20 dark:border-white/10"
+          className="border-border"
         >
           <AccordionTrigger className="px-1 text-sm font-medium hover:no-underline">
             {section.name}
@@ -57,9 +57,9 @@ export function CoursePageClient({
                 asChild
                 key={lesson.id}
                 className={cn(
-                  "justify-start rounded-[5px] font-normal",
+                  "justify-start rounded-lg font-normal",
                   lesson.id === lessonId &&
-                    "bg-white/60 text-foreground dark:bg-white/10",
+                    "bg-card text-foreground",
                 )}
               >
                 <Link href={`/courses/${course.id}/lessons/${lesson.id}`}>

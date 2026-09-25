@@ -32,8 +32,7 @@ export default async function CoursePageLayout({
   return (
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-10 md:py-14">
-        <div className="absolute top-0 left-1/2 -z-10 h-[220px] w-[420px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-10 md:py-14">
         <div className="container mx-auto px-4">
           <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl text-balance">
             {course.name}
@@ -45,7 +44,7 @@ export default async function CoursePageLayout({
       <section className="container mx-auto px-4 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8 items-start">
           {/* ---- Sidebar ---- */}
-          <aside className="lg:sticky lg:top-24 lg:self-start rounded-2xl border border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 p-4 dark:border-white/10 dark:bg-black/40">
+          <aside className="lg:sticky lg:top-24 lg:self-start rounded-2xl border border-border bg-card shadow-sm p-4">
             <Suspense
               fallback={<CoursePageClient course={mapCourse(course, [])} />}
             >

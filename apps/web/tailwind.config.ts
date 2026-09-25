@@ -13,17 +13,25 @@ export default {
   theme: {
   	container: {
   		center: true,
-  		padding: '2rem',
+  		padding: {
+  			DEFAULT: '1rem',
+  			sm: '1.5rem',
+  			lg: '2rem'
+  		},
   		screens: {
-  			sm: '1500px'
+  			xl: '1280px'
   		}
   	},
   	extend: {
   		fontFamily: {
-  			display: ['var(--font-fraunces)', 'Georgia', 'serif']
+  			sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			display: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
   		},
   		colors: {
   			background: 'hsl(var(--background))',
+  			surface: 'hsl(var(--surface))',
+  			success: 'hsl(var(--success))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
   				DEFAULT: 'hsl(var(--card))',

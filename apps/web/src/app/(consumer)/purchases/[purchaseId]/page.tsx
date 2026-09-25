@@ -61,12 +61,11 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
   return (
     <>
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
-        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
 
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-            <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl text-balance">
+            <h1 className="heading-display text-3xl sm:text-4xl text-balance">
               {enrollment.productDetails.name}
             </h1>
             <Button variant="outline" asChild>
@@ -79,20 +78,20 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
       {/* ---------------- CONTENT ---------------- */}
       <section className="container mx-auto px-4 py-10">
         <div className="mx-auto max-w-2xl">
-          <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
+          <Card className="border-border bg-card shadow-sm">
             <CardHeader className="pb-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-col gap-1">
                   <CardTitle className="text-lg">Enrollment</CardTitle>
                   <CardDescription>ID: {purchaseId}</CardDescription>
                 </div>
-                <Badge variant="secondary" className="rounded-[4px] text-xs">
+                <Badge variant="secondary" className="rounded-md text-xs">
                   {STATUS_LABELS[enrollment.status]}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4 border-t border-white/20 pt-4 dark:border-white/10">
-              <div className="rounded-[5px] border border-white/30 bg-white/40 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+            <CardContent className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+              <div className="rounded-lg border border-border bg-secondary/60 p-3">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Date
                 </p>
@@ -100,7 +99,7 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
                   {formatDate(enrollment.createdAt)}
                 </p>
               </div>
-              <div className="rounded-[5px] border border-white/30 bg-white/40 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="rounded-lg border border-border bg-secondary/60 p-3">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Course
                 </p>
@@ -108,13 +107,13 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
                   {enrollment.productDetails.name}
                 </p>
               </div>
-              <div className="rounded-[5px] border border-white/30 bg-white/40 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="rounded-lg border border-border bg-secondary/60 p-3">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Student
                 </p>
                 <p className="mt-0.5 text-sm font-medium">{user.name}</p>
               </div>
-              <div className="rounded-[5px] border border-white/30 bg-white/40 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="rounded-lg border border-border bg-secondary/60 p-3">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Price
                 </p>
@@ -125,7 +124,7 @@ async function SuspenseBoundary({ purchaseId }: { purchaseId: string }) {
                 </p>
               </div>
             </CardContent>
-            <CardFooter className="border-t border-white/20 pt-4 dark:border-white/10">
+            <CardFooter className="border-t border-border pt-4">
               <RefundSection purchase={enrollment} />
             </CardFooter>
           </Card>

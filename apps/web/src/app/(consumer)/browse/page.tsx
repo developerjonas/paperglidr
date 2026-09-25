@@ -46,7 +46,7 @@ export default async function BrowsePage({
 
   return (
     <div className="flex flex-col min-h-screen">
-      <section className="border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-10 md:py-14">
+      <section className="section-muted border-b py-10 md:py-14">
         <div className="container mx-auto px-4">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Browse Courses
@@ -58,7 +58,7 @@ export default async function BrowsePage({
         <div className="mt-6 md:hidden">
           <Suspense
             fallback={
-              <div className="h-10 w-full animate-pulse rounded-[5px] bg-muted" />
+              <div className="h-10 w-full animate-pulse rounded-lg bg-muted" />
             }
           >
             <SearchBar autoFocus />
@@ -67,7 +67,7 @@ export default async function BrowsePage({
       </section>
 
       {/* Dynamic Category Filtering Bar */}
-      <section className="sticky top-16 z-20 border-b border-white/10 bg-background/80 backdrop-blur-xl">
+      <section className="sticky top-16 z-20 border-b border-border bg-background/80">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
             <Link
@@ -128,7 +128,7 @@ export default async function BrowsePage({
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-white/20 p-12 text-center bg-muted/20">
+          <div className="rounded-2xl border border-dashed border-border p-12 text-center bg-muted/20">
             <BookOpen className="mx-auto h-10 w-10 text-muted-foreground/60" />
             <h3 className="mt-4 text-lg font-semibold">
               {query

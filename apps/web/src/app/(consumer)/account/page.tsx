@@ -86,13 +86,13 @@ export default function AccountPage() {
   if (isPending || !session) {
     return (
       <div className="flex flex-col min-h-screen">
-        <section className="border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14">
+        <section className="section-muted border-b py-14">
           <div className="container mx-auto px-4">
-            <div className="mx-auto h-8 w-48 animate-pulse rounded-[5px] bg-white/40 dark:bg-white/5" />
+            <div className="mx-auto h-8 w-48 animate-pulse rounded-lg bg-secondary/60" />
           </div>
         </section>
         <div className="container mx-auto px-4 py-10">
-          <div className="h-64 w-full animate-pulse rounded-2xl border border-white/30 bg-white/40 backdrop-blur-md dark:border-white/10 dark:bg-white/5" />
+          <div className="h-64 w-full animate-pulse rounded-2xl border border-border bg-secondary/60" />
         </div>
       </div>
     );
@@ -104,16 +104,15 @@ export default function AccountPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
-        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
 
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-xl font-bold text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-xl font-bold text-primary-foreground">
               {initial}
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+              <h1 className="heading-display text-3xl sm:text-4xl">
                 {user.name || "Your account"}
               </h1>
               <p className="text-sm text-muted-foreground sm:text-base">
@@ -139,7 +138,7 @@ export default function AccountPage() {
                     <Link
                       key={href}
                       href={href}
-                      className="flex items-center justify-between rounded-[5px] px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5"
+                      className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     >
                       <span className="flex items-center gap-2">
                         <Icon className="h-4 w-4" />
@@ -162,10 +161,10 @@ export default function AccountPage() {
                         key={id}
                         href={comingSoon ? undefined : `#${id}`}
                         aria-disabled={comingSoon}
-                        className={`flex items-center justify-between rounded-[5px] px-3 py-2 text-sm font-medium transition-colors ${
+                        className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                           comingSoon
                             ? "cursor-not-allowed text-muted-foreground/50"
-                            : "text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
                         }`}
                       >
                         <span className="flex items-center gap-2">
@@ -175,7 +174,7 @@ export default function AccountPage() {
                         {comingSoon && (
                           <Badge
                             variant="secondary"
-                            className="rounded-[4px] px-1.5 py-0 text-[9px]"
+                            className="rounded-md px-1.5 py-0 text-[9px]"
                           >
                             Soon
                           </Badge>
@@ -193,7 +192,7 @@ export default function AccountPage() {
             {/* ---- Profile ---- */}
             <Card
               id="profile"
-              className="scroll-mt-24 border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40"
+              className="scroll-mt-24 border-border bg-card shadow-sm"
             >
               <CardHeader>
                 <CardTitle className="text-lg">Profile</CardTitle>
@@ -202,7 +201,7 @@ export default function AccountPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-[5px] border border-white/30 bg-white/40 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="rounded-lg border border-border bg-secondary/60 p-3">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                     Name
                   </p>
@@ -210,7 +209,7 @@ export default function AccountPage() {
                     {user.name || "—"}
                   </p>
                 </div>
-                <div className="rounded-[5px] border border-white/30 bg-white/40 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="rounded-lg border border-border bg-secondary/60 p-3">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                     Email
                   </p>
@@ -222,7 +221,7 @@ export default function AccountPage() {
             {/* ---- Security / Connected accounts ---- */}
             <Card
               id="security"
-              className="scroll-mt-24 border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40"
+              className="scroll-mt-24 border-border bg-card shadow-sm"
             >
               <CardHeader>
                 <CardTitle className="text-lg">Security</CardTitle>
@@ -244,7 +243,7 @@ export default function AccountPage() {
                     return (
                       <span
                         key={id}
-                        className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/60 px-3 py-1.5 text-sm font-medium dark:border-white/10 dark:bg-white/5"
+                        className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium"
                       >
                         <Icon className="h-4 w-4" />
                         {meta.label}
@@ -263,12 +262,12 @@ export default function AccountPage() {
             {/* ---- Privacy & Data (stub for later) ---- */}
             <Card
               id="privacy"
-              className="scroll-mt-24 border-dashed border-white/30 bg-white/30 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-white/[0.02]"
+              className="scroll-mt-24 border-dashed border-border bg-secondary/40 shadow-sm"
             >
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-lg">Privacy & Data</CardTitle>
-                  <Badge variant="secondary" className="rounded-[4px]">
+                  <Badge variant="secondary" className="rounded-md">
                     Coming soon
                   </Badge>
                 </div>
@@ -281,7 +280,7 @@ export default function AccountPage() {
             </Card>
 
             {/* ---- Danger zone ---- */}
-            <Card className="border-destructive/20 bg-destructive/5 shadow-sm backdrop-blur-2xl dark:border-destructive/20 dark:bg-destructive/10">
+            <Card className="border-destructive/20 bg-destructive/5 shadow-sm dark:border-destructive/20 dark:bg-destructive/10">
               <CardHeader>
                 <CardTitle className="text-lg">Log out</CardTitle>
                 <CardDescription>
@@ -294,7 +293,7 @@ export default function AccountPage() {
                   variant="destructiveOutline"
                   size="lg"
                   onClick={handleLogout}
-                  className="w-full gap-2 rounded-[5px] sm:w-auto"
+                  className="w-full gap-2 rounded-lg sm:w-auto"
                 >
                   <LogOut className="h-4 w-4" />
                   Log out

@@ -107,7 +107,7 @@ async function SuspenseBoundary({
   return (
     <div className="flex flex-col gap-6">
       {/* ---- Video/content card ---- */}
-      <Card className="overflow-hidden border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 p-0 gap-0 dark:border-white/10 dark:bg-black/40">
+      <Card className="overflow-hidden border-border bg-card shadow-sm p-0 gap-0">
         <div className="aspect-video">
           {canView ? (
             <LessonContentViewer
@@ -191,7 +191,7 @@ async function SuspenseBoundary({
           )}
 
           {canView && attachments.length > 0 && (
-            <div className="flex flex-col gap-2 mt-2 rounded-[5px] border border-white/30 bg-white/40 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="flex flex-col gap-2 mt-2 rounded-lg border border-border bg-secondary/60 p-3">
               <h2 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                 Attachments
               </h2>
@@ -214,7 +214,7 @@ async function SuspenseBoundary({
       </Card>
 
       {/* ---- Q&A card ---- */}
-      <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 p-6 gap-4 dark:border-white/10 dark:bg-black/40">
+      <Card className="border-border bg-card shadow-sm p-6 gap-4">
         <h2 className="text-lg font-semibold">Questions & Answers</h2>
         <Suspense
           fallback={

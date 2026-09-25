@@ -2,37 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
+/*
+ * Theme: neutral greys, one bright blue, pill buttons, hairline borders.
+ * Sections alternate between --background and --surface (see .section-muted).
+ */
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 240 6% 15%;
+    --surface: 0 0% 98%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 240 6% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 280 75% 50%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --popover-foreground: 240 6% 15%;
+    --primary: 220 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 15%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 40%;
+    --accent: 240 5% 94%;
+    --accent-foreground: 240 6% 15%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 158 84% 32%;
+    --border: 240 5% 90%;
+    --input: 240 5% 88%;
+    --ring: 220 100% 50%;
+    --chart-1: 220 100% 50%;
+    --chart-2: 158 64% 40%;
+    --chart-3: 32 95% 52%;
+    --chart-4: 270 70% 60%;
+    --chart-5: 340 75% 55%;
+    --radius: 0.75rem;
+    --window-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 24px 60px -12px rgb(0 0 0 / 0.18);
+  }
+
+  .dark {
+    --background: 240 6% 7%;
+    --foreground: 240 5% 94%;
+    --surface: 240 5% 9.5%;
+    --card: 240 5% 11%;
+    --card-foreground: 240 5% 94%;
+    --popover: 240 5% 11%;
+    --popover-foreground: 240 5% 94%;
+    --primary: 218 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 240 5% 94%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 240 4% 18%;
+    --accent-foreground: 240 5% 94%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 158 64% 48%;
+    --border: 240 4% 18%;
+    --input: 240 4% 22%;
+    --ring: 218 100% 60%;
+    --chart-1: 218 100% 60%;
+    --chart-2: 158 64% 48%;
+    --chart-3: 32 95% 58%;
+    --chart-4: 270 70% 68%;
+    --chart-5: 340 75% 62%;
+    --window-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 24px 60px -12px rgb(0 0 0 / 0.7);
   }
 }
 
@@ -40,36 +73,44 @@ body {
   * {
     @apply border-border;
   }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground;
+    font-feature-settings: "cv11", "ss01";
   }
 }
 
-@layer base {
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 280 75% 60%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+@layer components {
+  /* Alternating band behind a page section. */
+  .section-muted {
+    @apply bg-surface;
+  }
+
+  /* Large display headings: tight tracking like the marketing pages. */
+  .heading-display {
+    @apply font-semibold tracking-[-0.035em] text-foreground;
+    line-height: 1.04;
+  }
+
+  /* App-window mockups and floating cards. */
+  .window {
+    @apply overflow-hidden rounded-2xl border bg-card;
+    box-shadow: var(--window-shadow);
+  }
+
+  /* Inline keyboard / label chip. */
+  .kbd {
+    @apply inline-flex h-6 min-w-6 items-center justify-center rounded-md border bg-background px-1.5 font-mono text-[11px] font-medium text-muted-foreground;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

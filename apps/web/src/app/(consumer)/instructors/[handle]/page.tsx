@@ -23,16 +23,15 @@ export default async function InstructorProfilePage({
   return (
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
-        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
 
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-xl font-bold text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary/80 text-xl font-bold text-primary-foreground">
               {initial}
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+              <h1 className="heading-display text-3xl sm:text-4xl">
                 {instructor.name}
               </h1>
               <p className="text-sm text-muted-foreground sm:text-base">
@@ -52,7 +51,7 @@ export default async function InstructorProfilePage({
             <h2 className="text-lg font-semibold px-1">Courses</h2>
 
             {courses.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/30 bg-white/30 p-8 text-center backdrop-blur-md dark:border-white/10 dark:bg-white/[0.02]">
+              <div className="rounded-2xl border border-dashed border-border bg-secondary/40 p-8 text-center">
                 <p className="text-sm text-muted-foreground">
                   This instructor hasn&apos;t published any courses yet.
                 </p>

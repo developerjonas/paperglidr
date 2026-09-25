@@ -51,10 +51,9 @@ export default async function EditProductPage({
   return (
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
-        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+          <h1 className="heading-display text-3xl sm:text-4xl">
             Edit Product
           </h1>
         </div>
@@ -64,7 +63,7 @@ export default async function EditProductPage({
       <section className="container mx-auto px-4 py-10">
         <div className="flex flex-col gap-10">
           <ReviewStatus status={product.status} reviewNote={product.reviewNote} />
-          <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
+          <Card className="border-border bg-card shadow-sm">
             <CardContent className="pt-6">
               <ProductForm
                 product={{
@@ -89,7 +88,7 @@ export default async function EditProductPage({
                 </Link>
               </Button>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
               <DiscountCodeTable
                 discountCodes={(
                   await getDiscountCodesForProduct(productId, product.authorId)

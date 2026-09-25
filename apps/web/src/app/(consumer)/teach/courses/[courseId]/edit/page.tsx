@@ -36,11 +36,10 @@ export default async function EditCoursePage({
   return (
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
-        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
 
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl text-balance">
+          <h1 className="heading-display text-3xl sm:text-4xl text-balance">
             {course.name}
           </h1>
         </div>
@@ -49,13 +48,13 @@ export default async function EditCoursePage({
       {/* ---------------- CONTENT ---------------- */}
       <section className="container mx-auto px-4 py-10">
         <Tabs defaultValue="lessons">
-          <TabsList className="border border-white/30 bg-white/40 backdrop-blur-md dark:border-white/10 dark:bg-white/[0.03]">
+          <TabsList className="border border-border bg-secondary/60">
             <TabsTrigger value="lessons">Lessons</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
 
           <TabsContent value="lessons" className="flex flex-col gap-4 mt-4">
-            <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
+            <Card className="border-border bg-card shadow-sm">
               <CardHeader className="flex items-center flex-row justify-between">
                 <CardTitle className="text-lg">Sections</CardTitle>
                 <SectionFormDialog courseId={course.id}>
@@ -78,7 +77,7 @@ export default async function EditCoursePage({
               {course.courseSections.map((section) => (
                 <Card
                   key={section.id}
-                  className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40"
+                  className="border-border bg-card shadow-sm"
                 >
                   <CardHeader className="flex items-center flex-row justify-between gap-4">
                     <CardTitle
@@ -113,7 +112,7 @@ export default async function EditCoursePage({
           </TabsContent>
 
           <TabsContent value="details" className="mt-4">
-            <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
+            <Card className="border-border bg-card shadow-sm">
               <CardContent className="pt-6">
                 <CourseForm course={course} />
               </CardContent>

@@ -38,11 +38,10 @@ export default function CoursesPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/5 via-background to-background py-14 md:py-20">
-        <div className="absolute top-0 left-1/2 -z-10 h-[280px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
+      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
 
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+          <h1 className="heading-display text-3xl sm:text-4xl">
             My Courses
           </h1>
         </div>
@@ -74,7 +73,7 @@ async function CourseGrid() {
 
   if (courses.length === 0) {
     return (
-      <div className="col-span-full flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/30 bg-white/30 p-10 text-center backdrop-blur-md dark:border-white/10 dark:bg-white/[0.02]">
+      <div className="col-span-full flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-secondary/40 p-10 text-center">
         <p className="text-sm text-muted-foreground">
           You have no courses yet.
         </p>
@@ -88,7 +87,7 @@ async function CourseGrid() {
   return courses.map((course) => (
     <Card
       key={course.id}
-      className="overflow-hidden flex flex-col border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40 pb-0 gap-0"
+      className="overflow-hidden flex flex-col border-border bg-card shadow-sm pb-0 gap-0"
     >
       <CardHeader>
         <CardTitle className="text-lg">{course.name}</CardTitle>
@@ -116,7 +115,7 @@ async function CourseGrid() {
           <Link href={`/courses/${course.id}`}>View Course</Link>
         </Button>
       </CardFooter>
-      <div className="h-1.5 w-full bg-white/30 dark:bg-white/5">
+      <div className="h-1.5 w-full bg-secondary/40">
         <div
           className="h-full bg-primary"
           style={{
@@ -134,7 +133,7 @@ async function CourseGrid() {
 
 function SkeletonCourseCard() {
   return (
-    <Card className="border-white/30 bg-white/60 shadow-sm backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-black/40">
+    <Card className="border-border bg-card shadow-sm">
       <CardHeader>
         <CardTitle>
           <SkeletonText className="w-3/4" />
