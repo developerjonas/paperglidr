@@ -23,15 +23,17 @@ export function ListSection({ title, children }: { title?: string; children: Rea
   );
 }
 
-/** One row: label, optional value on the right, chevron when tappable. */
+/** One row: label (and optional subtitle), optional value on the right, chevron when tappable. */
 export function ListRow({
   label,
+  subtitle,
   value,
   onPress,
   tone = 'default',
   last = false,
 }: {
   label: string;
+  subtitle?: string;
   value?: string;
   onPress?: () => void;
   tone?: 'default' | 'danger' | 'primary';
@@ -41,7 +43,14 @@ export function ListRow({
   const color = tone === 'danger' ? theme.danger : tone === 'primary' ? theme.primary : theme.text;
   const content = (
     <View style={[styles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderColor: theme.border }]}>
-      <ThemedText style={{ color, flexShrink: 1 }}>{label}</ThemedText>
+      <View style={styles.labels}>
+        <ThemedText style={{ color }}>{label}</ThemedText>
+        {subtitle ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {subtitle}
+          </ThemedText>
+        ) : null}
+      </View>
       <View style={styles.right}>
         {value ? (
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
@@ -77,6 +86,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.three,
   },
+  labels: { flexShrink: 1, gap: 2 },
   right: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexShrink: 1 },
   chevron: { fontSize: 22, lineHeight: 24 },
 });

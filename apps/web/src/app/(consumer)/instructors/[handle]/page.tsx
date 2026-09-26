@@ -64,7 +64,7 @@ export default async function InstructorProfilePage({
               </div>
             )}
           </div>
-        </div>ß
+        </div>
       </section>
     </div>
   );

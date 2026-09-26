@@ -7,7 +7,7 @@ import { ProductTable } from "@/drizzle/schema"
 import { wherePublicProducts } from "@/features/products/permissions/products"
 import { addToWishlist, getWishlistForUser } from "@/features/wishlist/db/wishlist"
 
-/** The user's saved products, newest first. */
+/** The user's saved products, newest first (as the website). `available` is false for unpublished ones. */
 export const GET = v1Route("wishlist", async () => {
   const gate = await requireApiUser()
   if (!gate.ok) return gate.response
@@ -21,6 +21,8 @@ export const GET = v1Route("wishlist", async () => {
       description: item.product.description,
       imageUrl: item.product.imageUrl,
       priceInRupees: item.product.priceInRupees,
+      // False once the product is unpublished: it stays saved, but can't be opened.
+      available: item.product.status === "public",
       addedAt: item.createdAt,
     })),
   )

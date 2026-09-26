@@ -72,7 +72,7 @@ const token = res.headers.get("set-auth-token"); // store it
 
 | Method | Path | Access | Returns |
 | --- | --- | --- | --- |
-| GET | `/config` | Public | `siteUrl`, `supportEmail`, enabled payment `gateways`, `policy` numbers (refund window, fees, and so on) |
+| GET | `/config` | Public | `siteUrl`, `supportEmail`, enabled payment `gateways`, `policy` numbers (refund window, fees, and so on), `legal.pages` (open `siteUrl + path` — the website holds the only copy of the text), `company` details |
 | GET | `/categories` | Public | `[{ id, name, slug }]` |
 | GET | `/search?q=&categoryId=&minPrice=&maxPrice=&minRating=&sort=&page=` | Public | `{ page, results[] }`, 20 per page. `sort`: `relevance`, `rating`, `newest`, `price_asc`, `price_desc` |
 | GET | `/products?limit=` | Public | All public products, A–Z (the website's featured order), with `avgRating` and `reviewCount` |
@@ -81,7 +81,7 @@ const token = res.headers.get("set-auth-token"); // store it
 | GET | `/products/:productId/me` | User | `{ owned, wishlisted, latestPurchase }`: whether to show Buy or Go to course |
 | GET | `/courses/:courseId` | Public | Outline as the product page shows it (public sections, public and preview lessons) |
 | GET | `/courses/:courseId/reviews` | Public (published courses; or your own course) | `{ averageRating, reviewCount, reviews[] }`, newest first; each review has `edited` and `isMine` |
-| GET | `/instructors/:handle` | Public | Profile and their products |
+| GET | `/instructors/:handle` | Public | Profile, `products` (public, A–Z) and `courses` (the website's list: courses in a public product) |
 | GET | `/certificates/verify/:code` | Public | What the public verify page shows |
 
 ### Me and learning
@@ -120,7 +120,7 @@ const token = res.headers.get("set-auth-token"); // store it
 
 | Method | Path | Access | Returns |
 | --- | --- | --- | --- |
-| GET | `/wishlist` | User | Saved products |
+| GET | `/wishlist` | User | Saved products, newest first; `available: false` once a product is unpublished |
 | POST | `/wishlist` | User | `{ productId }` |
 | DELETE | `/wishlist/:productId` | User | |
 | GET | `/support` | User | Tickets, most recently active first |
@@ -173,4 +173,4 @@ Video URLs last up to twice the video's length, with a 3-hour cap. Documents las
 
 - **Teaching from the app:** creating or editing courses, uploading, sales and payouts. Instructors use the web studio.
 - **Referral links:** `?ref=` attribution is cookie-based on the web, so a purchase in the app isn't credited to the instructor's link.
-- **Certificate PDFs:** there's no PDF download. Open `verifyUrl` or the certificate page on the web.
+- **Certificate PDFs:** there's no PDF download. The app shows the certificate with its QR code and shares the `verifyUrl`.

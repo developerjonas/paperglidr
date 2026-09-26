@@ -50,9 +50,8 @@ and forgot password; the reset itself happens on the website.
 
 ## Status
 
-Step 6: sign-in and the account pages, product browsing, and learning —
-My learning, the course player (progress, continue, outline, reviews),
-public course pages, lessons (video / embed / PDF, mark complete with
-certificates, previous / next, attachments, report) and lesson Q&A — work;
-the rest are still placeholders. Google sign-in needs a development build (native module) and
+Steps 1–10 done: sign-in and account pages, product browsing, learning
+(course player, lessons, Q&A, reviews), instructor profiles, policies,
+contact and support tickets, certificates with QR codes and a QR scanner
+to verify them, and the wishlist. No placeholders remain. Google sign-in needs a development build (native module) and
 comes later. Payments and checkout are not in the app.

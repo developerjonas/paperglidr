@@ -9,7 +9,7 @@ import {
 } from "./cache/instructors";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { CourseTable, CourseProductTable, ProductTable } from "@/drizzle/schema"
-import { and } from "drizzle-orm"
+import { and, asc } from "drizzle-orm"
 
 export async function getInstructorByUserId(userId: string) {
   "use cache";
@@ -104,20 +104,28 @@ export async function getPublicInstructorByHandle(handle: string) {
 
   if (!instructor) return null
 
-  const courses = await db
-    .select({
-      id: ProductTable.id,
-      name: ProductTable.name,
-      imageUrl: ProductTable.imageUrl,
-    })
-    .from(ProductTable)
-    .where(
-      and(
-        // Products are authored by the user, not the instructor row.
-        eq(ProductTable.authorId, instructor.userId),
-        eq(ProductTable.status, "public")
+  const [products, courses] = await Promise.all([
+    // What you can buy from them.
+    db
+      .select({
+        id: ProductTable.id,
+        name: ProductTable.name,
+        description: ProductTable.description,
+        imageUrl: ProductTable.imageUrl,
+        priceInRupees: ProductTable.priceInRupees,
+      })
+      .from(ProductTable)
+      .where(
+        and(
+          // Products are authored by the user, not the instructor row.
+          eq(ProductTable.authorId, instructor.userId),
+          eq(ProductTable.status, "public")
+        )
       )
-    )
+      .orderBy(asc(ProductTable.name)),
+    // The website's "Courses" list: courses in at least one public product.
+    getInstructorPublishedCourses(instructor.userId),
+  ])
 
   return {
     handle: instructor.handle,
@@ -125,6 +133,7 @@ export async function getPublicInstructorByHandle(handle: string) {
     bio: instructor.bio,
     profileImageUrl: instructor.profileImageUrl,
     isVerified: instructor.isVerified,
-    courses,
+    products,
+    courses: [...courses].sort((a, b) => a.name.localeCompare(b.name)),
   }
 }

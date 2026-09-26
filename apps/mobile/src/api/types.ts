@@ -25,6 +25,17 @@ export type AppConfig = {
     referralWindowDays: number;
     minDescriptionLength: number;
   };
+  /** The policies; the text lives on the website (open siteUrl + path). */
+  legal: { lastUpdated: string; pages: { path: string; title: string; summary: string }[] };
+  company: {
+    brandName: string;
+    legalName: string;
+    registeredAddress: string;
+    registration: string;
+    pan: string;
+    supportEmail: string;
+    legalEmail: string;
+  };
 };
 
 export type Category = { id: string; name: string; slug: string };
@@ -122,7 +133,10 @@ export type PublicCourse = {
 
 export type InstructorProfile = InstructorSummary & {
   bio: string;
-  courses: { id: string; name: string; imageUrl: string }[];
+  /** Their public products (what you can buy), A–Z. */
+  products: { id: string; name: string; description: string; imageUrl: string; priceInRupees: number }[];
+  /** The website's "Courses": their courses in at least one public product, A–Z. */
+  courses: { id: string; name: string; description: string }[];
 };
 
 export type CertificateVerification = {
@@ -256,6 +270,8 @@ export type WishlistItem = {
   description: string;
   imageUrl: string;
   priceInRupees: number;
+  /** False once the product is unpublished — still saved, can't be opened. */
+  available: boolean;
   addedAt: ISODate;
 };
 
