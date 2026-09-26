@@ -13,6 +13,7 @@ export const keys = {
   product: (productId: string) => ['product', productId] as const,
   productReviews: (productId: string, page: number) => ['product', productId, 'reviews', page] as const,
   course: (courseId: string) => ['course', courseId] as const,
+  courseReviews: (courseId: string) => ['course', courseId, 'reviews'] as const,
   instructor: (handle: string) => ['instructor', handle] as const,
   verifyCertificate: (code: string) => ['verify', code] as const,
 

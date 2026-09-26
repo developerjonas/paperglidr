@@ -1,7 +1,13 @@
 import { db } from "@/drizzle/db";
 import { CourseTable, UserCourseAccessTable, UserLessonCompleteTable } from "@/drizzle/schema";
 import { revalidateCourseCache } from "./cache/courses";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, countDistinct, eq, inArray } from "drizzle-orm";
+import { cacheTag } from "next/dist/server/use-cache/cache-tag";
+import { getCourseIdTag } from "./cache/courses";
+import { getUserCourseAccessUserTag } from "./cache/userCourseAccess";
+import { getCourseSectionCourseTag } from "@/features/courseSections/db/cache";
+import { getLessonCourseTag } from "@/features/lessons/db/cache/lessons";
+import { getUserLessonCompleteUserTag } from "@/features/lessons/db/cache/userLessonComplete";
 
 // apps/web/src/features/courses/db/courses.ts — append to the existing file
 import { avg, count } from "drizzle-orm";
@@ -144,62 +150,64 @@ export async function getPublicCourseDetail(courseId: string) {
 }
 
 /**
- * Courses the signed-in user actually has access to (purchased/granted),
- * with lesson-completion progress. Powers the Home screen's "My Courses" —
- * deliberately NOT the same thing as the public product catalog.
+ * The courses a user has access to, A–Z, with published section/lesson
+ * counts and how many of those lessons they've completed. Powers the
+ * website's "My courses" and GET /api/v1/me/courses.
  */
-export async function getCoursesForUser(userId: string) {
-  const access = await db
-    .select({ courseId: UserCourseAccessTable.courseId })
-    .from(UserCourseAccessTable)
-    .where(eq(UserCourseAccessTable.userId, userId));
-
-  const courseIds = access.map((a) => a.courseId);
-  if (courseIds.length === 0) return [];
+export async function getUserCourses(userId: string) {
+  "use cache";
+  cacheTag(
+    getUserCourseAccessUserTag(userId),
+    getUserLessonCompleteUserTag(userId),
+  );
 
   const courses = await db
     .select({
       id: CourseTable.id,
       name: CourseTable.name,
       description: CourseTable.description,
+      sectionsCount: countDistinct(CourseSectionTable.id),
+      lessonsCount: countDistinct(LessonTable.id),
+      lessonsComplete: countDistinct(UserLessonCompleteTable.lessonId),
     })
     .from(CourseTable)
-    .where(inArray(CourseTable.id, courseIds));
-
-  const lessons = await db
-    .select({
-      courseId: CourseSectionTable.courseId,
-      lessonId: LessonTable.id,
-    })
-    .from(LessonTable)
+    // Inner join: only courses this user has access to. (A left join here
+    // listed every course in the database, drafts included, for everyone.)
     .innerJoin(
-      CourseSectionTable,
-      eq(CourseSectionTable.id, LessonTable.sectionId),
+      UserCourseAccessTable,
+      and(
+        eq(UserCourseAccessTable.courseId, CourseTable.id),
+        eq(UserCourseAccessTable.userId, userId),
+      ),
     )
-    .where(inArray(CourseSectionTable.courseId, courseIds));
+    .leftJoin(
+      CourseSectionTable,
+      and(
+        eq(CourseSectionTable.courseId, CourseTable.id),
+        wherePublicCourseSections,
+      ),
+    )
+    .leftJoin(
+      LessonTable,
+      and(eq(LessonTable.sectionId, CourseSectionTable.id), wherePublicLessons),
+    )
+    .leftJoin(
+      UserLessonCompleteTable,
+      and(
+        eq(UserLessonCompleteTable.lessonId, LessonTable.id),
+        eq(UserLessonCompleteTable.userId, userId),
+      ),
+    )
+    .orderBy(CourseTable.name)
+    .groupBy(CourseTable.id);
 
-  const lessonIds = lessons.map((l) => l.lessonId);
-  const completed = lessonIds.length
-    ? await db
-        .select({ lessonId: UserLessonCompleteTable.lessonId })
-        .from(UserLessonCompleteTable)
-        .where(
-          and(
-            eq(UserLessonCompleteTable.userId, userId),
-            inArray(UserLessonCompleteTable.lessonId, lessonIds),
-          ),
-        )
-    : [];
-  const completedSet = new Set(completed.map((c) => c.lessonId));
-
-  return courses.map((course) => {
-    const courseLessons = lessons.filter((l) => l.courseId === course.id);
-    return {
-      ...course,
-      totalLessons: courseLessons.length,
-      completedLessons: courseLessons.filter((l) =>
-        completedSet.has(l.lessonId),
-      ).length,
-    };
+  courses.forEach((course) => {
+    cacheTag(
+      getCourseIdTag(course.id),
+      getCourseSectionCourseTag(course.id),
+      getLessonCourseTag(course.id),
+    );
   });
+
+  return courses;
 }

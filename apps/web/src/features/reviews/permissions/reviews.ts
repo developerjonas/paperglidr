@@ -49,10 +49,14 @@ export async function getUserCourseCompletionPercent(
   userId: string,
   courseId: string,
 ) {
+  // Published sections and lessons only — the ones a student can see and
+  // complete, as progress and certificates count them. (Counting drafts too
+  // meant a student could never reach 50% on a course with unpublished work.)
   const sections = await db.query.CourseSectionTable.findMany({
-    where: (sections, { eq }) => eq(sections.courseId, courseId),
+    where: (sections, { and, eq }) => and(eq(sections.courseId, courseId), eq(sections.status, "public")),
     with: {
       lessons: {
+        where: (lessons, { or, eq }) => or(eq(lessons.status, "public"), eq(lessons.status, "preview")),
         with: {
           userLessonsComplete: {
             where: (ulc, { eq }) => eq(ulc.userId, userId),

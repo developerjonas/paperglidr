@@ -12,26 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { db } from "@/drizzle/db";
-import {
-  CourseSectionTable,
-  CourseTable,
-  LessonTable,
-  UserCourseAccessTable,
-  UserLessonCompleteTable,
-} from "@/drizzle/schema";
-import { getCourseIdTag } from "@/features/courses/db/cache/courses";
-import { getUserCourseAccessUserTag } from "@/features/courses/db/cache/userCourseAccess";
-import { getCourseSectionCourseTag } from "@/features/courseSections/db/cache";
-import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections";
-import { getLessonCourseTag } from "@/features/lessons/db/cache/lessons";
-import { getUserLessonCompleteUserTag } from "@/features/lessons/db/cache/userLessonComplete";
-import { wherePublicLessons } from "@/features/lessons/permissions/lessons";
 import { formatPlural } from "@/lib/formatters";
 import { getCurrentUser } from "@/services/auth";
-import { and, countDistinct, eq } from "drizzle-orm";
-import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import Link from "next/link";
+import { getUserCourses } from "@/features/courses/db/courses";
 import { Suspense } from "react";
 
 export default function CoursesPage() {
@@ -150,60 +134,4 @@ function SkeletonCourseCard() {
       </CardFooter>
     </Card>
   );
-}
-
-async function getUserCourses(userId: string) {
-  "use cache";
-  cacheTag(
-    getUserCourseAccessUserTag(userId),
-    getUserLessonCompleteUserTag(userId),
-  );
-
-  const courses = await db
-    .select({
-      id: CourseTable.id,
-      name: CourseTable.name,
-      description: CourseTable.description,
-      sectionsCount: countDistinct(CourseSectionTable.id),
-      lessonsCount: countDistinct(LessonTable.id),
-      lessonsComplete: countDistinct(UserLessonCompleteTable.lessonId),
-    })
-    .from(CourseTable)
-    .leftJoin(
-      UserCourseAccessTable,
-      and(
-        eq(UserCourseAccessTable.courseId, CourseTable.id),
-        eq(UserCourseAccessTable.userId, userId),
-      ),
-    )
-    .leftJoin(
-      CourseSectionTable,
-      and(
-        eq(CourseSectionTable.courseId, CourseTable.id),
-        wherePublicCourseSections,
-      ),
-    )
-    .leftJoin(
-      LessonTable,
-      and(eq(LessonTable.sectionId, CourseSectionTable.id), wherePublicLessons),
-    )
-    .leftJoin(
-      UserLessonCompleteTable,
-      and(
-        eq(UserLessonCompleteTable.lessonId, LessonTable.id),
-        eq(UserLessonCompleteTable.userId, userId),
-      ),
-    )
-    .orderBy(CourseTable.name)
-    .groupBy(CourseTable.id);
-
-  courses.forEach((course) => {
-    cacheTag(
-      getCourseIdTag(course.id),
-      getCourseSectionCourseTag(course.id),
-      getLessonCourseTag(course.id),
-    );
-  });
-
-  return courses;
 }

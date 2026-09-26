@@ -2,6 +2,7 @@ import { apiFetch, query } from './client';
 import type {
   AppConfig,
   AssetDelivery,
+  CourseReviews,
   Category,
   Certificate,
   CertificateVerification,
@@ -46,6 +47,7 @@ export const api = {
   productReviews: (productId: string, page = 1) =>
     apiFetch<ProductReviews>(v1(`/products/${id(productId)}/reviews${query({ page })}`)),
   course: (courseId: string) => apiFetch<PublicCourse>(v1(`/courses/${id(courseId)}`)),
+  courseReviews: (courseId: string) => apiFetch<CourseReviews>(v1(`/courses/${id(courseId)}/reviews`)),
   instructor: (handle: string) => apiFetch<InstructorProfile>(v1(`/instructors/${id(handle)}`)),
   verifyCertificate: (code: string) =>
     apiFetch<CertificateVerification>(v1(`/certificates/verify/${id(code)}`)),

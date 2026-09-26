@@ -80,6 +80,7 @@ const token = res.headers.get("set-auth-token"); // store it
 | GET | `/products/:productId/reviews?page=` | Public | Rating summary and reviews, 20 per page |
 | GET | `/products/:productId/me` | User | `{ owned, wishlisted, latestPurchase }`: whether to show Buy or Go to course |
 | GET | `/courses/:courseId` | Public | Outline as the product page shows it (public sections, public and preview lessons) |
+| GET | `/courses/:courseId/reviews` | Public (published courses; or your own course) | `{ averageRating, reviewCount, reviews[] }`, newest first; each review has `edited` and `isMine` |
 | GET | `/instructors/:handle` | Public | Profile and their products |
 | GET | `/certificates/verify/:code` | Public | What the public verify page shows |
 
@@ -88,8 +89,8 @@ const token = res.headers.get("set-auth-token"); // store it
 | Method | Path | Access | Returns |
 | --- | --- | --- | --- |
 | GET | `/me` | User | Profile, `role`, `instructor` (or `null`) |
-| GET | `/me/courses` | User | Courses the user can open, with `totalLessons` and `completedLessons` |
-| GET | `/me/courses/:courseId` | User | Player outline: `sections[].lessons[]` with `isComplete` and `isPreview`, progress, and `myReview`. 403 if not bought |
+| GET | `/me/courses` | User | The website's "My courses": courses the user can open, A–Z, with `totalSections`, `totalLessons`, `completedLessons` (published lessons only) |
+| GET | `/me/courses/:courseId` | User | Player outline: `sections[].lessons[]` with `isComplete` and `isPreview`, progress, and `myReview`. 403 if not bought. `review: { canWrite, completionPercent, requiredPercent }` (a review needs 50% of published lessons) |
 | GET | `/lessons/:lessonId` | User, or signed out for preview lessons | Lesson, `isComplete`, `assets[]` (each with a `url` to the next row) |
 | GET | `/lessons/:lessonId/assets/:assetId` | Same as the lesson | A playable URL, see [Playing lessons](#playing-lessons) |
 | POST | `/lessons/:lessonId/complete` | User | Marks it complete. Includes `certificate` once the course is finished |

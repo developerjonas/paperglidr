@@ -37,6 +37,7 @@ export default function RootLayout() {
               options={{ presentation: 'modal', title: 'Forgot password' }}
             />
             <Stack.Screen name="report" options={{ presentation: 'modal', title: 'Report' }} />
+            <Stack.Screen name="review" options={{ presentation: 'modal', title: 'Review' }} />
           </Stack>
         </ThemeProvider>
       </AuthProvider>

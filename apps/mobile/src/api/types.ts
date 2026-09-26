@@ -153,6 +153,8 @@ export type MyCourse = {
   id: string;
   name: string;
   description: string;
+  /** Published sections and lessons only, as the website counts them. */
+  totalSections: number;
   totalLessons: number;
   completedLessons: number;
 };
@@ -166,7 +168,9 @@ export type MyReview = {
   updatedAt: ISODate;
 };
 
-export type LearnerCourse = MyCourse & {
+export type LearnerCourse = Omit<MyCourse, 'totalSections'> & {
+  /** Reviews need 50% of the course completed (the website's rule). */
+  review: { canWrite: boolean; completionPercent: number; requiredPercent: number };
   sections: {
     id: string;
     name: string;
@@ -224,6 +228,24 @@ export type LessonQuestion = {
 };
 
 export type ReviewInput = { rating: number; content?: string };
+
+export type CourseReview = {
+  id: string;
+  rating: number;
+  content: string | null;
+  instructorReply: string | null;
+  createdAt: ISODate;
+  edited: boolean;
+  reviewerName: string;
+  reviewerImage: string | null;
+  isMine: boolean;
+};
+
+export type CourseReviews = {
+  averageRating: number | null;
+  reviewCount: number;
+  reviews: CourseReview[];
+};
 
 // ---- Wishlist, certificates, support, reports ----
 
