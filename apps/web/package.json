@@ -14,7 +14,8 @@
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/drizzle/seed.ts",
-    "test:security-smoke": "node scripts/security-smoke-test.mjs"
+    "test:security-smoke": "node scripts/security-smoke-test.mjs",
+    "report:free-tier-video": "tsx scripts/free-tier-video-report.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1106.0",
@@ -68,6 +69,7 @@
     "@next/eslint-plugin-next": "15.5.22",
     "@tailwindcss/container-queries": "^0.1.1",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
