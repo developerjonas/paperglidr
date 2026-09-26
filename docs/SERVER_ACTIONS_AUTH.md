@@ -42,13 +42,13 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `replyToLessonQuestion` | owner | purchaser, course author, or admin | ✅ |
 | `features/images/actions/imageUploads.ts` | `requestImageUploadUrl` | signed-in | staging key is under the caller's own `image-uploads/<purpose>/<userId>/`; JPEG/PNG/WebP ≤ 5 MB | 🆕 fix/funnel |
 | | `confirmImageUpload` | signed-in | only the caller's own staging keys (exact key shape); checks size, type and file signature before copying to the public bucket | 🆕 fix/funnel |
-| `features/lessons/actions/lessonAssets.ts` | `requestLessonAssetUploadUrl` | owner | lesson's course author or admin; type and size per `uploadRules.ts` | ✅ (rules added in task 12) |
-| | `confirmLessonAssetUpload` | owner | lesson's course author or admin **and** the asset belongs to that lesson | 🆕 task 12 |
-| | `setLessonYouTubeVideo` | owner | lesson's course author or admin; lesson must be a free **preview**; valid YouTube link | 🆕 fix/money-ops |
+| `features/lessons/actions/lessonAssets.ts` | `requestLessonAssetUploadUrl` | owner | lesson's course author or admin; type and size per `uploadRules.ts`; no MP4 on a free-tier lesson | ✅ (rules added in task 12; free-tier check added) |
+| | `confirmLessonAssetUpload` | owner | lesson's course author or admin **and** the asset belongs to that lesson; an MP4 is refused (and deleted) if the lesson became free-tier meanwhile | 🆕 task 12 |
+| | `setLessonEmbedVideo` | owner | lesson's course author or admin; lesson must be **free-tier** (preview, or its course is in a public ₹0 product); YouTube/Vimeo link valid per `@repo/video-embeds` | 🆕 free-tier embeds (replaces `setLessonYouTubeVideo`) |
 | | `removeLessonAsset` | owner | lesson's course author **and** the asset belongs to that lesson | 🔧 sweep: any asset ID could be deleted via a lesson the caller owned |
 | | `listLessonAssetsForEditor` | owner | lesson's course author or admin | ✅ |
 | `features/lessons/actions/lessons.ts` | `createLesson` | owner | caller authors the target section's course | ✅ |
-| | `updateLesson` | owner | caller authors the lesson **and** the target `sectionId`; can't leave `preview` while it has a YouTube video | 🔧 sweep: `sectionId` from the form was unchecked, so a lesson could be moved into another creator's course |
+| | `updateLesson` | owner | caller authors the lesson **and** the target `sectionId`; can't become free-tier (preview, or moved into a free course) with hosted video, or paid with a YouTube/Vimeo link | 🔧 sweep: `sectionId` from the form was unchecked, so a lesson could be moved into another creator's course |
 | | `deleteLesson` | owner | lesson's course author or admin | ✅ |
 | | `updateLessonOrders` | owner | **every** lesson ID is the caller's | 🔧 sweep: only the first ID was checked |
 | `features/lessons/actions/userLessonComplete.ts` | `updateLessonCompleteStatus` | owner | caller has access to the lesson's course; writes only the caller's progress | ✅ |
@@ -56,10 +56,10 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `approvePayout` | admin | `requireAdmin()` | 🔧 task 4: was a cached-role check |
 | | `denyPayout` | admin | `requireAdmin()` | 🔧 task 4: was a cached-role check |
 | | `getMyBalancesInRupees` | signed-in | caller's own available and held balance | ✅ (renamed in task 17) |
-| `features/products/actions/products.ts` | `createProduct` | signed-in | author = caller; **every bundled course is the caller's**; "publish" from a creator stores `pending_review` (the client can only send `private`/`public`) | 🔧 sweep: any course could be bundled, so another creator's paid course could be sold at ₹0 / enrolled free; task 18: moderation |
-| | `updateProduct` | owner | product owner **and** every bundled course is the caller's | 🔧 sweep: same bug as `createProduct` |
+| `features/products/actions/products.ts` | `createProduct` | signed-in | author = caller; **every bundled course is the caller's**; "publish" from a creator stores `pending_review` (the client can only send `private`/`public`); free-tier rule (`checkProductFreeTier`): a course can't become free while a lesson has hosted video | 🔧 sweep: any course could be bundled, so another creator's paid course could be sold at ₹0 / enrolled free; task 18: moderation |
+| | `updateProduct` | owner | product owner **and** every bundled course is the caller's; free-tier rule both ways (no going free with hosted video; a live free product can't turn paid or drop a course while its non-preview lessons use embeds; unpublishing is always allowed) | 🔧 sweep: same bug as `createProduct` |
 | | `deleteProduct` | owner | product owner or admin | ✅ |
-| `features/products/actions/moderation.ts` | `approveProductReview` | admin | `requireAdmin()`; `pending_review` only (status-guarded) | 🆕 task 18 |
+| `features/products/actions/moderation.ts` | `approveProductReview` | admin | `requireAdmin()`; `pending_review` only (status-guarded); free-tier rule re-checked at approval | 🆕 task 18 |
 | | `rejectProductReview` | admin | `requireAdmin()`; `pending_review` only; reason required | 🆕 task 18 |
 | `features/purchases/actions/purchases.ts` | `initiatePurchase` | signed-in | buys for the caller only | ✅ (see Found list) |
 | | `confirmPurchase` | owner | `purchase.userId` = caller | 🔧 task 5: had no check |

@@ -91,7 +91,7 @@ const token = res.headers.get("set-auth-token"); // store it
 | GET | `/me` | User | Profile, `role`, `instructor` (or `null`) |
 | GET | `/me/courses` | User | The website's "My courses": courses the user can open, A–Z, with `totalSections`, `totalLessons`, `completedLessons` (published lessons only) |
 | GET | `/me/courses/:courseId` | User | Player outline: `sections[].lessons[]` with `isComplete` and `isPreview`, progress, and `myReview`. 403 if not bought. `review: { canWrite, completionPercent, requiredPercent }` (a review needs 50% of published lessons) |
-| GET | `/lessons/:lessonId` | User, or signed out for preview lessons | Lesson, `isComplete`, `assets[]` (each with a `url` to the next row) |
+| GET | `/lessons/:lessonId` | User, or signed out for preview lessons | Lesson, `isComplete`, `assets[]` (each with a `url` to the next row, and `startSeconds` for YouTube/Vimeo). Only assets you may play are listed, see [Free lessons and video](#free-lessons-and-video) |
 | GET | `/lessons/:lessonId/assets/:assetId` | Same as the lesson | A playable URL, see [Playing lessons](#playing-lessons) |
 | POST | `/lessons/:lessonId/complete` | User | Marks it complete. Includes `certificate` once the course is finished |
 | DELETE | `/lessons/:lessonId/complete` | User | Marks it not complete |
@@ -165,9 +165,21 @@ const html = `<form id="f" method="POST" action="${next.url}">${Object.entries(n
 | `inline` | A signed file URL (video or PDF). Play or view it directly. It expires, so ask again after a long pause. |
 | `download` | A signed URL for a downloadable file |
 | `bunny_embed` | A Bunny Stream player URL. Load it in a WebView. |
-| `youtube` | `externalId` of a YouTube video. Free preview lessons only. |
+| `youtube` / `vimeo` | `{ externalId, startSeconds, embedUrl }`. `embedUrl` is the canonical player URL (`www.youtube-nocookie.com/embed/…?start=…` or `player.vimeo.com/video/…[?h=…][#t=…s]`). Free lessons only. |
 
 Video URLs last up to twice the video's length, with a 3-hour cap. Documents last 15 minutes.
+
+Check `embedUrl` with `parseEmbedUrl` from `@repo/video-embeds` before loading it, and play it through the provider's player API so you know when it ends: the YouTube IFrame API (`onStateChange` → `ENDED`) or Vimeo's `player.js` (`ended`). The app does this in `src/components/lesson/video-embed.tsx`: a small HTML page in a WebView whose `baseUrl` is the site, because YouTube refuses to play without a referrer. When the video ends, call `POST /lessons/:lessonId/complete`, as the website does.
+
+### Free lessons and video
+
+A lesson is **free** if it's a preview, or if its course is in any public product priced at 0 (even when the course is also sold in a paid product).
+
+- A free lesson's video is a YouTube or Vimeo link. It's never Chiyali-hosted video.
+- A paid lesson's video is Chiyali-hosted (an uploaded MP4, or Bunny), and only for people who have the course. Having a preview open doesn't count. A paid lesson never gets a YouTube or Vimeo link, because anyone with the link could watch it.
+- PDFs and image attachments work on any lesson, with the usual access rules.
+
+The server enforces this. Assets that break the rule (older content) aren't listed in `/lessons/:lessonId`, and their asset URL returns 404, the same as a missing asset. So the app never sees a hosted URL for a free lesson, or an embed for a paid one. The allowed providers and hosts are in `packages/video-embeds`, the one allowlist shared by the web app and the app.
 
 ## Not in v1 yet
 
