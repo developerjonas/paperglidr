@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { ChevronDown, ChevronRight, LogIn, Menu, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -120,7 +120,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export function AccountMenu({ ctx }: { ctx: NavContext }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  useEffect(() => setOpen(false), [pathname]);
+  // Close when the page changes (adjusting state during render, not in an effect).
+  const [seenPath, setSeenPath] = useState(pathname);
+  if (seenPath !== pathname) {
+    setSeenPath(pathname);
+    setOpen(false);
+  }
 
   if (!ctx.isLoggedIn) {
     return (
@@ -177,7 +182,12 @@ export function AccountMenu({ ctx }: { ctx: NavContext }) {
 export function MobileNav({ ctx }: { ctx: NavContext }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  useEffect(() => setOpen(false), [pathname]);
+  // Close when the page changes (adjusting state during render, not in an effect).
+  const [seenPath, setSeenPath] = useState(pathname);
+  if (seenPath !== pathname) {
+    setSeenPath(pathname);
+    setOpen(false);
+  }
   const close = () => setOpen(false);
 
   return (

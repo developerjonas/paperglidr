@@ -31,18 +31,23 @@ export function SearchBar({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The query the URL already reflects. Only typing something different
   // navigates — otherwise every page load would redirect to /browse.
-  const syncedValueRef = useRef(value);
+  const [synced, setSynced] = useState(value);
 
-  useEffect(() => {
-    if (!onResultsPage) return;
-    const q = searchParams.get("q") ?? "";
-    syncedValueRef.current = q;
-    setValue(q);
-  }, [searchParams, onResultsPage]);
+  // On the results page, follow the URL's ?q= (back/forward, links) —
+  // adjusted during render when it changes, not in an effect.
+  const urlQuery = onResultsPage ? (searchParams.get("q") ?? "") : null;
+  const [seenUrlQuery, setSeenUrlQuery] = useState(urlQuery);
+  if (urlQuery !== seenUrlQuery) {
+    setSeenUrlQuery(urlQuery);
+    if (urlQuery != null) {
+      setSynced(urlQuery);
+      setValue(urlQuery);
+    }
+  }
 
   function navigateNow() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    syncedValueRef.current = value;
+    setSynced(value);
     const params = new URLSearchParams(
       onResultsPage ? searchParams.toString() : "",
     );
@@ -60,13 +65,13 @@ export function SearchBar({
   }
 
   useEffect(() => {
-    if (value === syncedValueRef.current) return;
+    if (value === synced) return;
     timeoutRef.current = setTimeout(navigateNow, 350);
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }, [value, synced]);
 
   return (
     <div className={`relative w-full ${className ?? ""}`}>

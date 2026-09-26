@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const subscribe = () => () => {};
+
+/** False during server render and hydration, true after — the theme is only known on the client. */
 function useMounted() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  return mounted;
+  return useSyncExternalStore(subscribe, () => true, () => false);
 }
 
 /** Header pill: sun / moon, highlighting whichever theme is showing. */
