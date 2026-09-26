@@ -4,7 +4,7 @@ import { allowedImageHosts } from "./src/lib/imageHosts";
 
 const nextConfig: NextConfig = {
   // Workspace packages ship TypeScript source.
-  transpilePackages: ["@repo/password-policy"],
+  transpilePackages: ["@repo/password-policy", "@repo/video-embeds"],
   experimental: {
     // dynamicIO: true,
     // authInterrupts: true,

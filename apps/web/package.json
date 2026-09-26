@@ -35,6 +35,7 @@
     "@radix-ui/react-toast": "^1.2.4",
     "@react-pdf/renderer": "^4.6.0",
     "@repo/password-policy": "workspace:*",
+    "@repo/video-embeds": "workspace:*",
     "@sentry/nextjs": "11.0.0",
     "@t3-oss/env-nextjs": "^0.11.1",
     "better-auth": "^1.6.20",

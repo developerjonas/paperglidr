@@ -11,8 +11,11 @@ import { createdAt, id, updatedAt } from "../schemaHelpers";
 import { relations } from "drizzle-orm";
 import { LessonTable } from "./lesson";
 
+// youtube / vimeo = an external embed (free-tier lessons only — see
+// @repo/video-embeds); video_file = Chiyali-hosted video (paid lessons only)
 export const assetTypes = [
   "youtube",
+  "vimeo",
   "video_file",
   "pdf",
   "image",
@@ -22,7 +25,7 @@ export type AssetType = (typeof assetTypes)[number];
 export const assetTypeEnum = pgEnum("asset_type", assetTypes);
 
 // where it's physically stored / how it's delivered
-export const assetProviders = ["youtube", "r2", "bunny"] as const;
+export const assetProviders = ["youtube", "vimeo", "r2", "bunny"] as const;
 export type AssetProvider = (typeof assetProviders)[number];
 export const assetProviderEnum = pgEnum("asset_provider", assetProviders);
 
@@ -50,7 +53,7 @@ export const LessonAssetTable = pgTable("lesson_assets", {
   status: assetStatusEnum().notNull().default("pending"),
 
   // one of these two depending on provider
-  externalId: text(), // youtube video id
+  externalId: text(), // embed video id (youtube id; vimeo "id" or "id:hash")
   storageKey: text(), // r2/bunny object key (private — used to generate signed URLs)
 
   fileName: text(), // original filename, for download prompts
@@ -60,6 +63,7 @@ export const LessonAssetTable = pgTable("lesson_assets", {
   downloadable: boolean().notNull().default(false),
 
   durationSeconds: integer(),
+  startSeconds: integer(), // embeds: where playback starts (from the pasted link)
 
   order: integer().notNull().default(0), // ordering among attachments
   createdAt,

@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.20",
     "@repo/password-policy": "workspace:*",
+    "@repo/video-embeds": "workspace:*",
     "@tanstack/react-query": "^5.103.2",
     "expo": "~57.0.25",
     "expo-camera": "~57.0.5",

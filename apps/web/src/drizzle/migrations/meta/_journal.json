@@ -85,6 +85,13 @@
       "when": 1790353622959,
       "tag": "0011_user_username",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790412675210,
+      "tag": "0012_embed_providers",
+      "breakpoints": true
     }
   ]
 }
