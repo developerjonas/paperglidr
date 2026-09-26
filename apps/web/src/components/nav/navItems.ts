@@ -38,7 +38,7 @@ export function primaryLinks(ctx: NavContext): NavItem[] {
   return [
     { href: "/browse", label: "Browse" },
     {
-      href: ctx.isInstructor ? "/teach" : "/instructors/onboarding",
+      href: ctx.isInstructor ? "/teach" : "/creators",
       label: "Teach",
     },
     { href: ctx.isLoggedIn ? "/support" : "/contact", label: "Support" },

@@ -1,40 +1,29 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import {
   ArrowRight,
   BadgeCheck,
   BookOpen,
-  CheckCircle2,
-  Check,
-  FileText,
-  FolderPlus,
+  Calculator,
+  Code2,
   GraduationCap,
-  Link2,
-  Lock,
-  MessageSquare,
-  Package,
+  Landmark,
+  Languages,
+  type LucideIcon,
+  Palette,
   PlayCircle,
+  QrCode,
   Search,
-  ShieldCheck,
   Smartphone,
-  Tag,
-  TrendingUp,
-  Upload,
+  Star,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { CircuitLines } from "@/components/marketing/CircuitLines";
-import { StudioWindow } from "@/components/marketing/StudioWindow";
-import { ProductCard } from "@/features/products/components/ProductCard";
-import { getPublicProducts } from "@/features/products/db/products";
+import { getHomeCatalog, type HomeCourse, type HomeInstructor } from "@/features/products/db/home";
 import { getPublicCategories } from "@/features/categories/db/categories";
 import { POLICY_TERMS } from "@/config/policyTerms";
+import { formatPrice } from "@/lib/formatters";
 import { SITE_DESCRIPTION, SITE_NAME, pageMetadata } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -48,474 +37,432 @@ export const metadata: Metadata = {
   title: { absolute: `${SITE_NAME} — Learn from Nepali instructors, pay in NPR` },
 };
 
-// Every number below comes from the constants the code enforces.
-const {
-  creatorSharePercent,
-  platformFeePercent,
-  refundWindowDays,
-  refundCompletionThresholdPercent,
-  minimumPayout,
-  payoutHoldDays,
-  payoutRequiresVerifiedPhone,
-  referralWindowDays,
-} = POLICY_TERMS;
+// The learner's front door: find something to learn, see who teaches it,
+// start with a free lesson. The pitch to creators lives at /creators.
 
-const TRUST_LINE = "Free to publish · Priced in NPR · eSewa, Khalti & Fonepay";
+const SHELF_SIZE = 12;
 
-const STUDIO_ACTIONS = [
-  { icon: FolderPlus, label: "Create a course", where: ["Courses"] },
-  { icon: PlayCircle, label: "Add a video lesson", where: ["Course", "Section"] },
-  { icon: FileText, label: "Attach PDFs and course files", where: ["Lesson"] },
-  { icon: Package, label: "Bundle courses into one product", where: ["Products"] },
-  { icon: Wallet, label: "Set your price in NPR", where: ["Product"] },
-  { icon: Tag, label: "Create a discount code", where: ["Discounts"] },
-  { icon: MessageSquare, label: "Answer student questions", where: ["Lesson", "Q&A"] },
-  { icon: TrendingUp, label: "See today's sales", where: ["Sales"] },
-  { icon: ArrowRight, label: "Request a payout", where: ["Payouts"] },
-];
-
-const PAYMENT_METHODS = [
-  { name: "eSewa", detail: "Digital wallet", tile: "bg-[#60BB46]", letter: "e" },
-  { name: "Khalti", detail: "Digital wallet", tile: "bg-[#5C2D91]", letter: "K" },
-  { name: "Fonepay", detail: "QR payment from a bank app", tile: "bg-[#C8102E]", letter: "F" },
-];
-
-const FAQS = [
-  {
-    q: "Is it free to publish a course?",
-    a: `Yes. There is no sign-up fee and no monthly plan. ${SITE_NAME} keeps ${platformFeePercent.referralLink}% of a sale made through your own link and ${platformFeePercent.platform}% of a sale we bring you through the marketplace. You keep the rest.`,
-  },
-  {
-    q: "How do students pay?",
-    a: "In Nepali rupees, with eSewa, Khalti or a Fonepay QR code from any bank app. No foreign card needed.",
-  },
-  {
-    q: "When do I get paid?",
-    a: `Earnings from a sale become withdrawable ${payoutHoldDays} days after the sale, once its refund window has closed. Request a payout from your dashboard any time your balance reaches ${minimumPayout}${payoutRequiresVerifiedPhone ? "; you'll need to verify your phone number first" : ""}.`,
-  },
-  {
-    q: "What counts as a sale through my own link?",
-    a: `Share your course with ?ref=your-handle on the end of the link. Anyone who buys your course within ${referralWindowDays} days of clicking it counts as yours, and you keep ${creatorSharePercent.referralLink}%.`,
-  },
-  {
-    q: "Does my course need approval?",
-    a: "There's no application and no waitlist. Sign up, build your course, and submit it when it's ready. We check each course before it goes on sale.",
-  },
-  {
-    q: "Can students get a refund?",
-    a: `Yes, if they ask within ${refundWindowDays} days of buying and have completed less than ${refundCompletionThresholdPercent}% of the course's lessons.`,
-  },
-  {
-    q: "Do students get a certificate?",
-    a: "Yes. A certificate is issued automatically when a student completes a course, and anyone can verify it online.",
-  },
-];
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-sm font-medium text-primary">{children}</p>
-  );
+/** An icon for a category, guessed from its slug; a book otherwise. */
+function categoryIcon(slug: string): LucideIcon {
+  const s = slug.toLowerCase();
+  if (/loksewa|psc|government|civil/.test(s)) return Landmark;
+  if (/program|coding|code|tech|web|it\b|computer|developer/.test(s)) return Code2;
+  if (/language|english|korean|japanese|ielts|topik|nepali/.test(s)) return Languages;
+  if (/design|art|photo|video|creative/.test(s)) return Palette;
+  if (/account|finance|business|excel|tally|ca\b|market/.test(s)) return Calculator;
+  if (/entrance|exam|school|see|plus-two|neb|iom|ioe|cee/.test(s)) return GraduationCap;
+  return BookOpen;
 }
 
-function CheckList({ items }: { items: React.ReactNode[] }) {
-  return (
-    <ul className="mt-8 space-y-3.5">
-      {items.map((item, i) => (
-        <li key={i} className="flex items-start gap-3 text-[15px] text-foreground/80 sm:text-base">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 fill-success text-background" />
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
+export default async function HomePage() {
+  const [{ courses, instructors }, categories] = await Promise.all([
+    getHomeCatalog(),
+    getPublicCategories(),
+  ]);
 
-function Section({
-  muted = false,
-  className,
-  id,
-  children,
-}: {
-  muted?: boolean;
-  className?: string;
-  id?: string;
-  children: React.ReactNode;
-}) {
+  const free = courses.filter((c) => c.priceInRupees === 0);
+  const newest = courses; // already newest first
+  const topRated = courses
+    .filter((c) => c.reviewCount > 0 && c.avgRating != null)
+    .sort((a, b) => b.avgRating! - a.avgRating! || b.reviewCount - a.reviewCount);
+  const categoryShelves = categories
+    .map((category) => ({
+      category,
+      items: courses.filter((c) => c.categoryId === category.id),
+    }))
+    .filter((shelf) => shelf.items.length > 0)
+    .sort((a, b) => b.items.length - a.items.length)
+    .slice(0, 4);
+  const heroImages = courses.slice(0, 4);
+
   return (
-    <section
-      id={id}
-      className={cn(
-        "scroll-mt-20 py-20 sm:py-28",
-        muted && "section-muted",
-        className,
+    <div className="flex flex-col overflow-x-clip">
+      {/* ---------- HERO: search first ---------- */}
+      <section className="border-b">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:px-8 lg:py-20">
+          <div>
+            <h1 className="heading-display text-[2.4rem] leading-[1.05] sm:text-5xl lg:text-6xl">
+              Learn from Nepal&apos;s
+              <br className="hidden sm:block" /> best teachers.
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              Loksewa, entrance prep, languages, tech and more. Watch a free
+              lesson first, pay in rupees with eSewa, Khalti or Fonepay, and
+              learn on your phone.
+            </p>
+
+            <form action="/browse" method="get" role="search" className="mt-8 flex max-w-xl gap-2">
+              <label htmlFor="home-search" className="sr-only">
+                Search courses
+              </label>
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  id="home-search"
+                  name="q"
+                  type="search"
+                  placeholder="What do you want to learn?"
+                  className="h-12 w-full rounded-full border bg-background pl-12 pr-4 text-base shadow-sm outline-none transition-shadow focus:border-primary/40 focus:ring-4 focus:ring-primary/15"
+                />
+              </div>
+              <Button type="submit" size="lg" className="h-12 w-12 rounded-full px-0 sm:w-auto sm:px-6">
+                <Search className="sm:hidden" />
+                <span className="sr-only sm:not-sr-only">Search</span>
+              </Button>
+            </form>
+
+            {categories.length > 0 && (
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground">Popular:</span>
+                {categories.slice(0, 5).map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/browse?category=${category.slug}`}
+                    className="rounded-full border bg-background px-3 py-1 text-sm text-foreground/75 transition-colors hover:border-foreground/20 hover:text-foreground"
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <dl className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-sm">
+              <Stat value={courses.length} label={courses.length === 1 ? "course" : "courses"} />
+              <Stat value={instructors.length} label={instructors.length === 1 ? "instructor" : "instructors"} />
+              {free.length > 0 && <Stat value={free.length} label="free to start" />}
+            </dl>
+          </div>
+
+          <HeroMosaic courses={heroImages} />
+        </div>
+      </section>
+
+      {/* ---------- CATEGORIES ---------- */}
+      {categories.length > 0 && (
+        <Band>
+          <ShelfHeader title="Explore by topic" href="/browse" linkLabel="All courses" />
+          <div className="no-scrollbar -mx-4 mt-5 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
+            {categories.map((category) => {
+              const Icon = categoryIcon(category.slug);
+              return (
+                <Link
+                  key={category.id}
+                  href={`/browse?category=${category.slug}`}
+                  className="group flex w-36 shrink-0 flex-col gap-3 rounded-2xl border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-accent sm:w-auto"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="text-sm font-medium leading-snug">{category.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </Band>
       )}
-    >
+
+      {courses.length === 0 ? (
+        <Band>
+          <div className="rounded-2xl border border-dashed bg-background p-12 text-center">
+            <BookOpen className="mx-auto h-10 w-10 text-muted-foreground/60" />
+            <h2 className="mt-4 text-lg font-semibold">The first courses are on their way</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Instructors are preparing their lessons. Check back soon, or start teaching yourself.
+            </p>
+            <Button asChild variant="outline" className="mt-5">
+              <Link href="/creators">Teach on {SITE_NAME}</Link>
+            </Button>
+          </div>
+        </Band>
+      ) : (
+        <>
+          {free.length > 0 && (
+            <Shelf
+              title="Start for free"
+              subtitle="Whole courses you can take today, no payment needed."
+              href="/browse"
+              courses={free}
+              muted
+            />
+          )}
+          <Shelf
+            title="New on Chiyali"
+            subtitle="The latest courses from Nepali instructors."
+            href="/browse"
+            courses={newest}
+            muted={free.length === 0}
+          />
+          {topRated.length > 0 && (
+            <Shelf title="Top rated by students" href="/browse" courses={topRated} />
+          )}
+          {instructors.length > 0 && <InstructorShelf instructors={instructors} />}
+          {categoryShelves.map(({ category, items }) => (
+            <Shelf
+              key={category.id}
+              title={category.name}
+              href={`/browse?category=${category.slug}`}
+              courses={items}
+            />
+          ))}
+        </>
+      )}
+
+      {/* ---------- WHY LEARN HERE ---------- */}
+      <Band muted>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { icon: PlayCircle, title: "Watch before you pay", body: "Every course has a free preview lesson, so you know the teacher before you buy." },
+            { icon: Wallet, title: "Pay in rupees", body: "eSewa, Khalti or a Fonepay QR from your bank app. No foreign card." },
+            { icon: Smartphone, title: "Made for your phone", body: "Learn on mobile data, pick up where you left off, and ask the teacher questions." },
+            { icon: QrCode, title: "Certificates that check out", body: "Finish a course and get a certificate anyone can verify with its QR code." },
+          ].map(({ icon: Icon, title, body }) => (
+            <div key={title} className="flex gap-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Icon className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="font-semibold tracking-tight">{title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-8 text-sm text-muted-foreground">
+          Changed your mind? Refunds within {POLICY_TERMS.refundWindowDays} days if you&apos;ve
+          completed less than {POLICY_TERMS.refundCompletionThresholdPercent}% of the course.
+        </p>
+      </Band>
+
+      {/* ---------- TEACH ---------- */}
+      <Band>
+        <div className="relative overflow-hidden rounded-3xl border bg-surface px-6 py-12 sm:px-12 sm:py-14">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_80%_at_100%_0%,hsl(var(--primary)/0.14),transparent_70%)]"
+          />
+          <div className="relative grid items-center gap-8 lg:grid-cols-[1.4fr_1fr]">
+            <div>
+              <h2 className="heading-display text-3xl sm:text-4xl">Teach on {SITE_NAME}</h2>
+              <p className="mt-3 max-w-xl text-lg text-muted-foreground">
+                Turn what you know into a course. Free to publish, priced in
+                rupees, and you keep {POLICY_TERMS.creatorSharePercent.referralLink}% of
+                every sale through your own link.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+              <Button asChild size="lg">
+                <Link href="/instructors/onboarding">Start teaching</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/creators">
+                  How it works <ArrowRight />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Band>
+    </div>
+  );
+}
+
+function Band({ muted = false, children }: { muted?: boolean; children: React.ReactNode }) {
+  return (
+    <section className={cn("py-10 sm:py-14", muted && "section-muted")}>
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
     </section>
   );
 }
 
-export default async function HomePage() {
-  const [products, categories] = await Promise.all([
-    getPublicProducts(),
-    getPublicCategories(),
-  ]);
-
+function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="flex flex-col overflow-x-clip">
-      {/* ---------- HERO ---------- */}
-      <section className="relative pt-16 sm:pt-24">
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center px-4 text-center sm:px-6 lg:px-8">
-          <h1 className="heading-display max-w-3xl text-[2.6rem] sm:text-6xl lg:text-7xl">
-            The course platform
-            <br className="hidden sm:block" /> built for Nepal.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-            Publish a course in minutes, price it in rupees, and sell to
-            students who pay with eSewa, Khalti or Fonepay. No foreign cards,
-            no dollar pricing, no waitlist.
-          </p>
+    <div className="flex items-baseline gap-1.5">
+      <dt className="sr-only">{label}</dt>
+      <dd className="text-2xl font-semibold tracking-tight">{value}</dd>
+      <span className="text-muted-foreground">{label}</span>
+    </div>
+  );
+}
 
-          <div className="relative mt-10 w-full">
-            <CircuitLines />
-            <div className="relative flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg" className="w-full shadow-lg shadow-primary/25 sm:w-auto">
-                <Link href="/instructors/onboarding">
-                  <Upload /> Start teaching free
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-                <Link href="/browse">Browse courses</Link>
-              </Button>
-            </div>
-          </div>
+function ShelfHeader({
+  title,
+  subtitle,
+  href,
+  linkLabel = "See all",
+}: {
+  title: string;
+  subtitle?: string;
+  href: string;
+  linkLabel?: string;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-[1.7rem]">{title}</h2>
+        {subtitle && <p className="mt-1 text-sm text-muted-foreground sm:text-base">{subtitle}</p>}
+      </div>
+      <Link
+        href={href}
+        className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
+      >
+        {linkLabel} <ArrowRight className="h-3.5 w-3.5" />
+      </Link>
+    </div>
+  );
+}
 
-          <p className="mt-6 text-sm text-muted-foreground">{TRUST_LINE}</p>
-        </div>
+/** A horizontally scrolling row of courses, like a YouTube shelf. */
+function Shelf({
+  title,
+  subtitle,
+  href,
+  courses,
+  muted = false,
+}: {
+  title: string;
+  subtitle?: string;
+  href: string;
+  courses: HomeCourse[];
+  muted?: boolean;
+}) {
+  return (
+    <Band muted={muted}>
+      <ShelfHeader title={title} subtitle={subtitle} href={href} />
+      <ul className="no-scrollbar -mx-4 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0">
+        {courses.slice(0, SHELF_SIZE).map((course) => (
+          <li key={course.id} className="w-[72%] shrink-0 snap-start sm:w-64 lg:w-[calc((100%-3rem)/4)]">
+            <CourseTile course={course} />
+          </li>
+        ))}
+      </ul>
+    </Band>
+  );
+}
 
-        <div className="relative mx-auto mt-16 w-full max-w-6xl px-4 sm:mt-20 sm:px-6 lg:px-8">
-          <StudioWindow />
-        </div>
-        <div className="h-20 sm:h-28" />
-      </section>
-
-      {/* ---------- ONE STUDIO ---------- */}
-      <Section muted>
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="heading-display text-4xl sm:text-5xl">
-            Your whole course,
-            <br /> one studio.
-          </h2>
-          <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-            Lessons, files, pricing, discounts, student questions, sales and
-            payouts all live in one Creator Studio. No plugins to wire
-            together, no spreadsheet on the side.
-          </p>
-        </div>
-
-        <div className="window mx-auto mt-14 max-w-3xl" aria-hidden="true">
-          <div className="flex items-center gap-3 border-b px-5 py-4">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[15px] text-muted-foreground">
-              What do you want to do?
-            </span>
-          </div>
-          <ul className="p-2">
-            {STUDIO_ACTIONS.map(({ icon: Icon, label, where }, i) => (
-              <li
-                key={label}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] sm:text-[15px]",
-                  i === 0 && "bg-accent",
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate">{label}</span>
-                <span className="hidden gap-1.5 sm:flex">
-                  {where.map((w) => (
-                    <span key={w} className="kbd">
-                      {w}
-                    </span>
-                  ))}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="flex items-center justify-end gap-2 border-t bg-surface px-5 py-3 text-xs text-muted-foreground">
-            Everything lives in <span className="kbd">/teach</span>
-          </div>
-        </div>
-      </Section>
-
-      {/* ---------- PAYMENTS ---------- */}
-      <Section>
-        <div className="grid items-center gap-16 lg:grid-cols-2">
-          <div>
-            <h2 className="heading-display text-4xl sm:text-5xl">
-              Checkout the way
-              <br /> Nepal pays.
-            </h2>
-            <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted-foreground">
-              Students pay with the wallets already on their phone, in the
-              currency they earn in. Nothing fails at a foreign card form.
-            </p>
-            <CheckList
-              items={[
-                "eSewa, Khalti and Fonepay QR at checkout",
-                "Prices shown and charged in NPR",
-                "An invoice emailed for every purchase",
-                `Refunds within ${refundWindowDays} days if less than ${refundCompletionThresholdPercent}% is completed`,
-              ]}
-            />
-          </div>
-
-          <div className="relative mx-auto w-full max-w-lg py-8" aria-hidden="true">
-            <div className="window">
-              <div className="flex items-center gap-2 border-b px-5 py-4 text-sm font-medium">
-                <Smartphone className="h-4 w-4 text-muted-foreground" /> Payment methods
-              </div>
-              <ul className="divide-y px-3">
-                {PAYMENT_METHODS.map(({ name, detail, tile, letter }) => (
-                  <li key={name} className="flex items-center gap-4 px-2 py-4">
-                    <span
-                      className={cn(
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-white",
-                        tile,
-                      )}
-                    >
-                      {letter}
-                    </span>
-                    <div className="min-w-0 flex-1 leading-tight">
-                      <p className="text-sm font-semibold">{name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{detail}</p>
-                    </div>
-                    <CheckCircle2 className="h-5 w-5 shrink-0 fill-success text-background" />
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <span className="absolute -right-2 top-0 flex h-16 w-16 rotate-6 items-center justify-center rounded-2xl bg-[#60BB46] text-2xl font-bold text-white shadow-xl sm:-right-5">
-              e
-            </span>
-            <span className="absolute -bottom-3 -left-3 flex h-16 w-16 -rotate-6 sm:-left-7 items-center justify-center rounded-2xl bg-[#5C2D91] text-2xl font-bold text-white shadow-xl">
-              K
-            </span>
-          </div>
-        </div>
-      </Section>
-
-      {/* ---------- FEATURED COURSES ---------- */}
-      <Section muted>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <Eyebrow>For students</Eyebrow>
-            <h2 className="heading-display mt-2 text-4xl sm:text-5xl">
-              Learn from Nepali instructors.
-            </h2>
-          </div>
-          <Link
-            href="/browse"
-            className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
-          >
-            View all courses <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {categories.length > 0 && (
-          <div className="no-scrollbar -mx-4 mt-8 flex items-center gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:px-0">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/browse?category=${category.slug}`}
-                className="inline-flex shrink-0 items-center rounded-full border bg-background px-4 py-1.5 text-sm text-foreground/75 transition-colors hover:border-foreground/20 hover:text-foreground"
-              >
-                {category.name}
-              </Link>
-            ))}
-          </div>
+/** A course as a learner scans it: thumbnail, title, teacher, rating, price. */
+function CourseTile({ course }: { course: HomeCourse }) {
+  const isFree = course.priceInRupees === 0;
+  return (
+    <Link href={`/products/${course.id}`} className="group flex h-full flex-col">
+      <div className="relative aspect-video overflow-hidden rounded-xl border bg-muted">
+        <Image
+          src={course.imageUrl}
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 300px, (min-width: 640px) 256px, 72vw"
+          className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        />
+        {course.lessonCount > 0 && (
+          <span className="absolute bottom-2 right-2 rounded-md bg-black/75 px-1.5 py-0.5 text-xs font-medium text-white">
+            {course.lessonCount} {course.lessonCount === 1 ? "lesson" : "lessons"}
+          </span>
         )}
+      </div>
+      <h3 className="mt-3 line-clamp-2 font-semibold leading-snug tracking-tight group-hover:text-primary">
+        {course.name}
+      </h3>
+      <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+        <span className="truncate">{course.instructorName}</span>
+        {course.instructorVerified && (
+          <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Verified instructor" />
+        )}
+      </p>
+      <div className="mt-1.5 flex items-center gap-1.5 text-sm">
+        {course.avgRating != null && course.reviewCount > 0 ? (
+          <>
+            <span className="font-semibold">{course.avgRating.toFixed(1)}</span>
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+            <span className="text-muted-foreground">({course.reviewCount})</span>
+          </>
+        ) : (
+          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">New</span>
+        )}
+      </div>
+      <p className={cn("mt-1.5 font-semibold", isFree && "text-success")}>
+        {formatPrice(course.priceInRupees)}
+      </p>
+    </Link>
+  );
+}
 
-        <div className="mt-8">
-          {products.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {products.slice(0, 8).map((product) => (
-                <ProductCard key={product.id} {...product} />
-              ))}
+/** Instructors as a row of round avatars, like channels or pages to follow. */
+function InstructorShelf({ instructors }: { instructors: HomeInstructor[] }) {
+  return (
+    <Band muted>
+      <ShelfHeader
+        title="Learn from these teachers"
+        subtitle="Nepali instructors teaching on Chiyali."
+        href="/browse"
+        linkLabel="Browse courses"
+      />
+      <ul className="no-scrollbar -mx-4 mt-6 flex gap-6 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+        {instructors.map((instructor) => (
+          <li key={instructor.handle} className="w-28 shrink-0 sm:w-32">
+            <Link href={`/instructors/${instructor.handle}`} className="group flex flex-col items-center text-center">
+              <span className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-background ring-2 ring-primary/25 transition group-hover:ring-primary sm:h-28 sm:w-28">
+                <Image
+                  src={instructor.profileImageUrl}
+                  alt=""
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                />
+              </span>
+              <span className="mt-3 line-clamp-2 text-sm font-semibold leading-tight">
+                {instructor.name}
+                {instructor.isVerified && (
+                  <BadgeCheck
+                    className="ml-1 inline h-3.5 w-3.5 align-[-2px] text-primary"
+                    aria-label="Verified instructor"
+                  />
+                )}
+              </span>
+              <span className="mt-0.5 text-xs text-muted-foreground">
+                {instructor.productCount} {instructor.productCount === 1 ? "course" : "courses"}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Band>
+  );
+}
+
+/** Real course thumbnails as a tilted collage; a quiet placeholder until there are courses. */
+function HeroMosaic({ courses }: { courses: HomeCourse[] }) {
+  if (courses.length === 0) {
+    return (
+      <div aria-hidden="true" className="hidden aspect-[4/3] rounded-3xl border bg-surface lg:block">
+        <div className="flex h-full items-center justify-center">
+          <PlayCircle className="h-16 w-16 text-primary/40" />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div aria-hidden="true" className="relative mx-auto hidden w-full max-w-lg lg:block">
+      <div className="grid grid-cols-2 gap-4">
+        {courses.map((course, i) => (
+          <div
+            key={course.id}
+            className={cn(
+              "window overflow-hidden p-0",
+              i % 2 === 1 && "translate-y-8",
+              courses.length === 1 && "col-span-2",
+            )}
+          >
+            <div className="relative aspect-video">
+              <Image src={course.imageUrl} alt="" fill sizes="260px" className="object-cover" />
             </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed bg-background p-12 text-center">
-              <BookOpen className="mx-auto h-10 w-10 text-muted-foreground/60" />
-              <h3 className="mt-4 text-lg font-semibold">No courses published yet</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Check back soon — instructors are preparing new content.
+            <div className="px-3 py-2.5">
+              <p className="line-clamp-1 text-sm font-semibold">{course.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {course.instructorName} · {formatPrice(course.priceInRupees)}
               </p>
             </div>
-          )}
-        </div>
-      </Section>
-
-      {/* ---------- BUILT FOR NEPAL ---------- */}
-      <Section>
-        <div className="grid items-center gap-14 lg:grid-cols-2">
-          <div className="order-2 grid grid-cols-2 border-t lg:order-1">
-            {[
-              { icon: Wallet, big: "NPR", small: "prices and payouts in rupees" },
-              { icon: Link2, big: `${creatorSharePercent.referralLink}%`, small: "of sales through your link" },
-              { icon: ShieldCheck, big: `${refundWindowDays} days`, small: "refund window for students" },
-              { icon: TrendingUp, big: minimumPayout, small: "minimum payout" },
-            ].map(({ icon: Icon, big, small }, i) => (
-              <div
-                key={small}
-                className={cn("border-b p-5 sm:p-7", i % 2 === 0 && "border-r")}
-              >
-                <Icon className="h-5 w-5 text-primary" />
-                <p className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">{big}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{small}</p>
-              </div>
-            ))}
           </div>
-          <div className="order-1 lg:order-2">
-            <h2 className="heading-display text-4xl sm:text-5xl">
-              Built for Nepal,
-              <br /> not translated for it.
-            </h2>
-            <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted-foreground">
-              Global course platforms price in dollars, pay out to foreign
-              accounts and take cards your students don&apos;t have.{" "}
-              {SITE_NAME} works in rupees from the first lesson to the payout
-              that lands in your account.
-            </p>
-          </div>
-        </div>
-      </Section>
-
-      {/* ---------- HOW IT WORKS ---------- */}
-      <Section muted id="how-it-works">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="heading-display text-4xl sm:text-5xl">From idea to first sale.</h2>
-          <p className="mt-5 text-lg text-muted-foreground">
-            No application, no waitlist. Four steps, all from your dashboard.
-          </p>
-        </div>
-        <div className="mt-14 grid border-t sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { icon: Upload, title: "Upload your course", body: "Add videos and files, arrange lessons into sections, write a description." },
-            { icon: Wallet, title: "Set a price in NPR", body: "Decide what it's worth. Change it any time, or run a discount code." },
-            { icon: Link2, title: "Share your link", body: `Sales through your own link earn you ${creatorSharePercent.referralLink}%. The marketplace brings you more.` },
-            { icon: BadgeCheck, title: "Request your payout", body: `Earnings unlock after the ${payoutHoldDays}-day refund window. Withdraw from ${minimumPayout}.` },
-          ].map(({ icon: Icon, title, body }, i) => (
-            <div
-              key={title}
-              className={cn(
-                "border-b p-6 sm:p-7",
-                i % 2 === 0 && "sm:border-r",
-                i < 3 && "lg:border-r",
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
-                <Icon className="h-5 w-5 text-primary" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* ---------- PRICING ---------- */}
-      <Section>
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div className="lg:pl-12">
-            <h2 className="heading-display text-4xl sm:text-5xl">
-              Free to publish.
-              <br /> We earn when you do.
-            </h2>
-            <p className="mt-5 text-lg text-muted-foreground">
-              No monthly plan. No setup fee. A share of each sale, and nothing
-              if nothing sells.
-            </p>
-          </div>
-          <div className="window mx-auto w-full max-w-md p-7 sm:p-8">
-            <p className="flex items-baseline gap-2">
-              <span className="text-5xl font-semibold tracking-tight">NPR 0</span>
-              <span className="text-muted-foreground">to start</span>
-            </p>
-            <div className="mt-6 space-y-3 border-y py-5 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Sales through your link</span>
-                <span className="font-semibold">You keep {creatorSharePercent.referralLink}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Sales from the marketplace</span>
-                <span className="font-semibold">You keep {creatorSharePercent.platform}%</span>
-              </div>
-            </div>
-            <Button asChild size="lg" className="mt-6 w-full">
-              <Link href="/instructors/onboarding">Start teaching free</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="mt-3 w-full">
-              <Link href="/creator-terms">Read the creator terms</Link>
-            </Button>
-            <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-              <Check className="h-4 w-4 text-success" /> Payouts in NPR, from {minimumPayout}
-            </p>
-            <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
-              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Students pay through eSewa, Khalti or Fonepay. We handle
-              checkout, refunds and invoices.
-            </p>
-          </div>
-        </div>
-      </Section>
-
-      {/* ---------- FAQ ---------- */}
-      <Section muted>
-        <div className="mx-auto max-w-3xl">
-          <h2 className="heading-display text-4xl sm:text-5xl">Frequently asked questions</h2>
-          <Accordion type="single" collapsible className="mt-10">
-            {FAQS.map(({ q, a }) => (
-              <AccordionItem key={q} value={q}>
-                <AccordionTrigger className="py-5 text-base font-medium hover:no-underline sm:text-lg">
-                  {q}
-                </AccordionTrigger>
-                <AccordionContent className="pb-5 text-[15px] leading-relaxed text-muted-foreground">
-                  {a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-      </Section>
-
-      {/* ---------- CTA ---------- */}
-      <Section>
-        <div className="relative overflow-hidden rounded-3xl border bg-surface px-6 py-20 text-center sm:py-24">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 h-full bg-[radial-gradient(ellipse_60%_55%_at_50%_0%,hsl(var(--primary)/0.14),transparent_70%)]"
-          />
-          <div className="relative">
-            <GraduationCap className="mx-auto h-8 w-8 text-primary" />
-            <h2 className="heading-display mx-auto mt-6 max-w-2xl text-4xl sm:text-5xl">
-              Your course is worth publishing today.
-            </h2>
-            <p className="mx-auto mt-4 max-w-md text-lg text-muted-foreground">
-              Set up your creator page and publish your first lesson before
-              the day is over.
-            </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg" className="w-full sm:w-auto">
-                <Link href="/instructors/onboarding">Start teaching free</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-                <Link href="/browse">Browse courses</Link>
-              </Button>
-            </div>
-            <p className="mt-6 text-sm text-muted-foreground">{TRUST_LINE}</p>
-          </div>
-        </div>
-      </Section>
+        ))}
+      </div>
     </div>
   );
 }

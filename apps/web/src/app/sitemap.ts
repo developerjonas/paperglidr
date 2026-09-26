@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic"
 const STATIC_PATHS: { path: string; priority: number; changeFrequency: "daily" | "weekly" | "monthly" }[] = [
   { path: "/", priority: 1, changeFrequency: "daily" },
   { path: "/browse", priority: 0.9, changeFrequency: "daily" },
+  { path: "/creators", priority: 0.7, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.4, changeFrequency: "monthly" },
   { path: "/legal", priority: 0.3, changeFrequency: "monthly" },
   ...LEGAL_PAGES.map(page => ({ path: page.href, priority: 0.3, changeFrequency: "monthly" as const })),

@@ -52,7 +52,7 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
           title: "Teach",
           links: [
             { href: "/instructors/onboarding", label: "Become a Tutor" },
-            { href: "/#how-it-works", label: "How it works" },
+            { href: "/creators", label: "Teach on Chiyali" },
           ],
         };
 
