@@ -6,7 +6,12 @@ import { API_URL } from '@/api/config';
  * No cookies, an `Origin: chiyali://` header, and the session token comes
  * back in the `set-auth-token` header (the server's bearer plugin).
  */
-async function authFetch(path: string, body: unknown, token?: string | null) {
+async function authFetch(
+  path: string,
+  body: unknown,
+  token?: string | null,
+  method: 'GET' | 'POST' = 'POST',
+) {
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
@@ -17,9 +22,9 @@ async function authFetch(path: string, body: unknown, token?: string | null) {
   let response: Response;
   try {
     response = await fetch(`${API_URL}/api/auth${path}`, {
-      method: 'POST',
+      method,
       headers,
-      body: JSON.stringify(body),
+      body: method === 'GET' ? undefined : JSON.stringify(body),
       credentials: 'omit',
     });
   } catch {
@@ -43,6 +48,15 @@ function authErrorMessage(status: number, data: { message?: string; code?: strin
       return 'An account with this email already exists. Sign in instead.';
     case 'USERNAME_IS_ALREADY_TAKEN':
       return 'That username is taken.';
+    case 'INVALID_USERNAME':
+      return 'Usernames use letters, numbers, dots and underscores only.';
+    case 'USERNAME_TOO_SHORT':
+    case 'USERNAME_TOO_LONG':
+      return 'Usernames are 3 to 30 characters.';
+    case 'INVALID_PASSWORD':
+      return 'Your current password is wrong.';
+    case 'CREDENTIAL_ACCOUNT_NOT_FOUND':
+      return 'This account signs in with Google or GitHub and has no password yet.';
   }
   return data?.message || 'Something went wrong. Please try again.';
 }
@@ -85,5 +99,44 @@ export const authApi = {
 
   async signOut(token: string) {
     await authFetch('/sign-out', {}, token);
+  },
+
+  /** How this account can sign in: "credential" (password), "google", "github". */
+  async listSignInMethods(token: string) {
+    const { data } = await authFetch('/list-accounts', undefined, token, 'GET');
+    return ((data as { providerId: string }[] | null) ?? []).map((account) => account.providerId);
+  },
+
+  async updateProfile(token: string, changes: { name?: string; username?: string }) {
+    await authFetch(
+      '/update-user',
+      {
+        ...(changes.name !== undefined ? { name: changes.name.trim() } : {}),
+        ...(changes.username !== undefined
+          ? { username: changes.username, displayUsername: changes.username }
+          : {}),
+      },
+      token,
+    );
+  },
+
+  /**
+   * Returns the new session token when other devices were signed out —
+   * Better Auth ends every session then, including this one.
+   */
+  async changePassword(
+    token: string,
+    input: { currentPassword: string; newPassword: string; signOutOtherDevices: boolean },
+  ) {
+    const { data, token: headerToken } = await authFetch(
+      '/change-password',
+      {
+        currentPassword: input.currentPassword,
+        newPassword: input.newPassword,
+        revokeOtherSessions: input.signOutOtherDevices,
+      },
+      token,
+    );
+    return (data as { token?: string | null } | null)?.token ?? headerToken ?? null;
   },
 };

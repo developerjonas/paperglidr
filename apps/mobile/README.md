@@ -50,6 +50,6 @@ and forgot password; the reset itself happens on the website.
 
 ## Status
 
-Step 3: sign-in, sign-up and forgot password work; the rest are still
-placeholders. Google sign-in needs a development build (native module) and
+Step 4: sign-in, sign-up, forgot password, the Account hub, Profile, Edit
+profile and Change password work; the rest are still placeholders. Google sign-in needs a development build (native module) and
 comes later. Payments and checkout are not in the app.

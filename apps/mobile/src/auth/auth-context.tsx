@@ -25,6 +25,14 @@ type AuthContextValue = {
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   isUsernameAvailable: (username: string) => Promise<boolean>;
+  updateProfile: (changes: { name?: string; username?: string }) => Promise<void>;
+  changePassword: (input: {
+    currentPassword: string;
+    newPassword: string;
+    signOutOtherDevices: boolean;
+  }) => Promise<void>;
+  /** "credential" (password), "google", "github". */
+  listSignInMethods: () => Promise<string[]>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -107,11 +115,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       requestPasswordReset: authApi.requestPasswordReset,
       isUsernameAvailable: authApi.isUsernameAvailable,
+      updateProfile: async (changes) => {
+        await authApi.updateProfile(requireSession(tokenRef.current), changes);
+        await queryClient.invalidateQueries({ queryKey: keys.me.profile });
+      },
+      changePassword: async (input) => {
+        const newToken = await authApi.changePassword(requireSession(tokenRef.current), input);
+        // Signing out other devices ends this session too; carry on with the new one.
+        if (newToken) await startSession(newToken);
+      },
+      listSignInMethods: () => authApi.listSignInMethods(requireSession(tokenRef.current)),
     }),
-    [restoring, token, me.data, startSession, signOutLocally],
+    [restoring, token, me.data, startSession, signOutLocally, queryClient],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function requireSession(token: string | null) {
+  if (!token) throw new Error('Sign in to continue.');
+  return token;
 }
 
 export function useAuth() {

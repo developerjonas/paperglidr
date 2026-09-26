@@ -44,8 +44,9 @@ iOS keeps cookies from responses automatically. Once a cookie is present, Better
 | Sign in (username) | `POST /api/auth/sign-in/username` `{ username, password }` | Same response as email sign-in |
 | Sign in (Google) | `POST /api/auth/sign-in/social` `{ provider: "google", idToken: { token } }` | `token` = the ID token from native Google Sign-In |
 | Current session | `GET /api/auth/get-session` | `null` when the token is invalid |
-| Update name / photo | `POST /api/auth/update-user` `{ name?, image? }` | |
-| Change password | `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Can't be the current password. Pass `revokeOtherSessions: true` to sign out other devices |
+| Update profile | `POST /api/auth/update-user` `{ name?, username?, displayUsername? }` | Name 2-100 characters; username rules as sign-up, and unique |
+| Sign-in methods | `GET /api/auth/list-accounts` | `[{ providerId }]`: `credential` (password), `google`, `github` |
+| Change password | `POST /api/auth/change-password` `{ currentPassword, newPassword, revokeOtherSessions? }` | Same rules as sign-up, and can't be the current password. With `revokeOtherSessions: true` every session ends, this one too: switch to the `token` in the response |
 | Forgot password | `POST /api/auth/request-password-reset` `{ email, redirectTo: "/reset-password" }` | Always succeeds. The emailed link opens the website's reset page, which signs out every device |
 | Sign out | `POST /api/auth/sign-out` | Then delete the stored token |
 

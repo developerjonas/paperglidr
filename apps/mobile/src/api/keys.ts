@@ -19,6 +19,7 @@ export const keys = {
   me: {
     all: ['me'] as const,
     profile: ['me', 'profile'] as const,
+    signInMethods: ['me', 'sign-in-methods'] as const,
     productState: (productId: string) => ['me', 'product', productId] as const,
     courses: ['me', 'courses'] as const,
     course: (courseId: string) => ['me', 'courses', courseId] as const,
