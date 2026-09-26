@@ -17,8 +17,8 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: z.string().min(1).optional(),
     GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
     // Extra origins allowed to call the auth API, comma-separated, e.g.
-    // "https://www.chiyali.com,chiyali://". BETTER_AUTH_URL's own
-    // origin (https://chiyali.com) is always trusted. Parsed in lib/auth.ts.
+    // "https://chiyali.com,chiyali://". BETTER_AUTH_URL's own
+    // origin (https://www.chiyali.com) is always trusted. Parsed in lib/auth.ts.
     BETTER_AUTH_TRUSTED_ORIGINS: z
       .string()
       .optional()

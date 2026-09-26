@@ -6,7 +6,7 @@ import { z } from "zod"
 // Safe to import from both server and client code.
 export const env = createEnv({
   client: {
-    // Canonical public URL of the site, https://chiyali.com in production (no trailing slash)
+    // Canonical public URL of the site, https://www.chiyali.com in production (no trailing slash)
     NEXT_PUBLIC_APP_URL: z.string().url(),
     // Better Auth endpoint the browser talks to — normally the same as NEXT_PUBLIC_APP_URL
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),

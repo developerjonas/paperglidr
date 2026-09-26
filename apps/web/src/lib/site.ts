@@ -5,10 +5,10 @@ export const SITE_NAME = "Chiyali"
 
 /**
  * Canonical origin for metadata, Open Graph URLs, the sitemap and robots —
- * https://chiyali.com in production (NEXT_PUBLIC_APP_URL, validated).
+ * https://www.chiyali.com in production (NEXT_PUBLIC_APP_URL, validated).
  * The fallback only applies when env validation is skipped (CI builds).
  */
-export const SITE_URL = (clientEnv.NEXT_PUBLIC_APP_URL ?? "https://chiyali.com").replace(/\/+$/, "")
+export const SITE_URL = (clientEnv.NEXT_PUBLIC_APP_URL ?? "https://www.chiyali.com").replace(/\/+$/, "")
 
 export const SITE_DESCRIPTION =
   "Online courses from Nepali instructors, priced in NPR and paid with eSewa, Khalti or Fonepay. Creators publish in minutes and earn in rupees."

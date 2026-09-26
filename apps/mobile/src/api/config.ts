@@ -1,27 +1,19 @@
-import Constants from 'expo-constants';
-
-const PRODUCTION_URL = 'https://chiyali.com';
-const DEV_WEB_PORT = 3000;
+/** The production site (and its /api/v1). The canonical host: chiyali.com redirects here. */
+const PRODUCTION_URL = 'https://www.chiyali.com';
 
 /**
- * Where the web app (and its /api/v1) lives.
+ * Where the web app (and its /api/v1) lives: production, unless
+ * EXPO_PUBLIC_API_URL says otherwise — in dev builds and release builds
+ * alike. To run against a local `pnpm dev`, set it to your computer's LAN
+ * address, e.g. EXPO_PUBLIC_API_URL=http://192.168.1.10:3000 (a phone can't
+ * reach "localhost"). Metro caches it: restart with `npx expo start --clear`.
  *
- * 1. EXPO_PUBLIC_API_URL, if set (e.g. a staging URL, or a tunnel).
- * 2. In development: the web dev server on the same machine as the Expo dev
- *    server — its LAN address comes from the Expo host, so a real phone on
- *    the same Wi-Fi reaches `pnpm dev` without any config.
- * 3. Otherwise: production.
+ * Always the canonical host: a redirect (chiyali.com → www) can drop the
+ * Authorization header, which signs the user out of every request.
  */
 function resolveApiUrl() {
-  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
-  if (fromEnv) return fromEnv.replace(/\/+$/, '');
-
-  if (__DEV__) {
-    const host = Constants.expoConfig?.hostUri?.split(':')[0];
-    if (host) return `http://${host}:${DEV_WEB_PORT}`;
-    return `http://localhost:${DEV_WEB_PORT}`;
-  }
-  return PRODUCTION_URL;
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
+  return (fromEnv || PRODUCTION_URL).replace(/\/+$/, '');
 }
 
 export const API_URL = resolveApiUrl();

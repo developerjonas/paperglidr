@@ -8,7 +8,7 @@ User routes (anything that needs a signed-in user) return **404** unless `MOBILE
 
 ## Conventions
 
-- **Base URL:** `https://chiyali.com/api/v1`. Locally: `http://<your LAN IP>:3000/api/v1`.
+- **Base URL:** `https://www.chiyali.com/api/v1` (the canonical host; `chiyali.com` redirects there, and a redirect can drop the `Authorization` header, so always call `www`). Locally: `http://<your LAN IP>:3000/api/v1`, via `EXPO_PUBLIC_API_URL` in the app.
 - **Auth:** send `Authorization: Bearer <token>` on every request (see [Signing in](#signing-in)).
 - **Bodies:** JSON in, JSON out. Send `Content-Type: application/json`.
 - **Errors:** always `{ "message": "..." }`. The message is safe to show the user.
