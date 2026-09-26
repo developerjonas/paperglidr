@@ -179,3 +179,47 @@ describe("GET /api/v1/lessons/:id", () => {
     expect((await getLesson(lesson.lessonId, stranger.id)).status).toBe(403)
   })
 })
+
+describe("embed delivery", () => {
+  async function embedLesson(courseId: string, status: Status) {
+    const { lessonId } = await lessonWithAssets(courseId, status)
+    const [asset] = await db
+      .insert(LessonAssetTable)
+      .values({ lessonId, type: "vimeo", provider: "vimeo", role: "primary", status: "ready", externalId: "76979871:abc123def0", startSeconds: 12, order: 3 })
+      .returning()
+    return { lessonId, embed: asset! }
+  }
+
+  it("a preview's embed plays for anyone, as a canonical embed URL", async () => {
+    const { course } = await createProduct({ priceInRupees: 999 })
+    const { lessonId, embed } = await embedLesson(course.id, "preview")
+    const res = await get(lessonId, embed.id, null)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({
+      type: "vimeo",
+      externalId: "76979871",
+      startSeconds: 12,
+      embedUrl: "https://player.vimeo.com/video/76979871?h=abc123def0#t=12s",
+    })
+  })
+
+  it("a paid lesson's embed is never handed out, not even to a buyer", async () => {
+    const { course } = await createProduct({ priceInRupees: 999 })
+    const { lessonId, embed } = await embedLesson(course.id, "public")
+    const buyer = await createUser("buyer")
+    await enroll(buyer.id, course.id)
+    expect((await get(lessonId, embed.id, buyer.id)).status).toBe(404)
+    const body = JSON.parse((await getLesson(lessonId, buyer.id)).text) as { assets: { id: string }[] }
+    expect(body.assets.map(a => a.id)).not.toContain(embed.id)
+  })
+
+  it("a free course's embed plays for its students and is listed with its start time", async () => {
+    const { course } = await createProduct({ priceInRupees: 0 })
+    const { lessonId, embed } = await embedLesson(course.id, "public")
+    const student = await createUser("student")
+    await enroll(student.id, course.id)
+    expect((await get(lessonId, embed.id, student.id)).body.type).toBe("vimeo")
+    const body = JSON.parse((await getLesson(lessonId, student.id)).text) as { assets: { id: string; startSeconds: number | null }[] }
+    expect(body.assets.find(a => a.id === embed.id)?.startSeconds).toBe(12)
+  })
+})

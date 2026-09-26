@@ -12,6 +12,7 @@ export async function approveProductReview(productId: string) {
     if (!z.string().uuid().safeParse(productId).success) throw new UserFacingError("Product not found")
     const result = await approveProduct({ productId, adminId })
     if (result.outcome === "not_pending") throw new UserFacingError("This product isn't waiting for review")
+    if (result.outcome === "blocked") throw new UserFacingError(result.message)
     revalidatePath("/admin/products")
     return { error: false as const, message: "Approved: the product is live" }
   } catch (error) {

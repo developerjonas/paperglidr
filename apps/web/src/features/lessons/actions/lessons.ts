@@ -1,8 +1,11 @@
 "use server"
-import { and, eq } from "drizzle-orm"
-import { db } from "@/drizzle/db"
-import { LessonAssetTable } from "@/drizzle/schema"
-import { YOUTUBE_PREVIEW_ONLY_MESSAGE, youtubeAllowedFor } from "../lib/youtube"
+import {
+  PAID_LESSON_NO_EMBED_MESSAGE,
+  isFreeTierPlacement,
+  lessonHasEmbed,
+  lessonHasHostedVideo,
+  needsEmbedMessage,
+} from "../lib/freeTier"
 import { z } from "zod"
 import { lessonSchema } from "../schemas/lessons"
 import { getCurrentUser } from "@/services/auth"
@@ -50,11 +53,19 @@ export async function updateLesson(
   ) {
     return { error: true, message: "There was an error updating your lesson" }
   }
-  // A YouTube video is public, so it can only stay on a free preview.
-  if (!youtubeAllowedFor(data.status) && (await lessonHasYouTubeVideo(id))) {
+  // Free-tier lessons (previews, free courses) use an embed; paid lessons
+  // hosted video. The status or the section (course) may be changing.
+  const freeTier = await isFreeTierPlacement(data)
+  if (freeTier && (await lessonHasHostedVideo(id))) {
     return {
       error: true,
-      message: `${YOUTUBE_PREVIEW_ONLY_MESSAGE} Upload an MP4 (or remove the YouTube video) before changing this lesson's status.`,
+      message: `${needsEmbedMessage(data.status)} Remove the uploaded video before making this change.`,
+    }
+  }
+  if (!freeTier && (await lessonHasEmbed(id))) {
+    return {
+      error: true,
+      message: `${PAID_LESSON_NO_EMBED_MESSAGE} Replace the video before making this change.`,
     }
   }
   await updateLessonDb(id, data)
@@ -80,12 +91,4 @@ export async function updateLessonOrders(lessonIds: string[]) {
   }
   await updateLessonOrdersDb(lessonIds)
   return { error: false, message: "Successfully reordered your lessons" }
-}
-
-async function lessonHasYouTubeVideo(lessonId: string) {
-  const asset = await db.query.LessonAssetTable.findFirst({
-    where: and(eq(LessonAssetTable.lessonId, lessonId), eq(LessonAssetTable.provider, "youtube")),
-    columns: { id: true },
-  })
-  return asset != null
 }

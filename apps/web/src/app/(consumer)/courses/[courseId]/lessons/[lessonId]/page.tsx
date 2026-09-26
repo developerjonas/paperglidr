@@ -1,4 +1,4 @@
-import { youtubeAllowedFor } from "@/features/lessons/lib/youtube";
+import { isFreeTierLesson, mayDeliverAsset } from "@/features/lessons/lib/freeTier";
 import { ReportButton } from "@/features/reports/components/ReportButton";
 import { ActionButton } from "@/components/ActionButton";
 import { SkeletonButton } from "@/components/Skeleton";
@@ -23,6 +23,7 @@ import {
   getAttachmentLessonAssets,
 } from "@/features/lessons/db/lessonAssets";
 import {
+  canAccessLessonContent,
   canViewLesson,
   wherePublicLessons,
 } from "@/features/lessons/permissions/lessons";
@@ -97,11 +98,18 @@ async function SuspenseBoundary({
   const storedPrimary = canView
     ? ((await getPrimaryLessonAsset(lesson.id)) ?? null)
     : null;
-  // YouTube only plays on free previews (see features/lessons/lib/youtube).
+  // Embeds play on free-tier lessons only; hosted video only on paid
+  // lessons, for people who have the course (features/lessons/lib/freeTier).
   const primaryAsset =
-    storedPrimary?.provider === "youtube" && !youtubeAllowedFor(lesson.status)
-      ? null
-      : storedPrimary;
+    storedPrimary != null &&
+    mayDeliverAsset(storedPrimary, {
+      freeTier: await isFreeTierLesson(lesson.id),
+      hasCourseAccess: await canAccessLessonContent({ userId, role }, lesson.id).then(
+        (access) => access.allowed && access.hasCourseAccess,
+      ),
+    })
+      ? storedPrimary
+      : null;
   const attachments = canView ? await getAttachmentLessonAssets(lesson.id) : [];
 
   return (

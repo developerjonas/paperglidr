@@ -26,11 +26,12 @@ import {
   getUploadRule,
 } from "../lib/uploadRules";
 import { UserFacingError, actionError } from "@/lib/safeError";
+import { EMBED_PROVIDERS, INVALID_EMBED_MESSAGE, parseEmbedUrl, toStoredEmbed } from "@repo/video-embeds";
 import {
-  YOUTUBE_PREVIEW_ONLY_MESSAGE,
-  parseYouTubeVideoId,
-  youtubeAllowedFor,
-} from "../lib/youtube";
+  PAID_LESSON_NO_EMBED_MESSAGE,
+  isFreeTierLesson,
+  needsEmbedMessage,
+} from "../lib/freeTier";
 
 /**
  * Step 1 of upload: the instructor's client asks for a place to put the
@@ -54,6 +55,11 @@ export async function requestLessonAssetUploadUrl(
           ? "Lesson content must be an MP4 video or a PDF."
           : "Attachments must be a PDF, JPEG, PNG or WebP file."
       );
+    }
+    // Free-tier lessons (previews, free courses) use a YouTube or Vimeo
+    // link for their video; Chiyali-hosted video is for paid lessons.
+    if (rule.assetType === "video_file" && (await isFreeTierLesson(parsed.lessonId))) {
+      throw new UserFacingError(needsEmbedMessage(lesson.status));
     }
     if (parsed.fileSizeBytes > rule.maxBytes) {
       throw new UserFacingError(
@@ -103,7 +109,7 @@ export async function requestLessonAssetUploadUrl(
  */
 export async function confirmLessonAssetUpload(assetId: string, lessonId: string) {
   try {
-    await canEditLessonAssets(lessonId); // throws if unauthorized
+    const lesson = await canEditLessonAssets(lessonId); // throws if unauthorized
 
     const asset = await getLessonAsset(assetId);
     if (asset == null || asset.lessonId !== lessonId || asset.provider !== "r2") {
@@ -114,7 +120,11 @@ export async function confirmLessonAssetUpload(assetId: string, lessonId: string
       throw new Error(`r2 asset ${asset.id} has no storageKey/mimeType`);
     }
 
-    const problem = await checkStoredObject({
+    // The lesson may have become free-tier since the upload started.
+    const problem =
+      asset.type === "video_file" && (await isFreeTierLesson(lessonId))
+        ? needsEmbedMessage(lesson.status)
+        : await checkStoredObject({
       storageKey: asset.storageKey,
       role: asset.role,
       mimeType: asset.mimeType,
@@ -170,33 +180,36 @@ async function checkStoredObject({
 }
 
 /**
- * Sets a YouTube video as the lesson's content — free preview lessons
- * only. Replaces the current primary asset (an uploaded file's R2 object
+ * Sets a YouTube or Vimeo video as the lesson's content — free-tier
+ * lessons (previews, free courses) only. The link is normalised by
+ * @repo/video-embeds; only the video ID, unlisted hash and start time are
+ * stored. Replaces the current primary asset (an uploaded file's R2 object
  * is queued for deletion).
  */
-export async function setLessonYouTubeVideo(lessonId: string, url: string) {
+export async function setLessonEmbedVideo(lessonId: string, url: string) {
   try {
-    const lesson = await canEditLessonAssets(lessonId); // throws if unauthorized
-    if (!youtubeAllowedFor(lesson.status)) {
-      throw new UserFacingError(YOUTUBE_PREVIEW_ONLY_MESSAGE);
+    await canEditLessonAssets(lessonId); // throws if unauthorized
+    if (!(await isFreeTierLesson(lessonId))) {
+      throw new UserFacingError(PAID_LESSON_NO_EMBED_MESSAGE);
     }
-    const videoId = typeof url === "string" ? parseYouTubeVideoId(url) : null;
-    if (videoId == null) {
-      throw new UserFacingError("That isn't a YouTube video link (e.g. https://www.youtube.com/watch?v=…).");
-    }
+    const embed = typeof url === "string" ? parseEmbedUrl(url) : null;
+    if (embed == null) throw new UserFacingError(INVALID_EMBED_MESSAGE);
+    const stored = toStoredEmbed(embed);
+    const label = EMBED_PROVIDERS[embed.provider].label;
     const asset = await insertLessonAsset({
       lessonId,
-      type: "youtube",
-      provider: "youtube",
+      type: stored.provider,
+      provider: stored.provider,
       role: "primary",
       status: "pending",
-      externalId: videoId,
-      fileName: `YouTube ${videoId}`,
+      externalId: stored.externalId,
+      startSeconds: stored.startSeconds,
+      fileName: `${label} ${embed.videoId}`,
     });
     await markLessonAssetReady(asset.id);
-    return { error: false as const, message: "YouTube video set" };
+    return { error: false as const, message: `${label} video set` };
   } catch (error) {
-    return actionError(error, "setLessonYouTubeVideo", "Couldn't set the video.");
+    return actionError(error, "setLessonEmbedVideo", "Couldn't set the video.");
   }
 }
 

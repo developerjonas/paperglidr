@@ -13,6 +13,7 @@ import {
   canBundleCourses,
 } from "../permissions/products";
 import { canPublishProduct } from "../lib/canPublishProduct";
+import { checkProductFreeTier } from "@/features/lessons/lib/freeTier";
 import { productSchema } from "../schema/products";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -59,6 +60,13 @@ export async function createProduct(unsafeData: z.infer<typeof productSchema>) {
       return { error: true, message: check.reasons.join(" ") };
     }
   }
+
+  // Free courses use YouTube/Vimeo links, never uploaded video. Checked on
+  // submission too (fail fast); approval checks again.
+  const freeTierProblem = await checkProductFreeTier({
+    after: { live: data.status === "public", priceInRupees: data.priceInRupees, courseIds: data.courseIds },
+  });
+  if (freeTierProblem) return { error: true, message: freeTierProblem };
 
   await insertProduct({
     ...data,
@@ -124,6 +132,12 @@ export async function updateProduct(
       return { error: true, message: check.reasons.join(" ") };
     }
   }
+
+  const freeTierProblem = await checkProductFreeTier({
+    productId: id,
+    after: { live: data.status === "public", priceInRupees: data.priceInRupees, courseIds: data.courseIds },
+  });
+  if (freeTierProblem) return { error: true, message: freeTierProblem };
 
   const current = await db.query.ProductTable.findFirst({
     where: eq(ProductTable.id, id),

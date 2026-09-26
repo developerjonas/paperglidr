@@ -5,6 +5,7 @@ import { CourseSectionTable, LessonTable, ProductTable, UserTable } from "@/driz
 import { revalidateProductCache } from "../db/cache"
 import { sendNotification } from "@/services/email/notifications"
 import { env as clientEnv } from "@/data/env/client"
+import { checkProductFreeTier } from "@/features/lessons/lib/freeTier"
 
 /** The review queue (oldest submission first) and recent decisions. */
 export async function getModerationQueue() {
@@ -71,6 +72,20 @@ async function emailCreator(authorId: string, subject: string, paragraphs: strin
 
 /** pending_review -> public (status-guarded: a product is decided once). */
 export async function approveProduct({ productId, adminId }: { productId: string; adminId: string }) {
+  // Lessons may have changed since submission: a free product's courses
+  // must still have no uploaded video.
+  const pending = await db.query.ProductTable.findFirst({
+    where: and(eq(ProductTable.id, productId), eq(ProductTable.status, "pending_review")),
+    columns: { priceInRupees: true },
+    with: { courseProducts: { columns: { courseId: true } } },
+  })
+  if (pending == null) return { outcome: "not_pending" as const }
+  const problem = await checkProductFreeTier({
+    productId,
+    after: { live: true, priceInRupees: pending.priceInRupees, courseIds: pending.courseProducts.map(cp => cp.courseId) },
+  })
+  if (problem) return { outcome: "blocked" as const, message: problem }
+
   const now = new Date()
   const [product] = await db
     .update(ProductTable)

@@ -7,7 +7,8 @@ import { GET as deliverAsset } from "@/app/api/lessons/[lessonId]/assets/[assetI
  * with errors in the v1 `{ message }` shape. Success is one of:
  *   { type: "inline" | "download", url }   signed file URL (R2)
  *   { type: "bunny_embed", url }           Bunny Stream player URL
- *   { type: "youtube", externalId }        preview lessons only
+ *   { type: "youtube" | "vimeo", externalId, startSeconds, embedUrl }
+ *                                          free-tier lessons only
  * Ask again when a URL expires; never cache it.
  */
 export const GET = v1Route<{ lessonId: string; assetId: string }>("lesson asset", async (req, context) => {

@@ -5,8 +5,8 @@ import { canAccessLessonContent } from "@/features/lessons/permissions/lessons";
 import { getDownloadUrl } from "@/services/storage/r2";
 import { getBunnyEmbedUrl } from "@/services/bunny/streamToken";
 import { captureEvent } from "@/lib/observability";
-import { youtubeAllowedFor } from "@/features/lessons/lib/youtube";
-import { isFreeTierLesson, isHostedVideoAsset, mayDeliverHostedVideo } from "@/features/lessons/lib/freeTier";
+import { buildEmbedUrl, fromStoredEmbed, isEmbedProvider } from "@repo/video-embeds";
+import { isFreeTierLesson, mayDeliverAsset } from "@/features/lessons/lib/freeTier";
 import { routeError } from "@/lib/safeError";
 
 // Signed R2 URLs are the only thing guarding private files once issued,
@@ -52,11 +52,10 @@ async function handle(
 
   // Chiyali-hosted video (R2 MP4, Bunny) is for paid, enrolled content:
   // never for a free-tier lesson (free courses and previews use embeds),
-  // and never on preview access alone. Same answer as a missing asset, so
-  // it doesn't reveal that a hosted file exists.
+  // and never on preview access alone. Embeds are for free-tier lessons
+  // only. Same answer as a missing asset, so it doesn't reveal what exists.
   if (
-    isHostedVideoAsset(asset) &&
-    !mayDeliverHostedVideo({
+    !mayDeliverAsset(asset, {
       freeTier: await isFreeTierLesson(lessonId),
       hasCourseAccess: access.hasCourseAccess,
     })
@@ -64,13 +63,15 @@ async function handle(
     return json({ error: "Asset not found" }, 404);
   }
 
-  // YouTube is only ever for free previews (it's public anyway); a
-  // non-preview lesson never hands one out.
-  if (asset.provider === "youtube" && !youtubeAllowedFor(access.lesson.status)) {
-    return json({ error: "Asset not found" }, 404);
-  }
-  if (asset.provider === "youtube") {
-    return json({ type: "youtube", externalId: asset.externalId });
+  if (isEmbedProvider(asset.provider)) {
+    const embed = fromStoredEmbed(asset);
+    if (embed == null) return json({ error: "Asset has an invalid embed" }, 500);
+    return json({
+      type: embed.provider,
+      externalId: embed.videoId,
+      startSeconds: embed.startSeconds ?? null,
+      embedUrl: buildEmbedUrl(embed),
+    });
   }
 
   if (asset.provider === "bunny") {

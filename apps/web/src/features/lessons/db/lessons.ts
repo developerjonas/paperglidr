@@ -1,7 +1,6 @@
 import { db } from "@/drizzle/db"
 import { CourseSectionTable, LessonAssetTable, LessonTable } from "@/drizzle/schema"
 import { and, eq } from "drizzle-orm"
-import { youtubeAllowedFor } from "../lib/youtube"
 import { revalidateLessonCache } from "./cache/lessons"
 
 export async function getNextCourseLessonOrder(sectionId: string) {
@@ -176,6 +175,7 @@ export async function getLessonForViewer(lessonId: string) {
       fileSizeBytes: LessonAssetTable.fileSizeBytes,
       downloadable: LessonAssetTable.downloadable,
       durationSeconds: LessonAssetTable.durationSeconds,
+      startSeconds: LessonAssetTable.startSeconds,
       order: LessonAssetTable.order,
     })
     .from(LessonAssetTable)
@@ -189,11 +189,7 @@ export async function getLessonForViewer(lessonId: string) {
   // storageKey deliberately excluded — it's how the deliver endpoint
   // resolves a signed URL server-side; the client never needs it directly.
 
-  // YouTube only on free previews (features/lessons/lib/youtube).
-  return {
-    ...lesson,
-    assets: assets.filter(
-      (asset) => asset.provider !== "youtube" || youtubeAllowedFor(lesson.status),
-    ),
-  }
+  // Which assets the viewer may see is the caller's call (mayDeliverAsset
+  // in features/lessons/lib/freeTier).
+  return { ...lesson, assets }
 }

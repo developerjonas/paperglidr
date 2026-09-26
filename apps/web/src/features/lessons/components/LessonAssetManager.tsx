@@ -7,7 +7,7 @@ import { actionToast } from "@/hooks/use-toast";
 import {
   requestLessonAssetUploadUrl,
   confirmLessonAssetUpload,
-  setLessonYouTubeVideo,
+  setLessonEmbedVideo,
   removeLessonAsset,
   listLessonAssetsForEditor,
 } from "../actions/lessonAssets";
@@ -17,7 +17,9 @@ import {
   formatBytes,
   getUploadRule,
 } from "../lib/uploadRules";
-import { parseYouTubeVideoId, youtubeAllowedFor } from "../lib/youtube";
+import { INVALID_EMBED_MESSAGE, parseEmbedUrl } from "@repo/video-embeds";
+
+const youtubeAllowedFor = (lessonStatus: string) => lessonStatus === "preview";
 
 // Matches the shape returned by getLessonAssetsForLesson (db/lessonAssets.ts) —
 // keep in sync if that query's columns change.
@@ -44,14 +46,14 @@ export function LessonAssetManager({
   const [youtubeUrl, setYoutubeUrl] = useState("");
 
   async function handleSetYouTube() {
-    if (parseYouTubeVideoId(youtubeUrl) == null) {
+    if (parseEmbedUrl(youtubeUrl) == null) {
       actionToast({
-        actionData: { error: true, message: "That isn't a YouTube video link." },
+        actionData: { error: true, message: INVALID_EMBED_MESSAGE },
       });
       return;
     }
     setUploading(true);
-    const result = await setLessonYouTubeVideo(lessonId, youtubeUrl);
+    const result = await setLessonEmbedVideo(lessonId, youtubeUrl);
     actionToast({ actionData: result });
     setUploading(false);
     if (!result.error) {

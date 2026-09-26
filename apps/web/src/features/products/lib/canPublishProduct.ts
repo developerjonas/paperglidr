@@ -8,6 +8,7 @@ import {
   UserRole,
 } from "@/drizzle/schema"
 import { eq, and, inArray, ne, count } from "drizzle-orm"
+import { EMBED_PROVIDER_LABELS, EMBED_PROVIDER_NAMES } from "@repo/video-embeds"
 
 export const MIN_DESCRIPTION_LENGTH = 100
 
@@ -49,7 +50,7 @@ export async function canPublishProduct({
     reasons.push("Add at least one course before publishing.")
   } else if (!(await productHasPreviewVideo(courseIds))) {
     reasons.push(
-      'Add at least one lesson marked "preview" with a video (YouTube or uploaded file) before publishing.',
+      `Add at least one lesson marked "preview" with a ${EMBED_PROVIDER_LABELS} video before publishing.`,
     )
   }
 
@@ -131,7 +132,8 @@ async function productHasPreviewVideo(courseIds: string[]): Promise<boolean> {
         inArray(LessonAssetTable.lessonId, previewLessons.map((l) => l.id)),
         eq(LessonAssetTable.role, "primary"),
         eq(LessonAssetTable.status, "ready"),
-        inArray(LessonAssetTable.type, ["youtube", "video_file"]),
+        // Previews play embeds only (features/lessons/lib/freeTier).
+        inArray(LessonAssetTable.provider, EMBED_PROVIDER_NAMES),
       ),
     )
     .limit(1)
