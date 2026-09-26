@@ -1,13 +1,15 @@
+import { parseEmbedUrl } from '@repo/video-embeds';
 import { useQuery } from '@tanstack/react-query';
 import { useEventListener } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as WebBrowser from 'expo-web-browser';
 import { useRef } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import type { LessonAsset } from '@/api/types';
 import { api } from '@/api/v1';
 import { Embed } from '@/components/lesson/embed';
+import { VideoEmbed } from '@/components/lesson/video-embed';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -16,12 +18,23 @@ import { useTheme } from '@/hooks/use-theme';
 
 /**
  * The lesson's main content, like the website's LessonContentViewer: an
- * uploaded video plays here (and reports when it ends), a Bunny video or a
- * YouTube preview plays in an embed, a PDF opens in the in-app browser.
- * The signed URL is fetched fresh each time (they expire).
+ * uploaded video plays here, a free lesson's YouTube/Vimeo video plays
+ * through the provider's player (both report when they end), a Bunny video
+ * plays in an embed, a PDF opens in the in-app browser. The signed URL is
+ * fetched fresh each time (they expire). `fullscreen` fills the parent
+ * instead of a 16:9 box (the lesson screen in landscape).
  */
-export function LessonPlayer({ asset, onFinished }: { asset: LessonAsset | undefined; onFinished?: () => void }) {
+export function LessonPlayer({
+  asset,
+  onFinished,
+  fullscreen = false,
+}: {
+  asset: LessonAsset | undefined;
+  onFinished?: () => void;
+  fullscreen?: boolean;
+}) {
   const theme = useTheme();
+  const box: StyleProp<ViewStyle> = fullscreen ? styles.fill : undefined;
   const delivery = useQuery({
     queryKey: ['asset', asset?.url],
     queryFn: () => api.lessonAsset(asset!.url),
@@ -58,12 +71,14 @@ export function LessonPlayer({ asset, onFinished }: { asset: LessonAsset | undef
   }
 
   const d = delivery.data;
-  if (d.type === 'youtube') {
-    return <Embed uri={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(d.externalId)}?playsinline=1`} />;
+  if (d.type === 'youtube' || d.type === 'vimeo') {
+    // Checked against the shared allowlist again before it's loaded.
+    const embed = parseEmbedUrl(d.embedUrl);
+    if (embed != null) return <VideoEmbed key={d.embedUrl} embed={embed} onFinished={onFinished} style={box} />;
   }
-  if (d.type === 'bunny_embed') return <Embed uri={d.url} />;
-  if (asset.type === 'video_file' && d.type === 'inline') return <Video url={d.url} onFinished={onFinished} />;
-  if (asset.type === 'pdf') {
+  if (d.type === 'bunny_embed') return <Embed uri={d.url} style={box} />;
+  if (asset.type === 'video_file' && d.type === 'inline') return <Video url={d.url} onFinished={onFinished} style={box} />;
+  if (asset.type === 'pdf' && 'url' in d) {
     return (
       <Frame>
         <Icon ios="doc.richtext" android="picture_as_pdf" size={40} color={theme.primary} />
@@ -83,7 +98,7 @@ export function LessonPlayer({ asset, onFinished }: { asset: LessonAsset | undef
   );
 }
 
-function Video({ url, onFinished }: { url: string; onFinished?: () => void }) {
+function Video({ url, onFinished, style }: { url: string; onFinished?: () => void; style?: StyleProp<ViewStyle> }) {
   const player = useVideoPlayer(url, (p) => {
     p.play();
   });
@@ -94,7 +109,7 @@ function Video({ url, onFinished }: { url: string; onFinished?: () => void }) {
     reported.current = true;
     onFinished?.();
   });
-  return <VideoView player={player} style={styles.media} nativeControls allowsPictureInPicture contentFit="contain" />;
+  return <VideoView player={player} style={[styles.media, style]} nativeControls allowsPictureInPicture contentFit="contain" />;
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
@@ -104,6 +119,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   media: { width: '100%', aspectRatio: 16 / 9, backgroundColor: '#000' },
+  fill: { flex: 1, aspectRatio: undefined },
   frame: { alignItems: 'center', justifyContent: 'center', gap: Spacing.three, padding: Spacing.four },
   center: { textAlign: 'center' },
 });

@@ -1,12 +1,12 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 import { API_URL } from '@/api/config';
 
-/** A video embed (Bunny Stream, YouTube preview) — native WebView. */
-export function Embed({ uri }: { uri: string }) {
+/** A Bunny Stream embed — native WebView. (YouTube/Vimeo: VideoEmbed.) */
+export function Embed({ uri, style }: { uri: string; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={styles.media}>
+    <View style={[styles.media, style]}>
       <WebView
         source={{ uri, headers: { Referer: API_URL } }}
         allowsFullscreenVideo

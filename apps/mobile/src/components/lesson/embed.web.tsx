@@ -1,10 +1,10 @@
 import { createElement } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 /** A video embed on web: react-native-webview is native-only, so a plain iframe. */
-export function Embed({ uri }: { uri: string }) {
+export function Embed({ uri, style }: { uri: string; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={styles.media}>
+    <View style={[styles.media, style]}>
       {createElement('iframe', {
         src: uri,
         title: 'Lesson video',

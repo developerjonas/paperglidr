@@ -13,7 +13,8 @@ import {
 } from "@/drizzle/schema";
 import { wherePublicCourseSections } from "@/features/courseSections/permissions/sections";
 import { updateLessonCompleteStatus } from "@/features/lessons/actions/userLessonComplete";
-import { YouTubeVideoPlayer } from "@/features/lessons/components/YouTubeVideoPlayer";
+import { EmbedVideoPlayer } from "@/features/lessons/components/EmbedVideoPlayer";
+import { fromStoredEmbed } from "@repo/video-embeds";
 import { PdfLessonViewer } from "@/features/lessons/components/PdfLessonViewer";
 import { AssetDownloadButton } from "@/features/lessons/components/AssetDownloadButton";
 import { getLessonIdTag } from "@/features/lessons/db/cache/lessons";
@@ -247,7 +248,9 @@ function LessonContentViewer({
   asset: {
     id: string;
     type: string;
+    provider: string;
     externalId: string | null;
+    startSeconds: number | null;
     downloadable: boolean;
     fileName: string | null;
   } | null;
@@ -261,13 +264,9 @@ function LessonContentViewer({
     );
   }
 
-  if (asset.type === "youtube" && asset.externalId) {
-    return (
-      <YouTubeVideoPlayer
-        videoId={asset.externalId}
-        onFinishedVideo={onFinishedVideo}
-      />
-    );
+  const embed = fromStoredEmbed(asset);
+  if (embed != null) {
+    return <EmbedVideoPlayer embed={embed} onFinishedVideo={onFinishedVideo} />;
   }
 
   if (asset.type === "pdf") {

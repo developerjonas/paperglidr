@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
 import { keys } from '@/api/keys';
@@ -23,10 +25,20 @@ import { neighbours } from '@/lib/course';
  * One lesson, as the website's lesson page: the content, Previous / Mark
  * complete / Next, description (or the locked message), attachments,
  * report, and the lesson's Q&A. Free previews open for anyone.
+ *
+ * This screen may rotate (root layout): turned to landscape, the player
+ * fills the screen. Only styles change, so the video keeps playing.
  */
 export default function LessonScreen() {
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
   const theme = useTheme();
+  const window = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const landscape = Platform.OS !== 'web' && window.width > window.height;
+  const scroll = useRef<ScrollView>(null);
+  useEffect(() => {
+    if (landscape) scroll.current?.scrollTo({ y: 0, animated: false });
+  }, [landscape]);
   const { status } = useAuth();
   const queryClient = useQueryClient();
   const signedIn = status === 'signedIn';
@@ -106,17 +118,23 @@ export default function LessonScreen() {
   const attachments = l.assets.filter((a) => a.role === 'attachment');
 
   return (
-    <ThemedView style={styles.fill}>
-      <Stack.Screen options={{ title: '' }} />
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.playerWrap}>
+    <ThemedView style={[styles.fill, landscape && styles.black]}>
+      <Stack.Screen options={{ title: '', headerShown: !landscape, statusBarHidden: landscape }} />
+      <ScrollView ref={scroll} scrollEnabled={!landscape} contentContainerStyle={styles.scroll}>
+        <View
+          style={
+            landscape
+              ? { width: window.width, height: window.height, paddingLeft: insets.left, paddingRight: insets.right }
+              : styles.playerWrap
+          }>
           <LessonPlayer
             asset={primary}
+            fullscreen={landscape}
             onFinished={hasAccess && !l.isComplete ? () => complete.mutate(true) : undefined}
           />
         </View>
 
-        <View style={styles.column}>
+        <View style={[styles.column, landscape && styles.hidden]}>
           <View style={styles.titleRow}>
             <ThemedText type="subtitle" style={styles.title}>
               {l.name}
@@ -216,6 +234,8 @@ function Frame({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  black: { backgroundColor: '#000' },
+  hidden: { display: 'none' },
   scroll: { paddingBottom: Spacing.six, alignItems: 'center' },
   playerWrap: { width: '100%', maxWidth: MaxContentWidth },
   column: { width: '100%', maxWidth: MaxContentWidth, padding: Spacing.four, gap: Spacing.three },

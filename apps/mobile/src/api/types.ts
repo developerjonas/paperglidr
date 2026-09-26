@@ -195,14 +195,16 @@ export type LearnerCourse = Omit<MyCourse, 'totalSections'> & {
 
 export type LessonAsset = {
   id: string;
-  type: 'youtube' | 'video_file' | 'pdf' | 'image' | 'audio';
-  provider: 'youtube' | 'r2' | 'bunny';
+  type: 'youtube' | 'vimeo' | 'video_file' | 'pdf' | 'image' | 'audio';
+  provider: 'youtube' | 'vimeo' | 'r2' | 'bunny';
   role: 'primary' | 'attachment';
   fileName: string | null;
   mimeType: string | null;
   fileSizeBytes: number | null;
   downloadable: boolean;
   durationSeconds: number | null;
+  /** YouTube/Vimeo only: where playback starts. */
+  startSeconds: number | null;
   order: number;
   /** Path of GET /api/v1/lessons/:id/assets/:assetId. */
   url: string;
@@ -221,7 +223,8 @@ export type Lesson = {
 
 export type AssetDelivery =
   | { type: 'inline' | 'download' | 'bunny_embed'; url: string }
-  | { type: 'youtube'; externalId: string };
+  /** Free-tier lessons only (previews, free courses). */
+  | { type: 'youtube' | 'vimeo'; externalId: string; startSeconds: number | null; embedUrl: string };
 
 export type IssuedCertificateRef = { id: string; certificateCode: string; issuedAt: ISODate };
 

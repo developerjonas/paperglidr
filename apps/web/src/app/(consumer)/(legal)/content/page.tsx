@@ -89,10 +89,16 @@ export default function ContentPolicyPage() {
         <li>at least one course in it; and</li>
         <li>
           at least one lesson marked as a free <strong>preview</strong> with a
-          video (YouTube or an uploaded file), so students can see what they
-          are buying.
+          YouTube or Vimeo video, so students can see what they are buying.
         </li>
       </ul>
+      <p>
+        Free lessons (previews, and every lesson of a course you give away
+        for free) use a YouTube or Vimeo link for their video. Video you
+        upload to Chiyali is only for paid lessons, and only students who
+        have the course can watch it. PDFs and attachments work on any
+        lesson.
+      </p>
       <p>
         There is also a limit on how many products you can have on sale (or
         waiting for review) at once, which rises when you verify your phone

@@ -3,7 +3,7 @@
     "name": "Chiyali",
     "slug": "chiyali",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "chiyali",
     "userInterfaceStyle": "automatic",

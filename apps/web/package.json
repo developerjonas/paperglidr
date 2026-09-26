@@ -38,6 +38,7 @@
     "@repo/video-embeds": "workspace:*",
     "@sentry/nextjs": "11.0.0",
     "@t3-oss/env-nextjs": "^0.11.1",
+    "@vimeo/player": "^2.30.4",
     "better-auth": "^1.6.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
