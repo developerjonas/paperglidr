@@ -72,6 +72,8 @@ export type ProductDetail = {
   imageUrl: string;
   priceInRupees: number;
   categoryId: string | null;
+  /** The instructor's name, or the author's for products without an instructor profile. */
+  authorName: string;
   instructor: InstructorSummary | null;
   courses: { courseId: string; courseName: string }[];
   averageRating: number | null;

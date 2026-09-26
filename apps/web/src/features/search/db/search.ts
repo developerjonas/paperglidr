@@ -42,9 +42,13 @@ export async function searchProducts(params: SearchQuery) {
       CourseProductTable,
       eq(CourseProductTable.productId, ProductTable.id),
     )
+    // Hidden (moderated) reviews don't count, as on the product page.
     .leftJoin(
       CourseReviewTable,
-      eq(CourseReviewTable.courseId, CourseProductTable.courseId),
+      and(
+        eq(CourseReviewTable.courseId, CourseProductTable.courseId),
+        eq(CourseReviewTable.isHidden, false),
+      ),
     )
     .where(and(...conditions))
     .groupBy(ProductTable.id)

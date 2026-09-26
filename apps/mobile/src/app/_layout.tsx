@@ -36,6 +36,7 @@ export default function RootLayout() {
               name="(auth)/forgot-password"
               options={{ presentation: 'modal', title: 'Forgot password' }}
             />
+            <Stack.Screen name="report" options={{ presentation: 'modal', title: 'Report' }} />
           </Stack>
         </ThemeProvider>
       </AuthProvider>

@@ -10,6 +10,7 @@ import {
   CourseReviewTable,
   CourseTable,
   InstructorTable,
+  UserTable,
 } from "@/drizzle/schema";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import { wherePublicProducts } from "../permissions/products";
@@ -210,6 +211,8 @@ export async function getPublicProductListings({ limit }: { limit?: number } = {
     )
     .where(eq(ProductTable.status, "public"))
     .groupBy(ProductTable.id)
+    // Same order as the website's home page (getPublicProducts).
+    .orderBy(asc(ProductTable.name))
 
   const rows = limit ? await query.limit(limit) : await query
 
@@ -234,6 +237,14 @@ export async function getPublicProductDetail(productId: string) {
   if (!product) return null
   const { authorId, ...shown } = product
 
+  // "Created by": the instructor profile, or — for an author without one
+  // (e.g. an admin) — just their name, as the website's product page shows.
+  const [author] = await db
+    .select({ name: UserTable.name })
+    .from(UserTable)
+    .where(eq(UserTable.id, authorId))
+    .limit(1)
+
   // The public instructor profile only — never the user id or phone.
   const [instructor] = await db
     .select({
@@ -255,5 +266,10 @@ export async function getPublicProductDetail(productId: string) {
     .innerJoin(CourseTable, eq(CourseTable.id, CourseProductTable.courseId))
     .where(eq(CourseProductTable.productId, productId))
 
-  return { ...shown, instructor: instructor ?? null, courses }
+  return {
+    ...shown,
+    authorName: instructor?.name ?? author?.name ?? "Chiyali instructor",
+    instructor: instructor ?? null,
+    courses,
+  }
 }

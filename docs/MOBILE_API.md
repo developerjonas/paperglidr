@@ -75,8 +75,8 @@ const token = res.headers.get("set-auth-token"); // store it
 | GET | `/config` | Public | `siteUrl`, `supportEmail`, enabled payment `gateways`, `policy` numbers (refund window, fees, and so on) |
 | GET | `/categories` | Public | `[{ id, name, slug }]` |
 | GET | `/search?q=&categoryId=&minPrice=&maxPrice=&minRating=&sort=&page=` | Public | `{ page, results[] }`, 20 per page. `sort`: `relevance`, `rating`, `newest`, `price_asc`, `price_desc` |
-| GET | `/products?limit=` | Public | All public products with `avgRating` and `reviewCount` |
-| GET | `/products/:productId` | Public | Details, `instructor`, `courses[]`, `averageRating`, `reviewCount` |
+| GET | `/products?limit=` | Public | All public products, A–Z (the website's featured order), with `avgRating` and `reviewCount` |
+| GET | `/products/:productId` | Public | Details, `authorName` ("Created by"), `instructor` (or `null`), `courses[]`, `averageRating`, `reviewCount` |
 | GET | `/products/:productId/reviews?page=` | Public | Rating summary and reviews, 20 per page |
 | GET | `/products/:productId/me` | User | `{ owned, wishlisted, latestPurchase }`: whether to show Buy or Go to course |
 | GET | `/courses/:courseId` | Public | Outline as the product page shows it (public sections, public and preview lessons) |

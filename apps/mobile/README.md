@@ -50,6 +50,9 @@ and forgot password; the reset itself happens on the website.
 
 ## Status
 
-Step 4: sign-in, sign-up, forgot password, the Account hub, Profile, Edit
-profile and Change password work; the rest are still placeholders. Google sign-in needs a development build (native module) and
+Step 5: sign-in and the account pages, plus product browsing — Home
+(featured, highly rated, newest), Browse (search, categories, sort),
+product pages with their course content, reviews and reporting — work;
+the rest are still placeholders. Reusable cards live in
+src/components/catalog (ProductCard / ProductRow, CourseContentCard). Google sign-in needs a development build (native module) and
 comes later. Payments and checkout are not in the app.
