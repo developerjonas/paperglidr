@@ -95,7 +95,16 @@ export async function canAccessLessonContent(
   { userId, role }: { userId: string | undefined; role: UserRole | undefined },
   lessonId: string,
 ): Promise<
-  | { allowed: true; lesson: { id: string; courseId: string; status: LessonStatus } }
+  | {
+      allowed: true
+      lesson: { id: string; courseId: string; status: LessonStatus }
+      /**
+       * True for admins, the course author and users with access to the
+       * course; false when the lesson is open only because it's a preview.
+       * Hosted (R2 / Bunny) video needs this — see features/lessons/lib/freeTier.
+       */
+      hasCourseAccess: boolean
+    }
   | { allowed: false; reason: "not_found" | "sign_in_required" | "forbidden" }
 > {
   const lesson = await db.query.LessonTable.findFirst({
@@ -109,27 +118,33 @@ export async function canAccessLessonContent(
     },
   })
   if (lesson == null) return { allowed: false, reason: "not_found" }
-  const ok = {
+  const ok = (hasCourseAccess: boolean) => ({
     allowed: true as const,
     lesson: { id: lesson.id, courseId: lesson.section.course.id, status: lesson.status },
+    hasCourseAccess,
+  })
+
+  if (role === "admin") return ok(true)
+  if (userId != null && lesson.section.course.authorId === userId) return ok(true)
+
+  const hasAccessRow = async () => {
+    if (userId == null) return false
+    const access = await db.query.UserCourseAccessTable.findFirst({
+      where: and(
+        eq(UserCourseAccessTable.userId, userId),
+        eq(UserCourseAccessTable.courseId, lesson.section.course.id),
+      ),
+      columns: { userId: true },
+    })
+    return access != null
   }
 
-  if (role === "admin") return ok
-  if (userId != null && lesson.section.course.authorId === userId) return ok
-  if (lesson.status === "preview") return ok
+  if (lesson.status === "preview") return ok(await hasAccessRow())
   if (lesson.status === "private" || lesson.section.status !== "public") {
     return { allowed: false, reason: userId == null ? "sign_in_required" : "forbidden" }
   }
   if (userId == null) return { allowed: false, reason: "sign_in_required" }
-
-  const access = await db.query.UserCourseAccessTable.findFirst({
-    where: and(
-      eq(UserCourseAccessTable.userId, userId),
-      eq(UserCourseAccessTable.courseId, lesson.section.course.id),
-    ),
-    columns: { userId: true },
-  })
-  return access != null ? ok : { allowed: false, reason: "forbidden" }
+  return (await hasAccessRow()) ? ok(true) : { allowed: false, reason: "forbidden" }
 }
 
 export async function canViewLesson(

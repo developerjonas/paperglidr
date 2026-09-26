@@ -6,6 +6,7 @@ import { getDownloadUrl } from "@/services/storage/r2";
 import { getBunnyEmbedUrl } from "@/services/bunny/streamToken";
 import { captureEvent } from "@/lib/observability";
 import { youtubeAllowedFor } from "@/features/lessons/lib/youtube";
+import { isFreeTierLesson, isHostedVideoAsset, mayDeliverHostedVideo } from "@/features/lessons/lib/freeTier";
 import { routeError } from "@/lib/safeError";
 
 // Signed R2 URLs are the only thing guarding private files once issued,
@@ -24,7 +25,8 @@ const json = (body: unknown, status = 200) =>
  * Hands out a short-lived URL for one lesson asset. Access follows
  * canAccessLessonContent: preview lessons for anyone (signed out too),
  * the course author and admins for everything in their course, and
- * purchased access for the rest.
+ * purchased access for the rest. Hosted video additionally needs a
+ * non-free-tier lesson and real course access (features/lessons/lib/freeTier).
  */
 async function handle(
   _req: NextRequest,
@@ -45,6 +47,20 @@ async function handle(
   const asset = await getLessonAsset(assetId);
   // Pending = an upload that hasn't been confirmed yet (task 12).
   if (!asset || asset.lessonId !== lessonId || asset.status !== "ready") {
+    return json({ error: "Asset not found" }, 404);
+  }
+
+  // Chiyali-hosted video (R2 MP4, Bunny) is for paid, enrolled content:
+  // never for a free-tier lesson (free courses and previews use embeds),
+  // and never on preview access alone. Same answer as a missing asset, so
+  // it doesn't reveal that a hosted file exists.
+  if (
+    isHostedVideoAsset(asset) &&
+    !mayDeliverHostedVideo({
+      freeTier: await isFreeTierLesson(lessonId),
+      hasCourseAccess: access.hasCourseAccess,
+    })
+  ) {
     return json({ error: "Asset not found" }, 404);
   }
 
