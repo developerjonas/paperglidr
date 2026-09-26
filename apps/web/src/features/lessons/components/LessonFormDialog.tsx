@@ -12,9 +12,11 @@ export function LessonFormDialog({
   sections,
   defaultSectionId,
   lesson,
+  courseIsFree,
   children,
 }: {
   children: ReactNode
+  courseIsFree: boolean
   sections: { id: string; name: string }[]
   defaultSectionId?: string
   lesson?: {
@@ -41,6 +43,7 @@ export function LessonFormDialog({
             onSuccessAction={() => setIsOpen(false)}
             lesson={lesson}
             defaultSectionId={defaultSectionId}
+            courseIsFree={courseIsFree}
           />
         </div>
       </DialogContent>

@@ -13,7 +13,9 @@ import { deleteLesson, updateLessonOrders } from "../actions/lessons"
 export function SortableLessonList({
   sections,
   lessons,
+  courseIsFree,
 }: {
+  courseIsFree: boolean
   sections: {
     id: string
     name: string
@@ -45,7 +47,7 @@ export function SortableLessonList({
               {lesson.status === "preview" && <VideoIcon className="size-4" />}
               {lesson.name}
             </div>
-            <LessonFormDialog lesson={lesson} sections={sections}>
+            <LessonFormDialog lesson={lesson} sections={sections} courseIsFree={courseIsFree}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="ml-auto">
                   Edit

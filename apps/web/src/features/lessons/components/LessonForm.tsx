@@ -34,7 +34,10 @@ export function LessonForm({
   defaultSectionId,
   onSuccessAction,
   lesson,
+  courseIsFree,
 }: {
+  /** The course is in a free public product: every lesson is free-tier. */
+  courseIsFree: boolean
   sections: {
     id: string
     name: string
@@ -55,8 +58,8 @@ export function LessonForm({
   const [savedLessonId, setSavedLessonId] = useState<string | null>(
     lesson?.id ?? null
   )
-  // The status as saved on the server — what decides whether a YouTube
-  // video is allowed (free previews only).
+  // The status as saved on the server — with courseIsFree, what decides
+  // whether the lesson's video is a YouTube/Vimeo link or an upload.
   const [savedStatus, setSavedStatus] = useState<LessonStatus | null>(
     lesson?.status ?? null
   )
@@ -200,7 +203,10 @@ export function LessonForm({
       </Form>
 
       {savedLessonId ? (
-        <LessonAssetManager lessonId={savedLessonId} lessonStatus={savedStatus} />
+        <LessonAssetManager
+          lessonId={savedLessonId}
+          freeTier={courseIsFree || savedStatus === "preview"}
+        />
       ) : (
         <p className="text-sm text-muted-foreground">
           Save the lesson details first, then you&apos;ll be able to upload a PDF
