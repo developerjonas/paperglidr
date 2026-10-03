@@ -57,6 +57,12 @@ export const env = createEnv({
     SENTRY_DSN: z.string().url().optional(),
     SENTRY_ENVIRONMENT: z.string().min(1).optional(),
     SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
+    // Build time, for source map upload: the error service's base URL
+    // (GlitchTip: https://app.glitchtip.com). Unset = sentry.io.
+    SENTRY_URL: z.string().url().optional(),
+    // GlitchTip heartbeat monitor URL, pinged after each successful
+    // payment reconciliation run. Unset = no heartbeat.
+    CRON_HEARTBEAT_URL: z.string().url().optional(),
 
     // --- Mobile API ---
     // The user-specific /api/v1 routes (for the mobile app, not launching

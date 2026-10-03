@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
 // SDK is never initialised, and with no SENTRY_AUTH_TOKEN source maps are
 // not uploaded, so the app builds and runs with Sentry unset.
 export default withSentryConfig(nextConfig, {
+  // Error reporting goes to GlitchTip (Sentry-compatible): its URL, org
+  // and project slugs, and an auth token for source map upload.
+  sentryUrl: process.env.SENTRY_URL,
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,

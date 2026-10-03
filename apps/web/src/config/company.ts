@@ -16,7 +16,7 @@ export const COMPANY = {
 } as const
 
 /** One date for every policy page. Update it whenever any policy changes. */
-export const LEGAL_LAST_UPDATED = "23 September 2026"
+export const LEGAL_LAST_UPDATED = "3 October 2026"
 
 /** Shown instead of a number until it is issued — never a fake number. */
 export const REGISTRATION_PENDING = "Registration in progress"

@@ -51,6 +51,8 @@
         "SENTRY_AUTH_TOKEN",
         "SENTRY_ORG",
         "SENTRY_PROJECT",
+        "SENTRY_URL",
+        "CRON_HEARTBEAT_URL",
         "VERCEL_ENV",
         "CI",
         "BUNNY_STREAM_LIBRARY_ID",

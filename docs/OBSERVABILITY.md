@@ -1,6 +1,6 @@
-# Observability: Sentry, alerts and uptime checks
+# Observability: GlitchTip, alerts and uptime checks
 
-What the app reports, and the steps to set up alerts and uptime checks by hand. Everything here is optional at runtime. With the Sentry variables unset, the app builds and runs normally and reports nothing.
+What the app reports, and the steps to set up alerts and uptime checks by hand. Errors go to **GlitchTip** (hosted at app.glitchtip.com, project *Chiyali Web*), which speaks Sentry's protocol: the app uses the official `@sentry/nextjs` SDK and its `SENTRY_*` variables, pointed at GlitchTip. Everything here is optional at runtime. With the variables unset, the app builds and runs normally and reports nothing.
 
 ## What the app sends
 
@@ -15,9 +15,10 @@ What the app reports, and the steps to set up alerts and uptime checks by hand. 
 **Reported automatically:**
 - Uncaught errors in pages, route handlers and server actions, through `onRequestError` in `instrumentation.ts`.
 - Errors that the app catches and turns into a generic message, through `safeErrorMessage` / `actionError` / `routeError` in `src/lib/safeError.ts`. These are tagged `area=action` or `area=route`, plus `context=<name>`. Deliberate `UserFacingError`s (validation messages) are **not** reported.
-- Browser errors.
+- Browser errors. They're sent through `/api/monitoring` on our own domain (`app/api/monitoring/route.ts`), so ad blockers that block the error service's domain don't drop them. That route only forwards envelopes whose DSN is ours.
+- Not sent: release-health sessions (GlitchTip doesn't use them). No session replay.
 
-**Tagged for alerting** (the names are defined in `src/lib/observability.ts`):
+**Tagged for triage** (the names are defined in `src/lib/observability.ts`; filter the issue list by them):
 
 | Tag | Values | Where |
 |---|---|---|
@@ -36,78 +37,66 @@ What the app reports, and the steps to set up alerts and uptime checks by hand. 
 
 Every payment event also carries `gateway` (esewa / khalti / fonepay) and `source` (return / poll / cron / admin / success_page), plus the purchase ID as extra data.
 
-**Cron monitor:** `/api/cron/reconcile-payments` checks in to a Sentry cron monitor named `reconcile-payments` (schedule `15 18 * * *` — daily while on the Vercel Hobby plan, TODO back to `*/5 * * * *` — 5-minute margin). The monitor is created on the first check-in.
+**Cron heartbeat:** after each successful run, `/api/cron/reconcile-payments` sends a POST to `CRON_HEARTBEAT_URL`, a GlitchTip **heartbeat** monitor. GlitchTip alerts when the pings stop: the run failed, or the scheduler stopped calling it. The schedule is `15 18 * * *` (daily while on the Vercel Hobby plan; TODO back to `*/5 * * * *`). A failing heartbeat ping never fails the payment run.
 
 **Privacy.**
 - `sendDefaultPii` is off: no IPs, cookies or user details.
 - `beforeSend` (`src/lib/sentryOptions.ts`) removes request cookies, headers and bodies, and cuts the `params:` part out of database error messages, which can contain payout bank details or emails. The SQL itself is kept.
 - Tracing is off unless `SENTRY_TRACES_SAMPLE_RATE` is set.
-- The privacy policy lists Sentry as a processor only once you turn it on. See "Before you turn it on" below.
+- The privacy policy lists GlitchTip as the error-monitoring processor.
 
-## Steps: Sentry
+## Steps: GlitchTip
 
-1. Create a Sentry account (the free Developer plan is enough) and a project. Platform: **Next.js**. Name: `chiyali-web`.
-2. Project settings → Client Keys (DSN): copy the DSN.
-3. In Vercel, under Project → Settings → Environment Variables, add for **Production** (and Preview if you want preview errors too):
+1. GlitchTip → the organisation → project **Chiyali Web** (platform Next.js) → Settings: copy the **DSN**.
+2. In Vercel, under Project → Settings → Environment Variables, add for **Production** (and Preview if you want preview errors too):
    ```
    SENTRY_DSN=<dsn>
    NEXT_PUBLIC_SENTRY_DSN=<same dsn>
    SENTRY_ENVIRONMENT=production                 # Preview: preview
    NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
    ```
-   Optional, for readable stack traces (source map upload at build):
+   Optional, for readable stack traces (source maps are uploaded at build):
    ```
-   SENTRY_AUTH_TOKEN=<Settings → Auth Tokens → Create, scope project:releases + org:read>
-   SENTRY_ORG=<org slug>
-   SENTRY_PROJECT=chiyali-web
+   SENTRY_URL=https://app.glitchtip.com
+   SENTRY_AUTH_TOKEN=<GlitchTip → Profile → Auth Tokens → create, scope project:releases>
+   SENTRY_ORG=<organisation slug, as in GlitchTip's URL>
+   SENTRY_PROJECT=<project slug, as in GlitchTip's URL>
    ```
-4. Redeploy. `NEXT_PUBLIC_SENTRY_DSN` is inlined at build time.
-5. Check it works. On a preview deployment with the DSN set, open `/api/lessons/00000000-0000-0000-0000-000000000000/assets/x/deliver`. It returns a 404, so nothing is sent. To force a test event, use Sentry → Project → "Send a test event", or temporarily set a wrong `R2_BUCKET_NAME` on a preview and play an uploaded lesson. That produces an `area=deliver` error.
+   Without `SENTRY_AUTH_TOKEN` the build skips the upload and errors still arrive, just with minified stack traces.
+3. Redeploy. `NEXT_PUBLIC_SENTRY_DSN` is inlined at build time.
+4. Check it works: open `https://www.chiyali.com/api/monitoring` in a browser (it should say 405: the route exists and only accepts POST), then make a test error. For example, call `/api/health` on a preview whose database variables are wrong: it answers 503 and a "Health check failed" issue (`area=health`) appears.
 
-## Steps: alert rules (Sentry → Alerts → Create alert)
+## Steps: alerts (GlitchTip)
 
-Send every alert to email, and to the phone app or Slack if you have them. Use the Production environment.
+GlitchTip alerts are per project: "when *N* events happen within *M* minutes, notify these recipients". There are no per-tag rules, so start with one alert for any error, and use the tags above to triage.
 
-1. **Payments: money at risk** (issue alert)
-   - When: *a new issue is created* **or** *an issue changes state from resolved to unresolved* **or** *the issue is seen more than 1 time in 1 hour*.
-   - If: tag `area` equals `payments` **and** tag `payment_event` is in `verify_error, fulfilment_error, amount_mismatch, reused_transaction`.
-   - Then: notify immediately. Action interval: 5 minutes.
-   - Response: open `/admin/purchases` and look at the purchase ID in the event. `amount_mismatch` and `reused_transaction` leave the purchase `disputed`; check it in the gateway dashboard.
-2. **Payments: gateway not answering** (metric alert)
-   - Dataset: errors. Query: `area:payments payment_event:gateway_error`.
-   - Trigger: count > 10 in 15 minutes (critical), > 3 in 15 minutes (warning). Resolve below 1.
-   - This usually means a gateway outage. The cron keeps retrying; check the gateway's status and `/admin/purchases?status=pending`.
-3. **Payments: reconciliation cron** (cron monitor alert)
-   - Crons → `reconcile-payments` (it appears after the first run with the DSN set) → Alerts: notify on **missed** check-ins and **failed** runs, after 2 consecutive failures.
-   - Also add an issue alert: tag `area` equals `payments` and `context` equals `payments: cron reconcile`, notify on every new issue.
-4. **Lesson delivery 5xx** (metric alert)
-   - Dataset: errors. Query: `area:deliver`.
-   - Trigger: count > 5 in 5 minutes (critical), ≥ 1 in 5 minutes (warning).
-   - Usually an R2 credential or bucket problem (students can't play anything) or an asset row with no storage key.
-5. **Startup: payment gateway disabled** (issue alert)
-   - If: tag `area` equals `startup`. Level: error. Notify immediately.
-   - A live gateway failed its config check at boot and was switched off: the site is up but can't take that gateway's payments. The event's extra data says which variable is wrong. Fix it in Vercel and redeploy.
-6. **Invoice delivery gave up** (issue alert)
-   - If: tag `area` equals `invoices` **and** tag `invoice_event` equals `gave_up`. Notify by email.
-   - The buyer paid and has access, but never got their invoice. Check `last_delivery_error` on the invoice (usually a Resend domain or API key problem), fix it, then set `delivery_attempts = 0` on the affected invoices so the cron sends them.
-7. **Everything else** (issue alert): *a new issue is created*, environment Production, notify by email in a daily digest (action interval: 1 day). This covers `area=action`, `area=route` and browser errors without paging you.
+1. **Any error:** Project → Settings → Alerts → Create. 1 event within 1 minute. Recipients: your email, plus a webhook to Discord, Slack or Teams if you use one.
+2. **Error spike:** a second alert, 20 events within 5 minutes, to the same recipients.
+3. **Payment cron heartbeat:** Uptime Monitors → New → type **Heartbeat**, interval **1 day** (match the cron schedule; 5 minutes once it's back to every 5 minutes), with an hour of grace. Copy its URL into Vercel as `CRON_HEARTBEAT_URL` and redeploy.
+
+What to do when the alert is about:
+- **Payments** (`area=payments`): `verify_error`, `fulfilment_error`, `amount_mismatch` or `reused_transaction` mean money may be at risk. Open `/admin/purchases` and find the purchase ID in the event. `amount_mismatch` and `reused_transaction` leave the purchase `disputed`; check it in the gateway dashboard. Many `gateway_error`s in a short time usually mean a gateway outage; the cron keeps retrying.
+- **Startup** (`area=startup`): a live gateway failed its config check at boot and was switched off. The event's extra data says which variable is wrong; fix it in Vercel and redeploy.
+- **Lesson delivery** (`area=deliver`): usually an R2 credential or bucket problem (students can't play anything), or an asset row with no storage key.
+- **Invoices** (`area=invoices`, `invoice_event=gave_up`): the buyer has access but never got the invoice. Check `last_delivery_error` on the invoice, fix it, then set `delivery_attempts = 0` so the cron resends.
+- **Health** (`area=health`): the database is unreachable or a migration is missing. See "Deploying without downtime" below.
 
 ## Steps: uptime checks
 
-Use any external checker: UptimeRobot (free: 50 monitors, 5-minute checks) or Better Stack (free: 10 monitors, 3-minute checks). Always use the canonical host, `https://www.chiyali.com`. `chiyali.com` redirects there, and some checkers treat a redirect as down.
+Use GlitchTip's own **Uptime Monitors** (then alerts arrive in the same place), or UptimeRobot or Better Stack. Always use the canonical host, `https://www.chiyali.com`. `chiyali.com` redirects there, and some checkers treat a redirect as down.
 
 1. **Health (the main one):** `GET https://www.chiyali.com/api/health`, every 1–5 minutes.
    - Expect: status **200** and the body contains `"status":"ok"`. HEAD works too, if your checker only sends HEAD.
-   - It's red (**503**) when the database can't be reached **or** its schema doesn't match the code. A missing migration ("column … does not exist") shows up here within minutes, instead of on a customer's page. The body says which check failed (`database` or `schema`), never the error. The error goes to Sentry with tag `area=health`.
+   - It's red (**503**) when the database can't be reached **or** its schema doesn't match the code. A missing migration ("column … does not exist") shows up here within minutes, instead of on a customer's page. The body says which check failed (`database` or `schema`), never the error. The error goes to GlitchTip with tag `area=health`.
    - The body also has `commit` and `region`: which deployment answered. Handy right after a deploy or a rollback.
    - Alert after 2 failed checks, from at least 2 regions. Include one near Nepal (Singapore or India) if offered.
 2. **Home page:** `GET https://www.chiyali.com/`, every 5 minutes. Expect 200 **and** the body contains `Chiyali`. This catches what the health check can't: a page that fails to render.
 3. **Mobile API:** `GET https://www.chiyali.com/api/v1/config`, every 5 minutes. Expect 200 and the body contains `"siteName":"Chiyali"`. This is the first thing the app loads.
 4. **Cron endpoint is reachable:** `GET https://www.chiyali.com/api/cron/reconcile-payments`, **no** Authorization header, every 5 minutes.
    - Expect **401**. Don't store `CRON_SECRET` in a third-party checker.
-   - This proves the route is deployed and answering. Whether the cron actually *runs* is covered by the Sentry cron monitor (alert 3) and by Vercel → Project → Settings → Cron Jobs. A 404 means the route is missing; a 5xx means the app is broken. Either way, alert.
+   - This proves the route is deployed and answering. Whether the cron actually *runs* is covered by the heartbeat monitor (alerts, step 3) and by Vercel → Project → Settings → Cron Jobs. A 404 means the route is missing; a 5xx means the app is broken. Either way, alert.
 5. Optional: a **status page** in the same tool, listing monitors 1–3.
-6. Put the alert contacts in the same place as the Sentry alerts (email + phone).
+6. Put the alert contacts in the same place as the GlitchTip error alerts (email + phone).
 
 ## Deploying without downtime
 
@@ -131,5 +120,4 @@ Vercel deploys are already zero-downtime: a new deployment only receives traffic
 
 ## Before you turn it on
 
-- **Privacy policy:** add Sentry (Functional Software, Inc., USA) to the list of processors in `/privacy`, and mention error reports among the data you process. `docs/LEGAL_REVIEW.md` (cross-border processing) already asks the lawyer about processors outside Nepal.
-- **Region:** choose the EU or US data region when you create the Sentry org. It can't be changed later.
+- **Privacy policy:** `/privacy` lists GlitchTip as the error-monitoring processor. If you move to another service (e.g. Sentry), update that row and `LEGAL_LAST_UPDATED`. `docs/LEGAL_REVIEW.md` (cross-border processing) already asks the lawyer about processors outside Nepal.

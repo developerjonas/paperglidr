@@ -195,7 +195,7 @@ export default function PrivacyPolicyPage() {
             <td>The instructor&apos;s phone number and the code</td>
           </tr>
           <tr>
-            <td>Sentry (Functional Software, Inc.)</td>
+            <td>GlitchTip (app.glitchtip.com)</td>
             <td>Error monitoring: finding and fixing faults in the Platform</td>
             <td>Technical details of an error, such as the page, browser and device type, and the error message; set up not to receive your IP address, cookies or payment details</td>
           </tr>
