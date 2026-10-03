@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { instructorSchema, type InstructorFormValues } from "../schemas/instructors";
@@ -43,6 +43,8 @@ export function InstructorForm({
       acceptCreatorTerms: false,
     },
   });
+
+  const termsAccepted = useWatch({ control: form.control, name: "acceptCreatorTerms" });
 
   async function onSubmit(values: InstructorFormValues) {
     const res = await saveInstructorProfile(values);
@@ -146,7 +148,7 @@ export function InstructorForm({
         )}
         <Button
           type="submit"
-          disabled={form.formState.isSubmitting || (mustAcceptTerms && form.watch("acceptCreatorTerms") !== true)}
+          disabled={form.formState.isSubmitting || (mustAcceptTerms && termsAccepted !== true)}
         >
           Save profile
         </Button>

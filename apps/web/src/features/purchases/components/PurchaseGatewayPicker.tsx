@@ -104,7 +104,7 @@ export function PurchaseGatewayPicker({
         return
       }
       if (result.redirect.url) {
-        window.location.href = result.redirect.url
+        window.location.assign(result.redirect.url)
         return
       }
     }
