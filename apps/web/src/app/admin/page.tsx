@@ -33,6 +33,7 @@ import {
   LifeBuoyIcon,
   PackageIcon,
   SparklesIcon,
+  TrendingUpIcon,
   StarIcon,
   Undo2Icon,
   WalletIcon,
@@ -52,6 +53,12 @@ const MANAGEMENT_LINKS = [
     description: "Review products creators have asked to publish; feature live ones",
     href: "/admin/products",
     icon: PackageIcon,
+  },
+  {
+    title: "Launch",
+    description: "Sign-ups, sales, conversion and each creator's sales",
+    href: "/admin/launch",
+    icon: TrendingUpIcon,
   },
   {
     title: "Creators",
