@@ -54,12 +54,12 @@ iOS comes later, once there's an Apple developer account.
   - create a Google Service Account key and upload it to EAS;
   - then `npx eas-cli@latest build -p android --profile production` and `npx eas-cli@latest submit -p android` (goes to internal testing as a draft).
 - [ ] 🟠 **Reviewer login:** run `pnpm reviewer:create --yes` in `apps/web` against production (or give Claude the production database connection string). It prints the password once. Put it in Play Console → App content → App access.
-- [ ] 🟠✍️ **Store listing:**
+- [ ] 🟠✍️ **Store listing** (texts ready in [GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md)):
   - short and full description;
   - phone screenshots and the 1024×500 feature graphic (Claude can make them from the app with demo courses; real-phone ones look slightly more native);
   - Privacy Policy URL `https://www.chiyali.com/privacy`;
   - account deletion URL `https://www.chiyali.com/account/delete`.
-- [ ] 🟠✍️ **Data safety form and content rating questionnaire.** The app collects name, email, username and learning progress; nothing is sold. Q&A and reviews are user-generated content. Claude can check the code for exactly what's collected and write every answer for you to paste.
+- [ ] 🟠✍️ **Data safety form and content rating questionnaire** (answers ready in [GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md)). The app collects name, email, username and learning progress; nothing is sold. Q&A and reviews are user-generated content. Claude can check the code for exactly what's collected and write every answer for you to paste.
 - [ ] 🟡 **Later, for iOS:** Apple's payment rules. The app shows prices but has no buy button, so there's no in-app purchase; keep it that way, with no "buy on the website" links or wording in the iOS app.
 
 ## 4. Content supply (besides seeding courses yourself)
