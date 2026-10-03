@@ -8,10 +8,10 @@
     "scheme": "chiyali",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.thejonas.chiyali"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
+      "package": "com.developerjonas.chiyali",
       "adaptiveIcon": {
         "backgroundColor": "#0055ff",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -20,8 +20,7 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA"
-      ],
-      "package": "com.thejonas.chiyali"
+      ]
     },
     "web": {
       "output": "static",
@@ -54,6 +53,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2d47adb2-e2b2-4320-b3c3-29141e0788b8"
+      }
+    },
+    "owner": "thejonas"
   }
 }
