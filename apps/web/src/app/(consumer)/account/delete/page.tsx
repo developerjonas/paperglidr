@@ -9,8 +9,8 @@ import { COMPANY } from "@/config/company"
 import { SITE_NAME, pageMetadata } from "@/lib/site"
 
 // The "delete my account" page. Its URL is also the deletion link the
-// app stores ask for; signed-out visitors are sent to sign in and back
-// here (middleware.ts protects /account).
+// app stores ask for, so signed-out visitors see what's deleted and how to
+// do it (sign in here, in the app, or by email) instead of a redirect.
 export const metadata: Metadata = {
   ...pageMetadata({
     title: "Delete your account",
@@ -21,9 +21,8 @@ export const metadata: Metadata = {
 }
 
 export default async function DeleteAccountPage() {
-  const { userId, redirectToSignIn } = await getCurrentUser()
-  if (userId == null) return redirectToSignIn()
-  const blocker = await getAccountDeletionBlocker(userId)
+  const { userId } = await getCurrentUser()
+  const blocker = userId == null ? null : await getAccountDeletionBlocker(userId)
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -83,7 +82,20 @@ export default async function DeleteAccountPage() {
             <CardTitle className="text-lg">Delete my account</CardTitle>
           </CardHeader>
           <CardContent>
-            {blocker ? (
+            {userId == null ? (
+              <ol className="list-decimal space-y-2 pl-5 text-sm">
+                <li>
+                  <Link href="/sign-in?redirectTo=%2Faccount%2Fdelete" className="font-medium text-primary hover:underline">
+                    Sign in
+                  </Link>{" "}
+                  to your {SITE_NAME} account. You&apos;ll come back to this page.
+                </li>
+                <li>Type DELETE to confirm, and choose Delete my account.</li>
+                <li>
+                  In the {SITE_NAME} app it&apos;s the same: Account → Delete account.
+                </li>
+              </ol>
+            ) : blocker ? (
               <p className="text-sm">{blocker.message}</p>
             ) : (
               <DeleteAccountForm />

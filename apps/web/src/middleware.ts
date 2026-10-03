@@ -18,9 +18,14 @@ import { REF_COOKIE, REF_COOKIE_MAX_AGE_SECONDS } from "@/lib/referral"
 //   signed out).
 const protectedPrefixes = ["/account", "/certificates", "/purchases", "/teach", "/support"]
 const protectedExactPaths = ["/courses"]
+// Public on purpose inside a protected prefix: /account/delete is the
+// account deletion URL given to Google Play and the App Store, which must
+// explain how to delete an account to someone who isn't signed in.
+const publicExactPaths = ["/account/delete"]
 
 function isProtected(pathname: string) {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname
+  if (publicExactPaths.includes(path)) return false
   return (
     protectedExactPaths.includes(path) ||
     protectedPrefixes.some(prefix => path === prefix || path.startsWith(`${prefix}/`))
