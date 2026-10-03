@@ -17,7 +17,7 @@ export default async function AdminPayoutsPage() {
   const payouts = await getPendingPayouts()
 
   return (
-    <div className="container my-6 flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <PageHeader title="Payout Requests" />
 
       {payouts.length === 0 ? (

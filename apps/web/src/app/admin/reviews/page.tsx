@@ -18,7 +18,7 @@ export default async function AdminReviewsPage() {
   const reviews = await getReviewsForInstructor({ userId: userId!, role });
 
   return (
-    <div className="container my-6 flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <PageHeader title="All Course Reviews" />
       {reviews.length === 0 ? (
         <p className="text-sm text-muted-foreground">No reviews yet.</p>

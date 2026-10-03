@@ -27,7 +27,7 @@ export default async function CategoriesPage() {
   const categories = await getCategories();
 
   return (
-    <div className="container my-6 space-y-6">
+    <div className="space-y-6">
       {/* ---------------- HEADER & ACTIONS ---------------- */}
       <div className="flex items-center justify-between">
         <div>

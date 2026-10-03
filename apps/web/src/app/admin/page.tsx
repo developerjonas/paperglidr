@@ -1,342 +1,145 @@
+import Link from "next/link"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { db } from "@/drizzle/db";
-import {
-  CategoryTable,
-  CourseSectionTable,
-  CourseTable,
-  LessonTable,
-  ProductTable,
-  PurchaseTable,
-  UserCourseAccessTable,
-} from "@/drizzle/schema";
-import { getCourseGlobalTag } from "@/features/courses/db/cache/courses";
-import { getUserCourseAccessGlobalTag } from "@/features/courses/db/cache/userCourseAccess";
-import { getCourseSectionGlobalTag } from "@/features/courseSections/db/cache";
-import { getLessonGlobalTag } from "@/features/lessons/db/cache/lessons";
-import { getProductGlobalTag } from "@/features/products/db/cache";
-import { getPurchaseGlobalTag } from "@/features/purchases/db/cache";
-import { getCategoryGlobalTag } from "@/features/categories/db/cache";
-import { formatNumber, formatPrice } from "@/lib/formatters";
-import { count, countDistinct, isNotNull, sql, sum } from "drizzle-orm";
-import { cacheTag } from "next/dist/server/use-cache/cache-tag";
-import Link from "next/link";
-import {
-  CreditCardIcon,
-  DollarSignIcon,
-  FlagIcon,
-  FolderIcon,
-  LifeBuoyIcon,
-  PackageIcon,
-  SparklesIcon,
-  TrendingUpIcon,
-  StarIcon,
-  Undo2Icon,
-  WalletIcon,
-} from "lucide-react";
-import { ReactNode } from "react";
-import { requireAdmin } from "@/services/auth";
+  AdminPageHeader,
+  AttentionCard,
+  StatCard,
+  StatusBadge,
+  nprFromPaisa,
+  shortDateTime,
+} from "@/features/admin/components/AdminUi"
+import { getAttentionCounts } from "@/features/admin/db/attention"
+import { getCatalogueTotals, getRecentPurchases, getRecentSignups } from "@/features/admin/db/overview"
+import { getLaunchSummary } from "@/features/analytics/db/launch"
+import { formatNumber } from "@/lib/formatters"
+import { requireAdmin } from "@/services/auth"
 
-const MANAGEMENT_LINKS = [
-  {
-    title: "Categories",
-    description: "Manage course categories and metadata",
-    href: "/admin/categories",
-    icon: FolderIcon,
-  },
-  {
-    title: "Products",
-    description: "Review products creators have asked to publish; feature live ones",
-    href: "/admin/products",
-    icon: PackageIcon,
-  },
-  {
-    title: "Launch",
-    description: "Sign-ups, sales, conversion and each creator's sales",
-    href: "/admin/launch",
-    icon: TrendingUpIcon,
-  },
-  {
-    title: "Creators",
-    description: "Verified ticks, Founding-creator badges, Creator Terms",
-    href: "/admin/creators",
-    icon: SparklesIcon,
-  },
-  {
-    title: "Reports",
-    description: "Reported products and lessons",
-    href: "/admin/reports",
-    icon: FlagIcon,
-  },
-  {
-    title: "Purchases",
-    description: "Pending, failed and disputed payments; re-check with the gateway",
-    href: "/admin/purchases",
-    icon: CreditCardIcon,
-  },
-  {
-    title: "Refunds",
-    description: "Approve or reject refund requests; return the money in the gateway dashboard",
-    href: "/admin/refunds",
-    icon: Undo2Icon,
-  },
-  {
-    title: "Payouts",
-    description: "Review and process instructor payout requests",
-    href: "/admin/payouts",
-    icon: WalletIcon,
-  },
-  {
-    title: "Reviews",
-    description: "Moderate course reviews and instructor replies",
-    href: "/admin/reviews",
-    icon: StarIcon,
-  },
-  {
-    title: "Revenue",
-    description: "Platform revenue, monthly trends, and referral split",
-    href: "/admin/revenue",
-    icon: DollarSignIcon,
-  },
-  {
-    title: "Support",
-    description: "Respond to open support tickets",
-    href: "/admin/support",
-    icon: LifeBuoyIcon,
-  },
-];
-
-export default async function AdminPage() {
-  await requireAdmin();
-  const {
-    averageNetPurchasesPerCustomer,
-    netPurchases,
-    netSales,
-    refundedPurchases,
-    totalRefunds,
-  } = await getPurchaseDetails();
-
-  const [
-    totalStudents,
-    totalCategories,
-    totalProducts,
-    totalCourses,
-    totalCourseSections,
-    totalLessons,
-  ] = await Promise.all([
-    getTotalStudents(),
-    getTotalCategories(),
-    getTotalProducts(),
-    getTotalCourses(),
-    getTotalCourseSections(),
-    getTotalLessons(),
-  ]);
-
-  const STATS = [
-    { title: "Net Sales", value: formatPrice(netSales) },
-    { title: "Refunded Sales", value: formatPrice(totalRefunds) },
-    { title: "Un-Refunded Purchases", value: formatNumber(netPurchases) },
-    { title: "Refunded Purchases", value: formatNumber(refundedPurchases) },
-    {
-      title: "Purchases Per User",
-      value: formatNumber(averageNetPurchasesPerCustomer, {
-        maximumFractionDigits: 2,
-      }),
-    },
-    { title: "Students", value: formatNumber(totalStudents) },
-    { title: "Categories", value: formatNumber(totalCategories) },
-    { title: "Products", value: formatNumber(totalProducts) },
-    { title: "Courses", value: formatNumber(totalCourses) },
-    { title: "Course Sections", value: formatNumber(totalCourseSections) },
-    { title: "Lessons", value: formatNumber(totalLessons) },
-  ];
+/** The admin home: what needs doing now, the last 7 days, and recent activity. */
+export default async function AdminOverviewPage() {
+  await requireAdmin()
+  const [attention, week, totals, purchases, signups] = await Promise.all([
+    getAttentionCounts(),
+    getLaunchSummary(7),
+    getCatalogueTotals(),
+    getRecentPurchases(),
+    getRecentSignups(),
+  ])
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden section-muted border-b py-14 md:py-20">
-        <div className="container mx-auto px-4">
-          <h1 className="heading-display text-3xl sm:text-4xl">
-            Admin Dashboard
-          </h1>
+    <div className="flex flex-col gap-8">
+      <AdminPageHeader title="Overview" description="What needs your attention, and how the last 7 days went." />
+
+      <section aria-labelledby="attention" className="flex flex-col gap-3">
+        <h2 id="attention" className="text-lg font-semibold">Needs attention</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <AttentionCard label="Stuck payments" count={attention.stuckPayments} description="Pending over an hour: re-check them" href="/admin/purchases?status=pending" urgent />
+          <AttentionCard label="Disputed payments" count={attention.disputedPayments} description="Amount mismatch or reused transaction" href="/admin/purchases?status=disputed" urgent />
+          <AttentionCard label="Courses to review" count={attention.productsPending} description="Submitted by creators" href="/admin/products" />
+          <AttentionCard label="Refunds" count={attention.refunds} description="To decide, or to pay back" href="/admin/refunds" />
+          <AttentionCard label="Payout requests" count={attention.payouts} description="Creators waiting to be paid" href="/admin/payouts" />
+          <AttentionCard label="Support tickets" count={attention.openTickets} description="Open or in progress" href="/admin/support" />
+          <AttentionCard label="Reports" count={attention.reports} description="Reported content to check" href="/admin/reports" />
         </div>
       </section>
 
-      {/* ---------------- CONTENT ---------------- */}
-      <section className="container mx-auto px-4 py-10">
-        <div className="flex flex-col gap-10">
-          {/* ---- Stats overview ---- */}
-          <div className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold px-1">Overview</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-              {STATS.map((stat) => (
-                <StatCard key={stat.title} title={stat.title}>
-                  {stat.value}
-                </StatCard>
-              ))}
-            </div>
-          </div>
-
-          {/* ---- Management links ---- */}
-          <div className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold px-1">Manage</h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {MANAGEMENT_LINKS.map((link) => (
-                <LinkCard key={link.href} {...link} />
-              ))}
-            </div>
-          </div>
+      <section aria-labelledby="week" className="flex flex-col gap-3">
+        <div className="flex items-end justify-between gap-3">
+          <h2 id="week" className="text-lg font-semibold">Last 7 days</h2>
+          <Link href="/admin/launch" className="text-sm text-primary hover:underline">
+            More launch metrics →
+          </Link>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Sign-ups" value={formatNumber(week.signups)} />
+          <StatCard label="Paid sales" value={formatNumber(week.paidSales)} note={`${nprFromPaisa(week.gmvPaisa)} in sales`} />
+          <StatCard label="Free enrollments" value={formatNumber(week.freeEnrollments)} />
+          <StatCard
+            label="Checkout completion"
+            value={week.checkoutsStarted === 0 ? "—" : `${Math.round((100 * week.paidSales) / week.checkoutsStarted)}%`}
+            note={`${week.paidSales} of ${week.checkoutsStarted} checkouts`}
+          />
         </div>
       </section>
+
+      <section aria-labelledby="totals" className="flex flex-col gap-3">
+        <h2 id="totals" className="text-lg font-semibold">Platform</h2>
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <StatCard label="Users" value={formatNumber(totals.users)} href="/admin/users" />
+          <StatCard label="Creators" value={formatNumber(totals.creators)} href="/admin/creators" />
+          <StatCard label="Students" value={formatNumber(totals.students)} note="With at least one course" />
+          <StatCard label="Courses" value={formatNumber(totals.courses)} href="/admin/courses" />
+          <StatCard label="Live products" value={formatNumber(totals.liveProducts)} href="/admin/products" />
+          <StatCard label="Platform fee, 30 days" value={nprFromPaisa(totals.platformFee30dPaisa)} href="/admin/commissions" />
+        </div>
+      </section>
+
+      <div className="grid gap-8 xl:grid-cols-2">
+        <section aria-labelledby="recent-payments" className="flex flex-col gap-3">
+          <div className="flex items-end justify-between">
+            <h2 id="recent-payments" className="text-lg font-semibold">Recent payments</h2>
+            <Link href="/admin/purchases?status=all" className="text-sm text-primary hover:underline">All payments →</Link>
+          </div>
+          {purchases.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No payments yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>When</TableHead>
+                  <TableHead>Buyer / product</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {purchases.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{shortDateTime(p.createdAt)}</TableCell>
+                    <TableCell className="text-sm">
+                      <Link href={`/admin/purchases/${p.id}`} className="font-medium hover:underline">{p.product}</Link>
+                      <div className="text-muted-foreground">{p.buyer} · {p.gateway}</div>
+                    </TableCell>
+                    <TableCell className="text-right text-sm">{nprFromPaisa(p.paisa)}</TableCell>
+                    <TableCell><StatusBadge status={p.status} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </section>
+
+        <section aria-labelledby="recent-signups" className="flex flex-col gap-3">
+          <div className="flex items-end justify-between">
+            <h2 id="recent-signups" className="text-lg font-semibold">Recent sign-ups</h2>
+            <Link href="/admin/users" className="text-sm text-primary hover:underline">All users →</Link>
+          </div>
+          {signups.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No sign-ups yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>When</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Type</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {signups.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{shortDateTime(u.createdAt)}</TableCell>
+                    <TableCell className="text-sm">
+                      <Link href={`/admin/users/${u.id}`} className="font-medium hover:underline">{u.name}</Link>
+                      <div className="text-muted-foreground">{u.email}</div>
+                    </TableCell>
+                    <TableCell>{u.isCreator ? <StatusBadge status="paid" label="Creator" /> : <StatusBadge status="draft" label="Learner" />}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </section>
+      </div>
     </div>
-  );
-}
-
-function StatCard({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Card className="border-border bg-card shadow-sm">
-      <CardHeader className="text-center">
-        <CardDescription className="text-[11px] uppercase tracking-wide">
-          {title}
-        </CardDescription>
-        <CardTitle className="text-2xl font-bold">{children}</CardTitle>
-      </CardHeader>
-    </Card>
-  );
-}
-
-function LinkCard({
-  title,
-  description,
-  href,
-  icon: Icon,
-}: {
-  title: string;
-  description: string;
-  href: string;
-  icon: React.FC<React.SVGProps<SVGSVGElement>>;
-}) {
-  return (
-    <Link href={href} className="block transition-transform hover:scale-[1.02]">
-      <Card className="h-full border-border bg-card shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-lg">{title}</CardTitle>
-          <Icon className="h-5 w-5 text-muted-foreground" />
-        </CardHeader>
-        <CardHeader className="pt-0">
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-      </Card>
-    </Link>
-  );
-}
-
-async function getPurchaseDetails() {
-  "use cache";
-  cacheTag(getPurchaseGlobalTag());
-
-  const data = await db
-    .select({
-      totalSales: sql<number>`COALESCE(${sum(
-        PurchaseTable.pricePaidInPaisa,
-      )}, 0)`.mapWith(Number),
-      totalPurchases: count(PurchaseTable.id),
-      totalUsers: countDistinct(PurchaseTable.userId),
-      isRefund: isNotNull(PurchaseTable.refundedAt),
-    })
-    .from(PurchaseTable)
-    .groupBy((table) => table.isRefund);
-
-  const [refundData] = data.filter((row) => row.isRefund);
-  const [salesData] = data.filter((row) => !row.isRefund);
-
-  const netSales = (salesData?.totalSales ?? 0) / 100;
-  const totalRefunds = (refundData?.totalSales ?? 0) / 100;
-  const netPurchases = salesData?.totalPurchases ?? 0;
-  const refundedPurchases = refundData?.totalPurchases ?? 0;
-  const averageNetPurchasesPerCustomer =
-    salesData?.totalUsers != null && salesData.totalUsers > 0
-      ? netPurchases / salesData.totalUsers
-      : 0;
-
-  return {
-    netSales,
-    totalRefunds,
-    netPurchases,
-    refundedPurchases,
-    averageNetPurchasesPerCustomer,
-  };
-}
-
-async function getTotalStudents() {
-  "use cache";
-  cacheTag(getUserCourseAccessGlobalTag());
-
-  const [data] = await db
-    .select({ totalStudents: countDistinct(UserCourseAccessTable.userId) })
-    .from(UserCourseAccessTable);
-
-  if (data == null) return 0;
-  return data.totalStudents;
-}
-
-async function getTotalCategories() {
-  "use cache";
-  cacheTag(getCategoryGlobalTag());
-
-  const [data] = await db
-    .select({ totalCategories: count(CategoryTable.id) })
-    .from(CategoryTable);
-
-  if (data == null) return 0;
-  return data.totalCategories;
-}
-
-async function getTotalCourses() {
-  "use cache";
-  cacheTag(getCourseGlobalTag());
-
-  const [data] = await db
-    .select({ totalCourses: count(CourseTable.id) })
-    .from(CourseTable);
-
-  if (data == null) return 0;
-  return data.totalCourses;
-}
-
-async function getTotalProducts() {
-  "use cache";
-  cacheTag(getProductGlobalTag());
-
-  const [data] = await db
-    .select({ totalProducts: count(ProductTable.id) })
-    .from(ProductTable);
-  if (data == null) return 0;
-  return data.totalProducts;
-}
-
-async function getTotalLessons() {
-  "use cache";
-  cacheTag(getLessonGlobalTag());
-
-  const [data] = await db
-    .select({ totalLessons: count(LessonTable.id) })
-    .from(LessonTable);
-  if (data == null) return 0;
-  return data.totalLessons;
-}
-
-async function getTotalCourseSections() {
-  "use cache";
-  cacheTag(getCourseSectionGlobalTag());
-
-  const [data] = await db
-    .select({ totalCourseSections: count(CourseSectionTable.id) })
-    .from(CourseSectionTable);
-  if (data == null) return 0;
-  return data.totalCourseSections;
+  )
 }

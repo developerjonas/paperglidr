@@ -39,7 +39,7 @@ export default async function AdminProductsPage() {
   ])
 
   return (
-    <div className="container my-6 flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <PageHeader title="Product Review" />
       <p className="max-w-3xl text-sm text-muted-foreground">
         Products creators have asked to publish. Check the description,

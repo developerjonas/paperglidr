@@ -22,7 +22,7 @@ export default async function AdminSupportPage() {
   const tickets = await getAllTickets();
 
   return (
-    <div className="container my-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader title="Support Tickets" />
 
       <Table>

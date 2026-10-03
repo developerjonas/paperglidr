@@ -19,7 +19,7 @@ export default async function AdminSupportTicketPage({
   if (ticket == null) return notFound();
 
   return (
-    <div className="container my-6 max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <PageHeader title={ticket.subject} />

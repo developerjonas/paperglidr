@@ -29,7 +29,7 @@ export default async function AdminRevenuePage() {
   ]);
 
   return (
-    <div className="container my-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader title="Revenue" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

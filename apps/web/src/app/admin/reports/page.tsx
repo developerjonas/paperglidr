@@ -50,7 +50,7 @@ export default async function AdminReportsPage() {
   const { open, closed } = await getReportsForAdmin()
 
   return (
-    <div className="container my-6 flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <PageHeader title="Reports" />
       <p className="max-w-3xl text-sm text-muted-foreground">
         Reports from the product and lesson pages. To take something down,

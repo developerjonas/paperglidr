@@ -43,7 +43,7 @@ export default async function AdminRefundsPage() {
   const { pending, decided } = await getRefundRequestsForAdmin()
 
   return (
-    <div className="container my-6 flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <PageHeader title="Refund Requests" />
       <p className="max-w-3xl text-sm text-muted-foreground">
         <strong>Approve &amp; revoke</strong> marks the purchase refunded,
