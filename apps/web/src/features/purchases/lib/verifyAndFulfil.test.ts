@@ -169,6 +169,24 @@ describe("Invariant 4: paid and closed the tab -> access within one cron run", (
   })
 })
 
+describe("Time budget (an external cron's request timeout)", () => {
+  it("stops starting checks when the budget is used up; the next run picks them up", async () => {
+    const { purchase } = await createPendingPurchase({ ageMs: 3 * MINUTE })
+    const gateway = new StubGateway().answer(purchase.id, paid(999))
+
+    // No time at all: nothing is checked, everything is deferred.
+    const out = await reconcilePayments({ deps: stubDeps(gateway), limit: 10_000, timeBudgetMs: 0 })
+    expect(out.deferred).toBe(out.checked)
+    expect(gateway.callsFor(purchase.id)).toBe(0)
+    expect((await purchaseState(purchase.id)).status).toBe("pending")
+
+    // A run with time completes it.
+    const next = await reconcilePayments({ deps: stubDeps(gateway), limit: 10_000, timeBudgetMs: 60_000 })
+    expect(next.deferred).toBeUndefined()
+    expectFulfilledOnce(await purchaseState(purchase.id))
+  })
+})
+
 describe("Invariant 5: late success wins (failed -> completed)", () => {
   it("gateway said failed, later says paid", async () => {
     const { purchase } = await createPendingPurchase({ ageMs: 5 * MINUTE })

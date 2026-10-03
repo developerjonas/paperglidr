@@ -17,7 +17,7 @@ How money moves through Chiyali, how to configure it, and how to test it.
    | `/api/payments/khalti/return/[purchaseId]` | the buyer's browser returns from Khalti |
    | `/api/payments/fonepay/status/[purchaseId]` | the QR page polls every 3 seconds (owner only) |
    | the success page | as it loads |
-   | `/api/cron/reconcile-payments` | daily (TODO: every 5 minutes, see Cron) |
+   | `/api/cron/reconcile-payments` | every 5 minutes, from cron-job.org (see Cron) |
    | **Admin → Purchases → "Re-check payment"** | by hand |
 
    Any number of these can run at once; exactly one completes the purchase.
@@ -58,14 +58,19 @@ These are sent per request. Register or whitelist them where the gateway's dashb
 
 ### Cron
 
-- `apps/web/vercel.json` runs `/api/cron/reconcile-payments` once a day (18:15 UTC, midnight in Nepal). Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
-- **TODO:** the Vercel Hobby plan only allows daily crons. Go back to every 5 minutes (`*/5 * * * *` in `vercel.json` and `CRON_SCHEDULE` in the route) after upgrading, or point an external scheduler at the route every 5 minutes. Until then a closed-tab purchase can wait up to a day for access, and a run checks at most 50 purchases.
-- Any scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://chiyali.com/api/cron/reconcile-payments`.
+- **Scheduled on [cron-job.org](https://cron-job.org)**, not Vercel Cron (the Hobby plan only allows daily runs; `apps/web/vercel.json` has no crons). Set up the job like this:
+  - URL: `https://www.chiyali.com/api/cron/reconcile-payments`, method GET.
+  - Schedule: every 5 minutes.
+  - Advanced → Headers: `Authorization` = `Bearer <CRON_SECRET>` (the same value as in Vercel).
+  - Advanced → Timeout: 30 seconds (the maximum). Notifications: on failure, after 2 in a row.
+  - Use **Test run** after saving: it should answer 200 with a summary. 401 means the header or secret is wrong.
+- Each run is kept short for that 30-second limit: up to 25 payments, and it stops starting new checks after 20 seconds. Anything left (`"deferred": N` in the summary) is picked up 5 minutes later. Invoice retries and upload cleanup only run if time is left.
+- Any other scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://www.chiyali.com/api/cron/reconcile-payments`. Overlapping runs are safe: each purchase is fulfilled exactly once.
 - Without `CRON_SECRET` the endpoint refuses every request. It returns a summary such as `{"checked": 3, "outcomes": {"completed": 1, "pending": 2}, "invoices": {...}}`.
 - The same run also does housekeeping, each step isolated so one failure doesn't stop the others:
   - **Invoice retry.** Invoices whose PDF or email failed (`emailed_at` still null) are retried at most 5 times, at least 10 minutes apart, for 30 days. An atomic claim means the cron and the post-payment send never email the same invoice twice. After the 5th failure Sentry gets `area=invoices`, `invoice_event=gave_up`. The error is in `invoices.last_delivery_error`.
   - **Upload cleanup.** Lesson uploads still `pending` after 24 hours (never confirmed) are deleted, both the R2 object and the row. The R2 objects of replaced or removed lesson files are deleted 4 hours later, via the `storage_deletions` queue. The delay is longer than any signed playback URL, so nobody's video stops mid-lesson.
-- The run is wrapped in a Sentry cron monitor (`reconcile-payments`). See `docs/OBSERVABILITY.md`.
+- After each successful run it pings the GlitchTip heartbeat monitor (`CRON_HEARTBEAT_URL`), which alerts when runs stop. See `docs/OBSERVABILITY.md`.
 
 ## Tests
 
@@ -90,7 +95,7 @@ The stub gateway lives in `src/test/` only. A test fails if any app file imports
 3. Buy a real ₹10–50 test product and confirm:
    - you land on the success page with access granted, and the purchase row is `completed`;
    - there is one ledger row and one invoice row, and the invoice email arrives.
-4. **Closed-tab test:** pay, then close the tab before the redirect. Access should appear after the next cron run (daily for now; within 5 minutes once the TODO above is done).
+4. **Closed-tab test:** pay, then close the tab before the redirect. Access should appear after the next cron run, within 5 minutes.
 5. **Replay test:** reload the return URL. The purchase stays completed with one ledger row.
 6. **Cancel test:** cancel at the gateway. You reach the failure page, and the purchase later becomes `failed`.
 7. Refund the test payment in the merchant dashboard, then use Admin → revoke to remove access and reverse the ledger.

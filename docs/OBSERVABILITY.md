@@ -37,7 +37,7 @@ What the app reports, and the steps to set up alerts and uptime checks by hand. 
 
 Every payment event also carries `gateway` (esewa / khalti / fonepay) and `source` (return / poll / cron / admin / success_page), plus the purchase ID as extra data.
 
-**Cron heartbeat:** after each successful run, `/api/cron/reconcile-payments` sends a POST to `CRON_HEARTBEAT_URL`, a GlitchTip **heartbeat** monitor. GlitchTip alerts when the pings stop: the run failed, or the scheduler stopped calling it. The schedule is `15 18 * * *` (daily while on the Vercel Hobby plan; TODO back to `*/5 * * * *`). A failing heartbeat ping never fails the payment run.
+**Cron heartbeat:** after each successful run, `/api/cron/reconcile-payments` sends a POST to `CRON_HEARTBEAT_URL`, a GlitchTip **heartbeat** monitor. GlitchTip alerts when the pings stop: the run failed, or the scheduler stopped calling it. The run is scheduled every 5 minutes on cron-job.org (docs/PAYMENTS.md, "Cron"). A failing heartbeat ping never fails the payment run.
 
 **Privacy.**
 - `sendDefaultPii` is off: no IPs, cookies or user details.
@@ -72,7 +72,7 @@ GlitchTip alerts are per project: "when *N* events happen within *M* minutes, no
 
 1. **Any error:** Project → Settings → Alerts → Create. 1 event within 1 minute. Recipients: your email, plus a webhook to Discord, Slack or Teams if you use one.
 2. **Error spike:** a second alert, 20 events within 5 minutes, to the same recipients.
-3. **Payment cron heartbeat:** Uptime Monitors → New → type **Heartbeat**, interval **1 day** (match the cron schedule; 5 minutes once it's back to every 5 minutes), with an hour of grace. Copy its URL into Vercel as `CRON_HEARTBEAT_URL` and redeploy.
+3. **Payment cron heartbeat:** Uptime Monitors → New → type **Heartbeat**, interval **5 minutes** (the cron-job.org schedule), with 10 minutes of grace. Copy its URL into Vercel as `CRON_HEARTBEAT_URL` and redeploy.
 
 What to do when the alert is about:
 - **Payments** (`area=payments`): `verify_error`, `fulfilment_error`, `amount_mismatch` or `reused_transaction` mean money may be at risk. Open `/admin/purchases` and find the purchase ID in the event. `amount_mismatch` and `reused_transaction` leave the purchase `disputed`; check it in the gateway dashboard. Many `gateway_error`s in a short time usually mean a gateway outage; the cron keeps retrying.
@@ -94,7 +94,7 @@ Use GlitchTip's own **Uptime Monitors** (then alerts arrive in the same place), 
 3. **Mobile API:** `GET https://www.chiyali.com/api/v1/config`, every 5 minutes. Expect 200 and the body contains `"siteName":"Chiyali"`. This is the first thing the app loads.
 4. **Cron endpoint is reachable:** `GET https://www.chiyali.com/api/cron/reconcile-payments`, **no** Authorization header, every 5 minutes.
    - Expect **401**. Don't store `CRON_SECRET` in a third-party checker.
-   - This proves the route is deployed and answering. Whether the cron actually *runs* is covered by the heartbeat monitor (alerts, step 3) and by Vercel → Project → Settings → Cron Jobs. A 404 means the route is missing; a 5xx means the app is broken. Either way, alert.
+   - This proves the route is deployed and answering. Whether the cron actually *runs* is covered by the heartbeat monitor (alerts, step 3) and by the job's run history on cron-job.org. A 404 means the route is missing; a 5xx means the app is broken. Either way, alert.
 5. Optional: a **status page** in the same tool, listing monitors 1–3.
 6. Put the alert contacts in the same place as the GlitchTip error alerts (email + phone).
 

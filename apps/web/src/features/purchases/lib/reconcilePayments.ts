@@ -25,6 +25,8 @@ const CONCURRENCY = 5;
 export type ReconcileSummary = {
   checked: number;
   outcomes: Partial<Record<FulfilOutcome | "expired", number>>;
+  /** Left for the next run because the time budget ran out. */
+  deferred?: number;
 };
 
 /**
@@ -36,7 +38,19 @@ export async function reconcilePayments({
   now = new Date(),
   limit = 50,
   deps = defaultFulfilDeps,
-}: { now?: Date; limit?: number; deps?: FulfilDeps } = {}): Promise<ReconcileSummary> {
+  timeBudgetMs,
+}: {
+  now?: Date;
+  limit?: number;
+  deps?: FulfilDeps;
+  /**
+   * Stop starting new checks after this long (the run's caller may give up
+   * on the request, e.g. cron-job.org after 30s). The rest are counted as
+   * `deferred` and picked up by the next run. Unset = no limit.
+   */
+  timeBudgetMs?: number;
+} = {}): Promise<ReconcileSummary> {
+  const startedAt = Date.now();
   const paidGateways = [...GATEWAY_NAMES];
 
   const pending = await db
@@ -96,6 +110,10 @@ export async function reconcilePayments({
 
   // Bounded concurrency: the whole batch must fit in one function run.
   for (let i = 0; i < queue.length; i += CONCURRENCY) {
+    if (timeBudgetMs != null && Date.now() - startedAt >= timeBudgetMs) {
+      summary.deferred = queue.length - i;
+      break;
+    }
     await Promise.all(
       queue.slice(i, i + CONCURRENCY).map(item =>
         reconcileOne(item).catch(error => {

@@ -7,17 +7,16 @@ import { captureError } from "@/lib/observability";
 import { retryInvoiceDeliveries } from "@/features/invoices/lib/deliverInvoice";
 import { cleanUpUploads } from "@/features/lessons/lib/uploadCleanup";
 
-// Batch of up to 50 gateway checks at concurrency 5.
+// Each run is kept short enough for an external scheduler's request
+// timeout (cron-job.org gives up after 30s): payment checks stop starting
+// after RUN_BUDGET_MS and the rest wait for the next run, 5 minutes later.
 export const maxDuration = 60;
+const RUN_BUDGET_MS = 20_000;
+const BATCH_SIZE = 25;
 
-// The schedule lives in apps/web/vercel.json; the GlitchTip heartbeat
-// monitor's interval must match it (docs/OBSERVABILITY.md).
-// TODO(cron): back to every 5 minutes ("*/5 * * * *") once off the Vercel
-// Hobby plan, which only allows daily crons. Until then a paid-but-closed-tab
-// purchase can wait up to a day for access, and each run checks at most 50
-// purchases. Stopgap: any external scheduler can call this route every 5
-// minutes with the Bearer CRON_SECRET (docs/PAYMENTS.md).
-// Now: daily at 18:15 UTC ("15 18 * * *") = midnight in Nepal (UTC+5:45).
+// Scheduled every 5 minutes on cron-job.org (docs/PAYMENTS.md, "Cron"),
+// not Vercel Cron: the Hobby plan only allows daily runs. The GlitchTip
+// heartbeat monitor's interval must match (docs/OBSERVABILITY.md).
 
 // Constant-time compare that doesn't leak the secret's length.
 function secretMatches(presented: string, secret: string) {
@@ -39,19 +38,22 @@ async function step<T>(name: string, job: () => Promise<T>) {
 }
 
 async function runJobs() {
+  const startedAt = Date.now();
   // Payment reconciliation keeps its summary at the top level (other
   // tools read { checked, outcomes }); a failure here fails the run.
-  const payments = await reconcilePayments();
-  const invoices = await step("invoice retry", () => retryInvoiceDeliveries());
-  const uploads = await step("upload cleanup", () => cleanUpUploads());
+  const payments = await reconcilePayments({ limit: BATCH_SIZE, timeBudgetMs: RUN_BUDGET_MS });
+  // Housekeeping only if there's time left; otherwise next run.
+  const timeLeft = () => Date.now() - startedAt < RUN_BUDGET_MS;
+  const invoices = timeLeft() ? await step("invoice retry", () => retryInvoiceDeliveries()) : { skipped: "time budget" };
+  const uploads = timeLeft() ? await step("upload cleanup", () => cleanUpUploads()) : { skipped: "time budget" };
   return { ...payments, invoices, uploads };
 }
 
 /**
  * Payment reconciliation, then invoice retries and upload cleanup.
  * Scheduler-agnostic: any caller presenting
- * `Authorization: Bearer <CRON_SECRET>` may trigger it (Vercel Cron sends
- * exactly that header when CRON_SECRET is set). Without CRON_SECRET
+ * `Authorization: Bearer <CRON_SECRET>` may trigger it (set that header on
+ * the cron-job.org job; Vercel Cron would send it too). Without CRON_SECRET
  * configured, every request is refused.
  */
 async function handle(request: Request) {
