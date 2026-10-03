@@ -37,21 +37,3 @@ export async function updateUser(
 
   return updatedUser
 }
-
-export async function deleteUser({ id }: { id: string }) {
-  const [deletedUser] = await db
-    .update(UserTable)
-    .set({
-      deletedAt: new Date(),
-      email: `redacted-${id}@deleted.com`,
-      name: "Deleted User",
-      image: null,
-    })
-    .where(eq(UserTable.id, id))
-    .returning()
-
-  if (deletedUser == null) throw new Error("Failed to delete user")
-  revalidateUserCache(deletedUser.id)
-
-  return deletedUser
-}

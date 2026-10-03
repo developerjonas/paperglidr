@@ -84,7 +84,8 @@ export default function AccountScreen() {
 
       {signedIn ? (
         <ListSection>
-          <ListRow label="Sign out" tone="danger" onPress={() => confirmSignOut(signOut)} last />
+          <ListRow label="Sign out" tone="danger" onPress={() => confirmSignOut(signOut)} />
+          <ListRow label="Delete account" tone="danger" onPress={() => router.push('/profile/delete-account')} last />
         </ListSection>
       ) : null}
     </Screen>

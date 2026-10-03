@@ -11,7 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** Pill button, as on the website: primary (blue) or outline. */
+/** Pill button, as on the website: primary (blue), outline, or danger (red, for actions that can't be undone). */
 export function Button({
   title,
   variant = 'primary',
@@ -21,13 +21,13 @@ export function Button({
   ...props
 }: Omit<PressableProps, 'children' | 'style'> & {
   title: string;
-  variant?: 'primary' | 'outline';
+  variant?: 'primary' | 'outline' | 'danger';
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
   const isDisabled = disabled || loading;
-  const primary = variant === 'primary';
+  const filled = variant !== 'outline';
 
   return (
     <Pressable
@@ -36,15 +36,15 @@ export function Button({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.base,
-        primary
-          ? { backgroundColor: theme.primary }
+        filled
+          ? { backgroundColor: variant === 'danger' ? theme.danger : theme.primary }
           : { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.background },
         { opacity: isDisabled ? 0.5 : pressed ? 0.8 : 1 },
         style,
       ]}
       {...props}>
-      {loading ? <ActivityIndicator color={primary ? theme.onPrimary : theme.text} /> : null}
-      <ThemedText type="smallBold" style={{ fontSize: 16, color: primary ? theme.onPrimary : theme.text }}>
+      {loading ? <ActivityIndicator color={filled ? theme.onPrimary : theme.text} /> : null}
+      <ThemedText type="smallBold" style={{ fontSize: 16, color: filled ? theme.onPrimary : theme.text }}>
         {title}
       </ThemedText>
     </Pressable>

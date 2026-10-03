@@ -54,6 +54,9 @@ export const api = {
 
   // Signed in
   me: () => apiFetch<Me>(v1('/me')),
+  /** Closes the account for good; `confirmation` must be "DELETE". The token stops working at once. */
+  deleteAccount: (confirmation: string) =>
+    apiFetch<MessageResult>(v1('/me'), { method: 'DELETE', body: { confirmation } }),
   productViewerState: (productId: string) =>
     apiFetch<ProductViewerState>(v1(`/products/${id(productId)}/me`)),
   myCourses: () => apiFetch<MyCourse[]>(v1('/me/courses')),

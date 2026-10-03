@@ -45,13 +45,8 @@ const QUICK_LINKS = [
 const ACCOUNT_SECTIONS = [
   { id: "profile", label: "Profile", icon: UserIcon },
   { id: "security", label: "Security", icon: ShieldIcon },
-  {
-    id: "privacy",
-    label: "Privacy & Data",
-    icon: DatabaseIcon,
-    comingSoon: true,
-  },
-];
+  { id: "privacy", label: "Privacy & Data", icon: DatabaseIcon },
+] as { id: string; label: string; icon: typeof UserIcon; comingSoon?: boolean }[];
 
 export default function AccountPage() {
   const router = useRouter();
@@ -259,24 +254,35 @@ export default function AccountPage() {
               </CardContent>
             </Card>
 
-            {/* ---- Privacy & Data (stub for later) ---- */}
+            {/* ---- Privacy & Data ---- */}
             <Card
               id="privacy"
-              className="scroll-mt-24 border-dashed border-border bg-secondary/40 shadow-sm"
+              className="scroll-mt-24 border-border bg-card shadow-sm"
             >
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">Privacy & Data</CardTitle>
-                  <Badge variant="secondary" className="rounded-md">
-                    Coming soon
-                  </Badge>
-                </div>
+                <CardTitle className="text-lg">Privacy & Data</CardTitle>
                 <CardDescription>
-                  Export or delete your personal data, and manage how your
-                  information is used — required under Nepal&apos;s E-Commerce
-                  Act.
+                  How we use your information is in our{" "}
+                  <Link href="/privacy" className="text-primary hover:underline">
+                    Privacy Policy
+                  </Link>
+                  .
                 </CardDescription>
               </CardHeader>
+              <CardContent>
+                <Link
+                  href="/account/delete"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm transition-colors hover:bg-accent"
+                >
+                  <span>
+                    <span className="block font-medium text-destructive">Delete account</span>
+                    <span className="block text-muted-foreground">
+                      Permanently close your account and remove your personal information.
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Link>
+              </CardContent>
             </Card>
 
             {/* ---- Danger zone ---- */}

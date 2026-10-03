@@ -38,6 +38,7 @@ Roles are read fresh from the database on every request (`getUser` is memoized p
 | | `getInstructorPublishedCourses` | none | public data (published courses of an instructor) | ✅ |
 | `features/instructors/actions/phoneOtp.ts` | `requestInstructorPhoneOtp` | signed-in | caller's own instructor profile | ✅ |
 | | `verifyInstructorPhoneOtp` | signed-in | caller's own profile; hashed code, 5 attempts | ✅ |
+| `features/users/actions/deleteAccount.ts` | `deleteMyAccount` | signed-in | only the caller's own account; typed `DELETE` confirmation; refused for admins and for creators with courses, products, earnings or payouts | 🆕 account deletion (App Store / Play) |
 | `features/lessonQuestions/actions/lessonQuestions.ts` | `askLessonQuestion` | owner | caller has purchased the course | ✅ |
 | | `replyToLessonQuestion` | owner | purchaser, course author, or admin | ✅ |
 | `features/images/actions/imageUploads.ts` | `requestImageUploadUrl` | signed-in | staging key is under the caller's own `image-uploads/<purpose>/<userId>/`; JPEG/PNG/WebP ≤ 5 MB | 🆕 fix/funnel |

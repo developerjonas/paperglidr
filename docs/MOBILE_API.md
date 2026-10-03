@@ -89,6 +89,7 @@ const token = res.headers.get("set-auth-token"); // store it
 | Method | Path | Access | Returns |
 | --- | --- | --- | --- |
 | GET | `/me` | User | Profile, `role`, `instructor` (or `null`) |
+| DELETE | `/me` | User | Deletes the account for good. Body `{ "confirmation": "DELETE" }`. The Bearer token stops working at once. 400 without the confirmation; 409 with a message for creators who have courses or earnings (they go through support) and for admins. What is removed and kept: `features/users/lib/deleteAccount.ts`; the same as the website's `/account/delete` |
 | GET | `/me/courses` | User | The website's "My courses": courses the user can open, A–Z, with `totalSections`, `totalLessons`, `completedLessons` (published lessons only) |
 | GET | `/me/courses/:courseId` | User | Player outline: `sections[].lessons[]` with `isComplete` and `isPreview`, progress, and `myReview`. 403 if not bought. `review: { canWrite, completionPercent, requiredPercent }` (a review needs 50% of published lessons) |
 | GET | `/lessons/:lessonId` | User, or signed out for preview lessons | Lesson, `isComplete`, `assets[]` (each with a `url` to the next row, and `startSeconds` for YouTube/Vimeo). Only assets you may play are listed, see [Free lessons and video](#free-lessons-and-video) |

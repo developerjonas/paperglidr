@@ -33,6 +33,8 @@ type AuthContextValue = {
   }) => Promise<void>;
   /** "credential" (password), "google", "github". */
   listSignInMethods: () => Promise<string[]>;
+  /** Deletes the account on the server, then signs out here. */
+  deleteAccount: (confirmation: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -125,6 +127,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (newToken) await startSession(newToken);
       },
       listSignInMethods: () => authApi.listSignInMethods(requireSession(tokenRef.current)),
+      deleteAccount: async (confirmation) => {
+        requireSession(tokenRef.current);
+        await api.deleteAccount(confirmation);
+        // The server already ended every session; just forget it here.
+        await signOutLocally();
+        queryClient.clear();
+      },
     }),
     [restoring, token, me.data, startSession, signOutLocally, queryClient],
   );
