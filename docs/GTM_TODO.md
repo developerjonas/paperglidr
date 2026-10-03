@@ -37,20 +37,12 @@ iOS comes later, once there's an Apple developer account.
 
 Realistic public launch on Play: **around 22–27 October**, if 12+ testers are opted in by 5–6 October.
 
-- [x] 🟠 **App ready for its first build:** expo-doctor 21/21, the Android bundle exports, the production API responds. The upload keystore was generated and is stored by EAS. Never lose access to the Expo account (@thejonas): every update must be signed with that keystore.
-- [ ] 🟠 **First builds (started 3 Oct on EAS):** the production AAB (versionCode 2) for Play, and a preview APK to install on phones. Download both from expo.dev → chiyali → Builds.
-- [ ] 🟠 **Test the preview APK on real phones:**
-  - rotating a lesson to landscape (full-screen player);
-  - YouTube/Vimeo lessons marking themselves complete when the video ends;
-  - the splash screen, which only shows correctly in a preview or production build;
-  - a crash report reaching GlitchTip's "Chiyali Expo App" project.
-- [ ] 🟠 **Play Console: create the app.** Name `Chiyali: Courses in Nepal`, default language English, App, Free. The first upload sets the package `com.developerjonas.chiyali`.
 - [ ] 🟠✍️ **Store listing and App content forms.** Every answer is ready to paste in [GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md):
   - listing texts;
   - app access (the reviewer account);
   - ads, content rating, target audience and Data safety;
   - account deletion URL `https://www.chiyali.com/account/delete` and privacy policy `https://www.chiyali.com/privacy`;
-  - graphics: a 512×512 icon, the 1024×500 feature graphic and at least 2 phone screenshots (Claude can make them from the app with demo courses).
+  - graphics: done, in `~/Desktop/Chiyali-Play-assets/` (512×512 icon, 1024×500 feature graphic, 8 phone screenshots at 1080×1920 made from the app with demo courses). Before the public launch, replace the screenshots with ones showing real courses.
 - [ ] 🟠 **Upload the first AAB by hand.** Google requires the very first upload to go through the Play Console, not the API. Go to Testing → Internal testing → Create release, and upload the `.aab`. Add yourself as an internal tester and install it from Play to check it.
 - [ ] 🟠⏳ **Closed test: 12+ testers for 14 days (start now):**
   - create a Google Group (e.g. `chiyali-testers@googlegroups.com`) and add it as the closed test's tester list: one list that's easy to grow;
