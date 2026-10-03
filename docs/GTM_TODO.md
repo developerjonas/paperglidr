@@ -10,7 +10,6 @@ Last updated: 2026-10-03.
 
 ## 1. Ship what's built (this week)
 
-- [ ] 🔴 **Push the latest commits** (app crash reporting, draft-course rule, YouTube playlist import, lint fixes): ask Claude to push. Vercel deploys automatically.
 - [ ] 🔴 **Run migration 0013 on the production database** if it isn't done yet: the deployed code already reads these columns (if `https://www.chiyali.com/api/health` shows `"schema":"fail"`, this is why):
   ```sql
   ALTER TABLE "products"    ADD COLUMN IF NOT EXISTS "featured_at" timestamp with time zone;
@@ -53,7 +52,6 @@ iOS comes later, once there's an Apple developer account.
   - create the app with package `com.developerjonas.chiyali`;
   - create a Google Service Account key and upload it to EAS;
   - then `npx eas-cli@latest build -p android --profile production` and `npx eas-cli@latest submit -p android` (goes to internal testing as a draft).
-- [ ] 🟠 **Reviewer login:** run `pnpm reviewer:create --yes` in `apps/web` against production (or give Claude the production database connection string). It prints the password once. Put it in Play Console → App content → App access.
 - [ ] 🟠✍️ **Store listing** (texts ready in [GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md)):
   - short and full description;
   - phone screenshots and the 1024×500 feature graphic (Claude can make them from the app with demo courses; real-phone ones look slightly more native);
