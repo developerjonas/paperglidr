@@ -10,63 +10,19 @@ Last updated: 2026-09-28.
 
 ---
 
-## 1. Company and government (start today ⏳)
+## TODOS:
 
-Everything payments and app stores need depends on these.
-
-- [ ] 🔴⏳ **Register the company** at the Office of the Company Registrar (OCR) as *Chiyali Technology Pvt. Ltd.* Then put the number in `apps/web/src/config/company.ts` (`registrationNumber`).
-- [ ] 🔴⏳ **PAN** from the Inland Revenue Department. Put it in `company.ts` (`pan`).
-- [ ] 🔴 **Ward office business registration** for the registered address (Lalitpur-22). **(confirm)**
-- [ ] 🔴 **Business bank account** in the company's name. Gateways pay settlements into it, and you pay creators from it.
-- [ ] 🔴 **E-Commerce Act, 2081:** check whether Chiyali must register as an e-commerce business with the Department of Commerce, and what the site must display (registration details, grievance officer, complaint process). **(confirm)**
-- [ ] 🟡 **VAT registration** once turnover passes the threshold. Invoices already support a VAT rate. **(confirm the threshold)**
 - [ ] 🟡 **Tax on creator payouts:** whether TDS must be withheld on what we pay creators, and how it's reported. **(confirm with an accountant)**
-- [ ] 🟡 **Privacy law:** make sure the Privacy Policy meets the Individual Privacy Act, 2075. **(confirm)**
-- [ ] 🟡 **Accountant on retainer** for monthly VAT/TDS filings and year-end.
-- [ ] 🟡 Optional: register the **"Chiyali" trademark** (Department of Industry).
 
-## 2. Legal pages
-
-- [ ] 🔴 **Lawyer reviews all policy pages** (ToS, Privacy, Refund, Creator Terms, Content, DMCA, Contact) and signs off in [LEGAL_REVIEW.md](./LEGAL_REVIEW.md). Gateways check these pages during KYC.
-- [ ] 🔴 Replace "Registration in progress" with the real registration number and PAN (the `company.ts` change above).
 - [ ] 🟡 The email addresses the site shows (`support@chiyali.com`, `legal@chiyali.com`) must actually receive mail. Set up the mailboxes or forwarding.
 
-## 3. Payments (the real critical path ⏳)
-
-Going live is only env changes; the code is done. Approval is what takes weeks.
-
-- [ ] 🔴⏳ **Khalti merchant account:** apply with company registration, PAN, bank details and the live site.
-- [ ] 🔴⏳ **eSewa merchant account:** same documents. Register the return URLs under `https://www.chiyali.com/api/payments/esewa/...`.
 - [ ] 🟡⏳ **Fonepay:** goes through the acquiring bank. Ask early whether they need a fixed server IP; Vercel doesn't have one by default.
-- [ ] 🔴 Launch on **whichever gateway is approved first.** The checkout hides gateways that aren't configured.
-- [ ] 🔴 **Go live, one gateway at a time:** set its live keys and `PAYMENT_MODE=live` in Vercel **Production only**. Then run the ₹10–₹50 real-money smoke test in GTM_PLAN §2.9: buy, close the tab early, replay, cancel, refund.
 
-## 4. Production setup (this week)
-
-- [ ] 🔴 **Run the database catch-up** (`apps/web/scripts/catch-up-migrations-0001-0012.sql`) on the production Neon database. Until then, browse, search, the home page, refunds and payouts fail with "column does not exist". Commit the script too; it isn't in git yet.
-- [ ] 🔴 **Vercel env vars point at the final domain:**
-  - `NEXT_PUBLIC_APP_URL`, `BETTER_AUTH_URL` and `NEXT_PUBLIC_BETTER_AUTH_URL` = `https://www.chiyali.com`. `/api/v1/config` still reports `paperglidr.com`.
-  - `BETTER_AUTH_TRUSTED_ORIGINS=https://chiyali.com,chiyali://`
-  - `MOBILE_API_ENABLED=true`
-  - Redeploy afterwards.
-- [ ] 🔴 **Google sign-in:** add `https://www.chiyali.com/api/auth/callback/google` in Google Cloud.
-- [ ] 🔴 **Email sending:** verify `chiyali.com` in Resend (SPF/DKIM DNS records), so invoices and password resets arrive and don't land in spam.
 - [ ] 🔴 **Vercel Pro:** the Hobby plan doesn't allow commercial use. Pro also lets the payment-reconciliation cron run every 5 minutes instead of daily. Then set the schedule in `apps/web/vercel.json` back to every 5 minutes (see the `TODO(cron)` in `apps/web/src/app/api/cron/reconcile-payments/route.ts`).
-- [ ] 🟡 `CRON_SECRET` set, and the cron shows successful runs.
+
 - [ ] 🟡 **Sentry DSN** set, so errors reach you before users post about them.
+
 - [ ] 🟡 **Uptime check** on the home page and `/api/v1/config`.
-- [ ] 🔴 **Full end-to-end run in sandbox:** a creator signs up → uploads → you approve → a student buys → watches → finishes → gets a certificate → verifies its QR → asks for a refund → the creator requests a payout.
-- [ ] 🟡 **Old lessons:** run `pnpm report:free-tier-video` against production and fix what it lists: free lessons with uploaded video, paid lessons with YouTube or Vimeo links.
-
-## 5. Mobile app: App Store and Play Store 🟠
-
-The website can launch without the apps. Launch web first, then **Android before iOS** (Nepal is mostly Android, and Play review is faster).
-
-**Accounts ⏳**
-- [ ] 🟠⏳ **D-U-N-S number** for the company. It's free, from Dun & Bradstreet, and takes days to weeks. Both stores need it for an organization account, which is what makes the listing show "Chiyali Technology Pvt. Ltd." as the publisher.
-- [ ] 🟠 **Google Play Console:** organization account, one-time USD 25 fee.
-- [ ] 🟠 **Apple Developer Program:** organization account, USD 99 per year.
-- [ ] 🟡 If you use a *personal* Play account instead, Google requires a **closed test with 12+ testers for 14 days** before you can publish. Organization accounts skip this. Line up testers either way.
 
 **Things missing in the code**
 - [ ] 🟠 **Delete my account, in the app and on the web.** Both stores reject apps that let users create accounts but not delete them. Play also needs a web page or link for deletion. A `deleteUser` function exists in the database code (it anonymises the user), but no screen or action uses it yet.
