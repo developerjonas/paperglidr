@@ -1,154 +1,172 @@
-import Link from "next/link";
-import { desc, eq, inArray } from "drizzle-orm";
-import { ActionButton } from "@/components/ActionButton";
-import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link"
+import { ActionButton } from "@/components/ActionButton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { db } from "@/drizzle/db";
-import { PaymentEventTable, PurchaseTable } from "@/drizzle/schema";
-import { recheckPurchasePayment } from "@/features/purchases/actions/adminPurchases";
-import { formatDate, formatPrice } from "@/lib/formatters";
-import { cn } from "@/lib/utils";
-import { requireAdmin } from "@/services/auth";
+  AdminPageHeader,
+  FilterTabs,
+  Pager,
+  SearchForm,
+  StatCard,
+  StatusBadge,
+  nprFromPaisa,
+  shortDateTime,
+} from "@/features/admin/components/AdminUi"
+import {
+  PAYMENT_GATEWAYS,
+  PAYMENT_STATUSES,
+  type PaymentGatewayFilter,
+  type PaymentStatusFilter,
+  getPaymentSummary,
+  listPayments,
+} from "@/features/admin/db/payments"
+import { recheckPurchasePayment } from "@/features/purchases/actions/adminPurchases"
+import { requireAdmin } from "@/services/auth"
 
-const STATUS_FILTERS = ["pending", "disputed", "failed", "completed"] as const;
-type StatusFilter = (typeof STATUS_FILTERS)[number];
+const STATUS_LABELS: Record<PaymentStatusFilter, string> = {
+  all: "All",
+  pending: "Pending",
+  completed: "Completed",
+  failed: "Failed",
+  disputed: "Disputed",
+  refunded: "Refunded",
+}
+const GATEWAY_LABELS: Record<PaymentGatewayFilter, string> = {
+  all: "Any gateway",
+  esewa: "eSewa",
+  khalti: "Khalti",
+  fonepay: "Fonepay",
+  bank: "Bank",
+  free: "Free",
+}
 
-const PAGE_SIZE = 100;
-
-export default async function AdminPurchasesPage({
+export default async function AdminPaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; gateway?: string; q?: string; page?: string }>
 }) {
-  await requireAdmin();
-  const { status: rawStatus } = await searchParams;
-  const status: StatusFilter = STATUS_FILTERS.includes(rawStatus as StatusFilter)
-    ? (rawStatus as StatusFilter)
-    : "pending";
+  await requireAdmin()
+  const params = await searchParams
+  const status: PaymentStatusFilter = (PAYMENT_STATUSES as readonly string[]).includes(params.status ?? "")
+    ? (params.status as PaymentStatusFilter)
+    : "all"
+  const gateway: PaymentGatewayFilter = (PAYMENT_GATEWAYS as readonly string[]).includes(params.gateway ?? "")
+    ? (params.gateway as PaymentGatewayFilter)
+    : "all"
+  const q = params.q?.trim() || undefined
+  const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1)
 
-  const purchases = await db.query.PurchaseTable.findMany({
-    where: eq(PurchaseTable.status, status),
-    orderBy: desc(PurchaseTable.createdAt),
-    limit: PAGE_SIZE,
-    with: { user: { columns: { email: true } } },
-  });
-
-  const events =
-    purchases.length === 0
-      ? []
-      : await db
-          .select()
-          .from(PaymentEventTable)
-          .where(inArray(PaymentEventTable.purchaseId, purchases.map(p => p.id)))
-          .orderBy(desc(PaymentEventTable.createdAt));
-  const latestEvent = new Map<string, (typeof events)[number]>();
-  for (const event of events) {
-    if (!latestEvent.has(event.purchaseId)) latestEvent.set(event.purchaseId, event);
+  const [{ rows, hasMore }, summary] = await Promise.all([listPayments({ q, status, gateway, page }), getPaymentSummary()])
+  const href = (next: { status?: string; gateway?: string; page?: number }) => {
+    const search = new URLSearchParams()
+    const s = next.status ?? status
+    const g = next.gateway ?? gateway
+    if (s !== "all") search.set("status", s)
+    if (g !== "all") search.set("gateway", g)
+    if (q) search.set("q", q)
+    if (next.page && next.page > 1) search.set("page", String(next.page))
+    const str = search.toString()
+    return str ? `/admin/purchases?${str}` : "/admin/purchases"
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="Purchases" />
+    <div className="flex flex-col gap-4">
+      <AdminPageHeader
+        title="Payments"
+        description="Every checkout. The payment cron re-checks pending ones with the gateway every 5 minutes; “Re-check payment” asks the gateway now. Open a payment for its gateway events, the commission split, the invoice and any refund."
+      />
 
-      <nav className="flex flex-wrap gap-2" aria-label="Filter by status">
-        {STATUS_FILTERS.map(filter => (
-          <Link
-            key={filter}
-            href={`/admin/purchases?status=${filter}`}
-            aria-current={filter === status ? "page" : undefined}
-            className={cn(
-              "rounded-lg border px-3 py-1 text-sm capitalize",
-              filter === status
-                ? "border-primary bg-primary text-primary-foreground"
-                : "hover:bg-muted",
-            )}
-          >
-            {filter}
-          </Link>
-        ))}
-      </nav>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Taken, last 30 days" value={nprFromPaisa(summary.taken30dPaisa)} note={`${summary.paid30d} paid purchase(s)`} />
+        <StatCard
+          label="Stuck pending (over 1 hour)"
+          value={summary.stuck}
+          note="The cron should settle these; re-check if they stay"
+          href="/admin/purchases?status=pending"
+        />
+        <StatCard label="Disputed" value={summary.counts.disputed} note="Amount or transaction mismatch: check by hand" href="/admin/purchases?status=disputed" />
+        <StatCard label="Failed, last 30 days" value={summary.failed30d} href="/admin/purchases?status=failed" />
+      </div>
 
-      {purchases.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No {status} purchases.</p>
+      <div className="flex flex-col gap-3">
+        <FilterTabs
+          label="Payment status"
+          current={status}
+          hrefFor={(value) => href({ status: value, page: 1 })}
+          options={PAYMENT_STATUSES.map((value) => ({ value, label: STATUS_LABELS[value], count: summary.counts[value] }))}
+        />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <FilterTabs
+            label="Gateway"
+            current={gateway}
+            hrefFor={(value) => href({ gateway: value, page: 1 })}
+            options={PAYMENT_GATEWAYS.map((value) => ({ value, label: GATEWAY_LABELS[value] }))}
+          />
+          <SearchForm
+            placeholder="Email, product, purchase or gateway ID"
+            value={q}
+            hidden={{ status: status === "all" ? undefined : status, gateway: gateway === "all" ? undefined : gateway }}
+          />
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          {q ? `No payments match "${q}".` : "No payments here."}
+        </p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Created</TableHead>
-              <TableHead>Buyer</TableHead>
-              <TableHead>Product</TableHead>
-              <TableHead>Gateway</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Last gateway event</TableHead>
-              <TableHead>Reference</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {purchases.map(purchase => {
-              const event = latestEvent.get(purchase.id);
-              return (
-                <TableRow key={purchase.id}>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(purchase.createdAt)}
+        <div className="rounded-xl border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>When</TableHead>
+                <TableHead>Buyer</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Gateway</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last gateway event</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                    <Link href={`/admin/purchases/${p.id}`} className="hover:underline">
+                      {shortDateTime(p.createdAt)}
+                    </Link>
                   </TableCell>
-                  <TableCell>{purchase.user.email}</TableCell>
-                  <TableCell>{purchase.productDetails.name}</TableCell>
-                  <TableCell className="capitalize">{purchase.gateway}</TableCell>
-                  <TableCell>{formatPrice(purchase.pricePaidInPaisa / 100)}</TableCell>
+                  <TableCell className="text-sm">
+                    <Link href={`/admin/users/${p.userId}`} className="hover:underline">
+                      {p.buyer}
+                    </Link>
+                    <p className="text-xs text-muted-foreground">{p.buyerEmail}</p>
+                  </TableCell>
+                  <TableCell className="max-w-56 text-sm">
+                    <Link href={`/admin/purchases/${p.id}`} className="font-medium hover:underline">
+                      {p.product}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-sm capitalize">{p.gateway}</TableCell>
+                  <TableCell className="text-right tabular-nums">{nprFromPaisa(p.paisa)}</TableCell>
                   <TableCell>
-                    {event ? (
-                      <div className="flex flex-col gap-0.5">
-                        <Badge variant="outline" className="w-fit">
-                          {event.outcome}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {event.source}
-                          {event.gatewayStatus ? ` · ${event.gatewayStatus}` : ""}
-                          {event.amountInPaisa != null
-                            ? ` · ${formatPrice(event.amountInPaisa / 100)}`
-                            : ""}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">none</span>
+                    <StatusBadge status={p.status} />
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{p.lastEvent ?? "none"}</TableCell>
+                  <TableCell className="text-right">
+                    {(p.status === "pending" || p.status === "failed") && p.gateway !== "free" && (
+                      <ActionButton variant="outline" size="sm" action={recheckPurchasePayment.bind(null, p.id)}>
+                        Re-check
+                      </ActionButton>
                     )}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    <div>{purchase.id}</div>
-                    <div className="text-muted-foreground">{purchase.gatewayCheckoutId}</div>
-                  </TableCell>
-                  <TableCell>
-                    {(purchase.status === "pending" || purchase.status === "failed") &&
-                      purchase.gateway !== "free" && (
-                        <ActionButton
-                          variant="outline"
-                          size="sm"
-                          action={recheckPurchasePayment.bind(null, purchase.id)}
-                        >
-                          Re-check payment
-                        </ActionButton>
-                      )}
-                  </TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
-      {purchases.length === PAGE_SIZE && (
-        <p className="text-xs text-muted-foreground">
-          Showing the newest {PAGE_SIZE}.
-        </p>
-      )}
+      <Pager page={page} hasMore={hasMore} hrefFor={(n) => href({ page: n })} />
     </div>
-  );
+  )
 }

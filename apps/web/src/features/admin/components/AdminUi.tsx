@@ -101,6 +101,13 @@ const STATUS_TONE: Record<string, keyof typeof TONES> = {
   failed: "bad",
   disputed: "bad",
   refunded: "neutral",
+  // payment events / invoices
+  initiated: "info",
+  already_completed: "good",
+  expired: "neutral",
+  error: "bad",
+  issued: "good",
+  void: "neutral",
   // products / courses
   public: "good",
   private: "neutral",
