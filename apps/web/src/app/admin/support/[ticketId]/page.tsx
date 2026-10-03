@@ -6,6 +6,7 @@ import { SupportTicketThread } from "@/features/support/components/SupportTicket
 import { AdminTicketStatusSelect } from "@/features/support/components/AdminTicketStatusSelect";
 import { PageHeader } from "@/components/PageHeader";
 import { requireAdmin } from "@/services/auth";
+import { SAVED_REPLIES, fillSavedReply } from "@/features/support/lib/savedReplies";
 
 export default async function AdminSupportTicketPage({
   params,
@@ -33,6 +34,11 @@ export default async function AdminSupportTicketPage({
         messages={ticket.messages}
         isClosed={ticket.status === "closed"}
         isAdminView
+        savedReplies={SAVED_REPLIES.map((reply) => ({
+          id: reply.id,
+          title: reply.title,
+          body: fillSavedReply(reply, ticket.user?.name),
+        }))}
       />
     </div>
   );

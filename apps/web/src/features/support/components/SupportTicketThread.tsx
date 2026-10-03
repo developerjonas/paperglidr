@@ -27,11 +27,14 @@ export function SupportTicketThread({
   messages,
   isClosed,
   isAdminView = false,
+  savedReplies = [],
 }: {
   ticketId: string;
   messages: Message[];
   isClosed: boolean;
   isAdminView?: boolean;
+  /** Admin only: ready-made answers (features/support/lib/savedReplies.ts), already filled in. */
+  savedReplies?: { id: string; title: string; body: string }[];
 }) {
   const [content, setContent] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -83,10 +86,30 @@ export function SupportTicketThread({
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          {savedReplies.length > 0 && (
+            <select
+              aria-label="Insert a saved reply"
+              value=""
+              onChange={(e) => {
+                const reply = savedReplies.find((r) => r.id === e.target.value);
+                if (!reply) return;
+                // Added below anything already typed, then edited before sending.
+                setContent((current) => (current.trim() ? `${current.trimEnd()}\n\n${reply.body}` : reply.body));
+              }}
+              className="h-9 w-fit rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Insert saved reply…</option>
+              {savedReplies.map((reply) => (
+                <option key={reply.id} value={reply.id}>
+                  {reply.title}
+                </option>
+              ))}
+            </select>
+          )}
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={3}
+            rows={savedReplies.length > 0 ? 8 : 3}
             placeholder={
               isAdminView ? "Reply to the user..." : "Add a reply..."
             }
