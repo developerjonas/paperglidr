@@ -18,8 +18,6 @@ Last updated: 2026-09-28.
 
 - [ ] 🟡 **Sentry DSN** set, so errors reach you before users post about them.
 
-- [ ] 🟡 **Uptime check** on the home page and `/api/v1/config`.
-
 **Things missing in the code**
 - [ ] 🟠 **Store identifiers in `apps/mobile/app.json`:** `ios.bundleIdentifier` and `android.package` (e.g. `com.chiyali.app`). These can never change after the first upload.
 - [ ] 🟠 **EAS setup:** there is no `eas.json` yet. Run `npx eas-cli@latest build:configure`, then create a production build for each store.
