@@ -10,7 +10,7 @@ Last updated: 2026-10-03.
 
 ## 1. Ship what's built (this week)
 
-- [ ] 🟠 **Push and deploy the latest commits:** the admin panel (Users, Courses, Products, Payments, Commissions) and `/account/delete` opening signed out. Play checks the account deletion URL, so deploy before filling in the Data safety form. No migration needed.
+- [x] 🟠 **Pushed (3 Oct):** the admin panel (Users, Courses, Products, Payments, Commissions), `/account/delete` opening signed out, and the script fixes. Check after Vercel deploys: `https://www.chiyali.com/account/delete` opens without signing in.
 - [ ] 🟡 **GlitchTip:**
   - set `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_ENVIRONMENT=production` in Vercel;
   - add an alert ("1 event in 1 minute" → email or Discord) in **both** projects: Chiyali Web and Chiyali Expo App (the app's reporting is already in its preview and production builds);
@@ -37,18 +37,17 @@ iOS comes later, once there's an Apple developer account.
 
 Realistic public launch on Play: **around 22–27 October**, if 12+ testers are opted in by 5–6 October.
 
-- [ ] 🟠✍️ **Store listing and App content forms.** Every answer is ready to paste in [GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md):
-  - listing texts;
-  - app access (the reviewer account);
-  - ads, content rating, target audience and Data safety;
-  - account deletion URL `https://www.chiyali.com/account/delete` and privacy policy `https://www.chiyali.com/privacy`;
-  - graphics: done, in `~/Desktop/Chiyali-Play-assets/` (512×512 icon, 1024×500 feature graphic, 8 phone screenshots at 1080×1920 made from the app with demo courses). Before the public launch, replace the screenshots with ones showing real courses.
-- [ ] 🟠 **Upload the first AAB by hand.** Google requires the very first upload to go through the Play Console, not the API. Go to Testing → Internal testing → Create release, and upload the `.aab`. Add yourself as an internal tester and install it from Play to check it.
-- [ ] 🟠⏳ **Closed test: 12+ testers for 14 days (start now):**
-  - create a Google Group (e.g. `chiyali-testers@googlegroups.com`) and add it as the closed test's tester list: one list that's easy to grow;
-  - promote the same release to **Closed testing**, with Nepal as the country (plus wherever testers live);
-  - recruit **15–20** testers, not exactly 12: if fewer than 12 stay opted in, the 14 days may have to start again. Good candidates are first creators, students, and friends with Android phones; the Gmail address they give must be the one signed in on their phone;
-  - send them the opt-in link, and ask them to open the app a few times over the two weeks and send feedback. Google asks about tester engagement when you apply.
+- [x] 🟠 **Play Console set up (3 Oct):** app "Chiyali: Courses in Nepal" (`com.developerjonas.chiyali`) created; store listing, graphics and App content forms filled ([GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md)); first AAB (versionCode 2) uploaded to internal testing.
+  - The screenshots in `~/Desktop/Chiyali-Play-assets/` show demo courses: replace them with real ones before the public launch.
+- [ ] 🟠 **Reviewer account password:** create it once a first course is live on production (`pnpm reviewer:create --yes` in `apps/web`; add `--product=<id>` for a free course), then put the password in App content → Sign in details. Sign in once with it to check before Google reviews the app.
+- [ ] 🟠⏳ **Closed test: 12+ testers for 14 days (start now).** In Play Console → Dashboard → "Set up your closed test track":
+  1. **Select countries and regions:** Nepal (plus wherever testers live).
+  2. **Select testers:** create a Google Group (e.g. `chiyali-testers@googlegroups.com`), add testers' Gmail addresses to it, and add the group's address as the tester list. One list that's easy to grow.
+  3. **Create a new release:** add the same AAB from the app bundle library (versionCode 2) and the release notes from GTM_STORE_TEXTS.md.
+  4. **Preview and confirm**, then **send the release to Google for review** (Publishing overview → Send changes for review).
+  5. When it's approved, copy the opt-in link (Closed testing → Testers) and send it to testers. The 14 days count from when **12 or more are opted in**.
+  - Recruit **15–20** testers, not exactly 12: if fewer than 12 stay opted in, the 14 days may have to start again. Good candidates are first creators, students, and friends with Android phones; the Gmail address they give must be the one signed in on their phone.
+  - Ask them to open the app a few times over the two weeks and send feedback: Google asks about tester engagement when you apply.
 - [ ] 🟠 **Apply for production access** (Dashboard → Apply for production) once the 14 days are done. Google asks how you tested, what feedback you got and what you changed.
 - [ ] 🟠 **After that, updates without the Console:**
   - create a Google Service Account key and upload it to EAS;
