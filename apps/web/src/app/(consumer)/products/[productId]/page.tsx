@@ -48,6 +48,7 @@ import {
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 import Image from "next/image";
 import Link from "next/link";
+import { FoundingBadge } from "@/features/instructors/components/FoundingBadge";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import type { Metadata } from "next";
@@ -313,7 +314,7 @@ function Price({ price }: { price: number }) {
 
 type ProductAuthor = {
   name: string;
-  instructor: { name: string; handle: string; profileImageUrl: string | null } | null;
+  instructor: { name: string; handle: string; profileImageUrl: string | null; isFounding: boolean } | null;
 };
 
 function InstructorBlock({ author }: { author: ProductAuthor }) {
@@ -348,8 +349,9 @@ function InstructorBlock({ author }: { author: ProductAuthor }) {
       )}
       <div className="leading-tight">
         <p className="text-xs text-muted-foreground">Created by</p>
-        <p className="font-semibold group-hover:underline underline-offset-4">
-          {name}
+        <p className="flex items-center gap-2 font-semibold">
+          <span className="group-hover:underline underline-offset-4">{name}</span>
+          {author.instructor?.isFounding && <FoundingBadge compact />}
         </p>
       </div>
     </>
@@ -421,6 +423,7 @@ async function getPublicProduct(id: string) {
       instructorName: InstructorTable.name,
       handle: InstructorTable.handle,
       profileImageUrl: InstructorTable.profileImageUrl,
+      isFounding: InstructorTable.isFounding,
     })
     .from(UserTable)
     .leftJoin(InstructorTable, eq(InstructorTable.userId, UserTable.id))
@@ -452,6 +455,7 @@ async function getPublicProduct(id: string) {
               name: authorRow.instructorName,
               handle: authorRow.handle,
               profileImageUrl: authorRow.profileImageUrl,
+              isFounding: authorRow.isFounding ?? false,
             }
           : null,
     },

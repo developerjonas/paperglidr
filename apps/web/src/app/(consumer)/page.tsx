@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getHomeCatalog, type HomeCourse, type HomeInstructor } from "@/features/products/db/home";
+import { FoundingBadge } from "@/features/instructors/components/FoundingBadge";
 import { getPublicCategories } from "@/features/categories/db/categories";
 import { POLICY_TERMS } from "@/config/policyTerms";
 import { formatPrice } from "@/lib/formatters";
@@ -60,6 +61,10 @@ export default async function HomePage() {
     getPublicCategories(),
   ]);
 
+  // Pinned by an admin (/admin/products), most recently featured first.
+  const featured = courses
+    .filter((c) => c.featuredAt != null)
+    .sort((a, b) => b.featuredAt!.getTime() - a.featuredAt!.getTime());
   const free = courses.filter((c) => c.priceInRupees === 0);
   const newest = courses; // already newest first
   const topRated = courses
@@ -176,6 +181,14 @@ export default async function HomePage() {
         </Band>
       ) : (
         <>
+          {featured.length > 0 && (
+            <Shelf
+              title="Featured courses"
+              subtitle="Hand-picked by the Chiyali team."
+              href="/browse"
+              courses={featured}
+            />
+          )}
           {free.length > 0 && (
             <Shelf
               title="Start for free"
@@ -366,6 +379,7 @@ function CourseTile({ course }: { course: HomeCourse }) {
         {course.instructorVerified && (
           <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Verified instructor" />
         )}
+        {course.instructorFounding && <FoundingBadge compact className="ml-0.5 shrink-0" />}
       </p>
       <div className="mt-1.5 flex items-center gap-1.5 text-sm">
         {course.avgRating != null && course.reviewCount > 0 ? (
@@ -420,6 +434,7 @@ function InstructorShelf({ instructors }: { instructors: HomeInstructor[] }) {
               <span className="mt-0.5 text-xs text-muted-foreground">
                 {instructor.productCount} {instructor.productCount === 1 ? "course" : "courses"}
               </span>
+              {instructor.isFounding && <FoundingBadge compact className="mt-1.5" />}
             </Link>
           </li>
         ))}

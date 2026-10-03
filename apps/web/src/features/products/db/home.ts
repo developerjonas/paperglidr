@@ -23,9 +23,12 @@ export type HomeCourse = {
   priceInRupees: number
   categoryId: string | null
   createdAt: Date
+  /** Pinned to the home page by an admin; null = not featured. */
+  featuredAt: Date | null
   instructorName: string
   instructorHandle: string | null
   instructorVerified: boolean
+  instructorFounding: boolean
   avgRating: number | null
   reviewCount: number
   lessonCount: number
@@ -36,6 +39,7 @@ export type HomeInstructor = {
   name: string
   profileImageUrl: string
   isVerified: boolean
+  isFounding: boolean
   productCount: number
 }
 
@@ -99,10 +103,12 @@ export async function getHomeCatalog(): Promise<{
       priceInRupees: ProductTable.priceInRupees,
       categoryId: ProductTable.categoryId,
       createdAt: ProductTable.createdAt,
+      featuredAt: ProductTable.featuredAt,
       authorName: UserTable.name,
       instructorName: InstructorTable.name,
       instructorHandle: InstructorTable.handle,
       instructorVerified: InstructorTable.isVerified,
+      instructorFounding: InstructorTable.isFounding,
       avgRating: ratings.avgRating,
       reviewCount: ratings.reviewCount,
       lessonCount: lessons.lessonCount,
@@ -122,9 +128,11 @@ export async function getHomeCatalog(): Promise<{
     priceInRupees: row.priceInRupees,
     categoryId: row.categoryId,
     createdAt: row.createdAt,
+    featuredAt: row.featuredAt,
     instructorName: row.instructorName ?? row.authorName,
     instructorHandle: row.instructorHandle,
     instructorVerified: row.instructorVerified ?? false,
+    instructorFounding: row.instructorFounding ?? false,
     avgRating: row.avgRating == null ? null : Number(row.avgRating),
     reviewCount: Number(row.reviewCount ?? 0),
     lessonCount: Number(row.lessonCount ?? 0),
@@ -136,6 +144,7 @@ export async function getHomeCatalog(): Promise<{
       name: InstructorTable.name,
       profileImageUrl: InstructorTable.profileImageUrl,
       isVerified: InstructorTable.isVerified,
+      isFounding: InstructorTable.isFounding,
       productCount: count(ProductTable.id),
     })
     .from(InstructorTable)
@@ -144,7 +153,8 @@ export async function getHomeCatalog(): Promise<{
       and(eq(ProductTable.authorId, InstructorTable.userId), eq(ProductTable.status, "public")),
     )
     .groupBy(InstructorTable.id)
-    .orderBy(desc(count(ProductTable.id)), InstructorTable.name)
+    // Founding creators first, then the most courses.
+    .orderBy(desc(InstructorTable.isFounding), desc(count(ProductTable.id)), InstructorTable.name)
     .limit(12)
 
   return {

@@ -1,4 +1,4 @@
-import { and, asc, avg, count, eq, ilike } from "drizzle-orm";
+import { and, asc, avg, count, desc, eq, ilike, sql } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { getProductGlobalTag, revalidateProductCache } from "./cache";
 import {
@@ -196,6 +196,7 @@ export async function getPublicProductListings({ limit }: { limit?: number } = {
       description: ProductTable.description,
       imageUrl: ProductTable.imageUrl,
       priceInRupees: ProductTable.priceInRupees,
+      featuredAt: ProductTable.featuredAt,
       avgRating: avg(CourseReviewTable.rating),
       reviewCount: count(CourseReviewTable.id),
     })
@@ -211,12 +212,17 @@ export async function getPublicProductListings({ limit }: { limit?: number } = {
     )
     .where(eq(ProductTable.status, "public"))
     .groupBy(ProductTable.id)
-    // Same order as the website's home page (getPublicProducts).
-    .orderBy(asc(ProductTable.name))
+    // Featured first (most recently featured on top), then newest — the
+    // website home's order.
+    .orderBy(sql`${ProductTable.featuredAt} desc nulls last`, desc(ProductTable.createdAt))
 
   const rows = limit ? await query.limit(limit) : await query
 
-  return rows.map(r => ({ ...r, avgRating: r.avgRating ? Number(r.avgRating) : null }))
+  return rows.map(({ featuredAt, ...r }) => ({
+    ...r,
+    isFeatured: featuredAt != null,
+    avgRating: r.avgRating ? Number(r.avgRating) : null,
+  }))
 }
 
 // Public catalogue (GET /api/v1/products/[id], no auth): public products
@@ -252,6 +258,7 @@ export async function getPublicProductDetail(productId: string) {
       name: InstructorTable.name,
       profileImageUrl: InstructorTable.profileImageUrl,
       isVerified: InstructorTable.isVerified,
+      isFounding: InstructorTable.isFounding,
     })
     .from(InstructorTable)
     .where(eq(InstructorTable.userId, authorId))

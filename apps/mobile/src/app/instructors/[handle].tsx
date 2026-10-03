@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { keys } from '@/api/keys';
 import { api } from '@/api/v1';
 import { ProductCarousel } from '@/components/catalog/product-carousel';
+import { FoundingBadge } from '@/components/founding-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Avatar } from '@/components/ui/avatar';
@@ -50,6 +51,7 @@ export default function InstructorScreen() {
             </ThemedText>
             {i.isVerified ? <Icon ios="checkmark.seal.fill" android="verified" size={20} color={theme.primary} /> : null}
           </View>
+          {i.isFounding ? <FoundingBadge /> : null}
           <ThemedText themeColor="textSecondary">@{i.handle}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             {formatPlural(i.courses.length, 'course', 'courses')} · {formatPlural(i.products.length, 'product', 'products')}

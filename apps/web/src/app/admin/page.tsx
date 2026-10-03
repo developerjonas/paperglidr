@@ -32,6 +32,7 @@ import {
   FolderIcon,
   LifeBuoyIcon,
   PackageIcon,
+  SparklesIcon,
   StarIcon,
   Undo2Icon,
   WalletIcon,
@@ -48,9 +49,15 @@ const MANAGEMENT_LINKS = [
   },
   {
     title: "Products",
-    description: "Review products creators have asked to publish",
+    description: "Review products creators have asked to publish; feature live ones",
     href: "/admin/products",
     icon: PackageIcon,
+  },
+  {
+    title: "Creators",
+    description: "Verified ticks, Founding-creator badges, Creator Terms",
+    href: "/admin/creators",
+    icon: SparklesIcon,
   },
   {
     title: "Reports",

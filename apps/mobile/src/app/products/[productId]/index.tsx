@@ -11,6 +11,7 @@ import { useAuth } from '@/auth/auth-context';
 import { CourseContentCard, toCourseContent } from '@/components/catalog/course-content-card';
 import { Rating } from '@/components/catalog/rating';
 import { WishlistButton } from '@/components/catalog/wishlist-button';
+import { FoundingBadge } from '@/components/founding-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Avatar } from '@/components/ui/avatar';
@@ -126,6 +127,7 @@ export default function ProductScreen() {
                 {p.instructor?.isVerified ? (
                   <Icon ios="checkmark.seal.fill" android="verified" size={14} color={theme.primary} />
                 ) : null}
+                {p.instructor?.isFounding ? <FoundingBadge compact /> : null}
               </View>
             </View>
             {p.instructor ? <Icon ios="chevron.right" android="chevron_right" size={16} color={theme.textSecondary} /> : null}

@@ -50,6 +50,8 @@ export type ProductListing = {
   priceInRupees: number;
   avgRating: number | null;
   reviewCount: number;
+  /** Pinned by Chiyali; /products lists these first. */
+  isFeatured?: boolean;
 };
 
 export type SearchSort = 'relevance' | 'rating' | 'newest' | 'price_asc' | 'price_desc';
@@ -74,6 +76,8 @@ export type InstructorSummary = {
   name: string;
   profileImageUrl: string;
   isVerified: boolean;
+  /** "Founding creator" badge (set by Chiyali). */
+  isFounding?: boolean;
 };
 
 export type ProductDetail = {

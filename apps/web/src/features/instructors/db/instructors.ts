@@ -103,6 +103,7 @@ export async function getPublicInstructorByHandle(handle: string) {
       bio: InstructorTable.bio,
       profileImageUrl: InstructorTable.profileImageUrl,
       isVerified: InstructorTable.isVerified,
+      isFounding: InstructorTable.isFounding,
     })
     .from(InstructorTable)
     .where(eq(InstructorTable.handle, handle))
