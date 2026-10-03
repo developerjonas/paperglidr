@@ -135,3 +135,39 @@ export async function rejectProduct({
   )
   return { outcome: "rejected" as const }
 }
+
+/**
+ * Takes a live product off sale (public -> private), e.g. after a report.
+ * The reason is emailed to the creator. Students who bought it keep their
+ * courses: access lives on user_course_access, which this doesn't touch.
+ */
+export async function unpublishProduct({
+  productId,
+  adminId,
+  reason,
+}: {
+  productId: string
+  adminId: string
+  reason: string
+}) {
+  const now = new Date()
+  const [product] = await db
+    .update(ProductTable)
+    .set({ status: "private", featuredAt: null, reviewedAt: now, reviewedBy: adminId, reviewNote: reason, updatedAt: now })
+    .where(and(eq(ProductTable.id, productId), eq(ProductTable.status, "public")))
+    .returning()
+  if (product == null) return { outcome: "not_public" as const }
+
+  revalidateProductCache(product.id)
+  await emailCreator(
+    product.authorId,
+    `"${product.name}" was taken off sale`,
+    [
+      `We've taken "${product.name}" off sale on Chiyali. The reason:`,
+      reason,
+      "Students who already bought it keep their access. Fix the issue and choose \"Publish\" to send it for review again, or reply to this email if you think this is a mistake.",
+    ],
+    { href: `${clientEnv.NEXT_PUBLIC_APP_URL}/teach/products/${product.id}/edit`, label: "Edit the product" },
+  )
+  return { outcome: "unpublished" as const }
+}

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { requireAdmin } from "@/services/auth"
 import { UserFacingError, actionError } from "@/lib/safeError"
-import { approveProduct, rejectProduct } from "../lib/moderation"
+import { approveProduct, rejectProduct, unpublishProduct } from "../lib/moderation"
 
 export async function approveProductReview(productId: string) {
   const { userId: adminId } = await requireAdmin()
@@ -33,5 +33,21 @@ export async function rejectProductReview(productId: string, reason: string) {
     return { error: false as const, message: "Rejected; the creator has been emailed" }
   } catch (error) {
     return actionError(error, "rejectProductReview")
+  }
+}
+
+export async function unpublishProductAsAdmin(productId: string, reason: string) {
+  const { userId: adminId } = await requireAdmin()
+  try {
+    const parsed = z
+      .object({ productId: z.string().uuid(), reason: z.string().trim().min(1).max(2000) })
+      .safeParse({ productId, reason })
+    if (!parsed.success) throw new UserFacingError("A reason is required")
+    const result = await unpublishProduct({ adminId, ...parsed.data })
+    if (result.outcome === "not_public") throw new UserFacingError("This product isn't live")
+    revalidatePath("/admin/products")
+    return { error: false as const, message: "Taken off sale; the creator has been emailed" }
+  } catch (error) {
+    return actionError(error, "unpublishProductAsAdmin")
   }
 }
