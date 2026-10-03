@@ -66,6 +66,17 @@ Every payment event also carries `gateway` (esewa / khalti / fonepay) and `sourc
 3. Redeploy. `NEXT_PUBLIC_SENTRY_DSN` is inlined at build time.
 4. Check it works: open `https://www.chiyali.com/api/monitoring` in a browser (it should say 405: the route exists and only accepts POST), then make a test error. For example, call `/api/health` on a preview whose database variables are wrong: it answers 503 and a "Health check failed" issue (`area=health`) appears.
 
+## The mobile app (GlitchTip project "Chiyali Expo App")
+
+The app reports through `@sentry/react-native` to its own GlitchTip project (DSN `…/28438`): JavaScript errors, render errors (`Sentry.wrap` on the root layout), unhandled promise rejections, and native crashes on Android/iOS.
+
+- **Where it's set up:** `apps/mobile/src/lib/monitoring.ts` (imported first in `src/app/_layout.tsx`), the `@sentry/react-native` plugin in `app.json` (`url: https://app.glitchtip.com/`), and `metro.config.js`.
+- **When it reports:** only when `EXPO_PUBLIC_SENTRY_DSN` is set. `eas.json` sets it for **preview** and **production** builds, with `EXPO_PUBLIC_SENTRY_ENVIRONMENT` = `preview` / `production`. `npx expo start` reports nothing unless you set it yourself.
+- **Not sent:** release-health sessions (GlitchTip doesn't support them), performance traces, IPs, user details, or request headers.
+- **Native crashes need a real build** (EAS preview or production), not Expo Go.
+- **Readable stack traces (optional):** source-map upload is off (`SENTRY_DISABLE_AUTO_UPLOAD=true` in `eas.json`), so builds never fail on it. To turn it on, add EAS environment variables `SENTRY_AUTH_TOKEN` (sensitive; GlitchTip → Profile → Auth Tokens, scope `project:releases`), `SENTRY_ORG` and `SENTRY_PROJECT` (the slugs in GlitchTip's URL), then remove `SENTRY_DISABLE_AUTO_UPLOAD` from `eas.json`.
+- Alerts work the same way as for the website: set them up on the app project too.
+
 ## Steps: alerts (GlitchTip)
 
 GlitchTip alerts are per project: "when *N* events happen within *M* minutes, notify these recipients". There are no per-tag rules, so start with one alert for any error, and use the tags above to triage.

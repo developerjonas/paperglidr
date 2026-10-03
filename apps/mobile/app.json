@@ -48,6 +48,12 @@
           "cameraPermission": "Chiyali uses the camera to scan certificate QR codes.",
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "@sentry/react-native",
+        {
+          "url": "https://app.glitchtip.com/"
+        }
       ]
     ],
     "experiments": {

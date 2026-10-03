@@ -8,6 +8,11 @@
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SENTRY_DSN": "https://c5e50ec80152474eacf4f4e7ea15822a@app.glitchtip.com/28438",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production"
       }
     },
     "preview": {
@@ -16,6 +21,11 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SENTRY_DSN": "https://c5e50ec80152474eacf4f4e7ea15822a@app.glitchtip.com/28438",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "preview"
       }
     }
   },

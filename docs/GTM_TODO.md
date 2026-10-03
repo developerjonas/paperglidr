@@ -58,7 +58,7 @@ iOS comes later, once there's an Apple developer account.
   - Privacy Policy URL `https://www.chiyali.com/privacy`;
   - account deletion URL `https://www.chiyali.com/account/delete`.
 - [ ] 🟠 **Data safety form and content rating questionnaire.** The app collects name, email, username and learning progress; nothing is sold. Q&A and reviews are user-generated content.
-- [ ] 🟡 **App crash reporting:** create a GlitchTip project "Chiyali App" (React Native) and send the DSN, so it can be wired into the app.
+- [ ] 🟡 **App crash alerts:** in GlitchTip's "Chiyali Expo App" project, add the same "1 event in 1 minute" alert as the website. Reporting is wired into preview and production builds.
 - [ ] 🟡 **Later, for iOS:** Apple's payment rules. The app shows prices but has no buy button, so there's no in-app purchase; keep it that way, with no "buy on the website" links or wording in the iOS app.
 
 ## 4. Content supply (besides seeding courses yourself)

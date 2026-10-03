@@ -1,3 +1,5 @@
+// First, so errors anywhere below are reported.
+import { Sentry } from '@/lib/monitoring';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
@@ -10,7 +12,7 @@ import { Colors } from '@/constants/theme';
 // password open as a modal. Auth is app-wide but optional (auth-context).
 // The app is portrait, except a lesson, which turns to landscape for the
 // video (app.json allows every orientation; each screen narrows it).
-export default function RootLayout() {
+function RootLayout() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const colors = Colors[scheme];
@@ -47,3 +49,6 @@ export default function RootLayout() {
     </ApiProvider>
   );
 }
+
+// Sentry.wrap catches render errors (and is a no-op when reporting is off).
+export default Sentry.wrap(RootLayout);
