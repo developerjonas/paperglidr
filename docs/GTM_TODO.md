@@ -12,8 +12,6 @@ Last updated: 2026-09-28.
 
 - [ ] 🟡 **Tax on creator payouts:** whether TDS must be withheld on what we pay creators, and how it's reported. **(confirm with an accountant)**
 
-- [ ] 🟡 The email addresses the site shows (`support@chiyali.com`, `legal@chiyali.com`) must actually receive mail. Set up the mailboxes or forwarding.
-
 - [ ] 🟡⏳ **Fonepay:** goes through the acquiring bank. Ask early whether they need a fixed server IP; Vercel doesn't have one by default.
 
 - [ ] 🔴 **Vercel Pro:** the Hobby plan doesn't allow commercial use. Pro also lets the payment-reconciliation cron run every 5 minutes instead of daily. Then set the schedule in `apps/web/vercel.json` back to every 5 minutes (see the `TODO(cron)` in `apps/web/src/app/api/cron/reconcile-payments/route.ts`).
@@ -25,7 +23,6 @@ Last updated: 2026-09-28.
 **Things missing in the code**
 - [ ] 🟠 **Store identifiers in `apps/mobile/app.json`:** `ios.bundleIdentifier` and `android.package` (e.g. `com.chiyali.app`). These can never change after the first upload.
 - [ ] 🟠 **EAS setup:** there is no `eas.json` yet. Run `npx eas-cli@latest build:configure`, then create a production build for each store.
-- [ ] 🟠 **Test on real phones:** the lesson player rotating to landscape, and YouTube/Vimeo videos marking the lesson complete when they end. Neither could be checked on the simulator.
 - [ ] 🟠 **App icon and splash screen:** still the Expo template images from when the app was created. Stores need the real Chiyali icon.
 
 **Store listings**

@@ -30,6 +30,7 @@ What the app reports, and the steps to set up alerts and uptime checks by hand. 
 | `area=payments` (with `context=payments: cron reconcile`) | the reconciliation cron itself failed | `/api/cron/reconcile-payments` |
 | `area=startup`, `payment_event=gateway_disabled` | at server boot, a live gateway's config has a sandbox URL, test credential or non-https URL, so it was switched off. The site stays up. Also `area=startup` warnings for allow-list typos | `services/payments/bootCheck.ts` |
 | `area=invoices`, `invoice_event=attempt_failed` / `gave_up` | an invoice's PDF or email failed; the cron retries up to 5 times, then `gave_up` | `features/invoices/lib/deliverInvoice.ts` |
+| `area=health` | `/api/health` found the database unreachable or its schema out of date (a missing migration). The uptime monitor also goes red | `app/api/health/route.ts` |
 | `area=cleanup` | some R2 deletions in the cron's upload cleanup failed (warning; retried next run) | `features/lessons/lib/uploadCleanup.ts` |
 | `area=deliver` | `/api/lessons/…/deliver` answered 5xx: an exception, or a deliberate 500 such as an asset with no storage key | deliver route |
 
@@ -93,19 +94,40 @@ Send every alert to email, and to the phone app or Slack if you have them. Use t
 
 ## Steps: uptime checks
 
-Use any external checker. Examples use Better Stack (free tier: 10 monitors, 3-minute checks); UptimeRobot works the same way.
+Use any external checker: UptimeRobot (free: 50 monitors, 5-minute checks) or Better Stack (free: 10 monitors, 3-minute checks). Always use the canonical host, `https://www.chiyali.com`. `chiyali.com` redirects there, and some checkers treat a redirect as down.
 
-1. **Home page**
-   - URL: `https://chiyali.com/`, method GET, every 3 minutes (1 minute if your plan allows).
-   - Expect: status 200 **and** the body contains `Chiyali`.
-   - Alert after 2 failed checks, from at least 2 regions. Include a Kathmandu-near region (e.g. Singapore or India) if offered.
-2. **Cron endpoint is reachable**
-   - URL: `https://chiyali.com/api/cron/reconcile-payments`, method GET, **no** Authorization header, every 5 minutes.
-   - Expect: status **401**. Don't store `CRON_SECRET` in a third-party checker.
-   - This proves the route is deployed and answering. Whether the cron actually *runs* is covered by the Sentry cron monitor (alert 3) and by Vercel → Project → Settings → Cron Jobs, where you can see recent invocations.
-   - A 404 means the route is missing from the deployment. A 5xx means the app is broken. Either way, alert.
-3. Optional: a **status page** in the same tool listing both monitors.
-4. Put the alert contacts in the same place as the Sentry alerts (email + phone).
+1. **Health (the main one):** `GET https://www.chiyali.com/api/health`, every 1–5 minutes.
+   - Expect: status **200** and the body contains `"status":"ok"`. HEAD works too, if your checker only sends HEAD.
+   - It's red (**503**) when the database can't be reached **or** its schema doesn't match the code. A missing migration ("column … does not exist") shows up here within minutes, instead of on a customer's page. The body says which check failed (`database` or `schema`), never the error. The error goes to Sentry with tag `area=health`.
+   - The body also has `commit` and `region`: which deployment answered. Handy right after a deploy or a rollback.
+   - Alert after 2 failed checks, from at least 2 regions. Include one near Nepal (Singapore or India) if offered.
+2. **Home page:** `GET https://www.chiyali.com/`, every 5 minutes. Expect 200 **and** the body contains `Chiyali`. This catches what the health check can't: a page that fails to render.
+3. **Mobile API:** `GET https://www.chiyali.com/api/v1/config`, every 5 minutes. Expect 200 and the body contains `"siteName":"Chiyali"`. This is the first thing the app loads.
+4. **Cron endpoint is reachable:** `GET https://www.chiyali.com/api/cron/reconcile-payments`, **no** Authorization header, every 5 minutes.
+   - Expect **401**. Don't store `CRON_SECRET` in a third-party checker.
+   - This proves the route is deployed and answering. Whether the cron actually *runs* is covered by the Sentry cron monitor (alert 3) and by Vercel → Project → Settings → Cron Jobs. A 404 means the route is missing; a 5xx means the app is broken. Either way, alert.
+5. Optional: a **status page** in the same tool, listing monitors 1–3.
+6. Put the alert contacts in the same place as the Sentry alerts (email + phone).
+
+## Deploying without downtime
+
+Vercel deploys are already zero-downtime: a new deployment only receives traffic once it has built and started, and **Instant Rollback** (Vercel → Deployments → ⋯ → Promote / Instant Rollback) switches back in seconds. What causes downtime here is everything around the code:
+
+1. **Database changes must work with both versions of the code.** The old deployment keeps serving until the new one is live, and a rollback brings old code back onto the new schema. So:
+   - **Run migrations *before* deploying** the code that needs them, never after. The outage after the domain move was this: new code, old schema.
+   - **Only add** in a migration: new tables, nullable columns or columns with defaults, new enum values, indexes. Drop or rename only in a later release, once no deployed code uses the old shape ("expand, then contract").
+   - After running a migration, check `/api/health` is green before promoting the deploy.
+2. **Preview before production.** Every branch gets a preview URL. Point previews at a Neon **branch** of the production database (Vercel's Neon integration can create one per preview), so migrations are tried on real data first.
+3. **Roll back the code, not the database.** If a deploy breaks, use Instant Rollback. Because migrations only add (rule 1), the old code still works on the new schema.
+4. **Database availability (Neon).**
+   - Turn off *scale to zero* (autosuspend) for the production branch on a paid plan. Otherwise the first request after idle waits for the database to wake.
+   - Use the **pooled** connection string in production.
+   - Point-in-time restore is the backup. Know how to use it before you need it.
+5. **Region.** Put Vercel Functions in the **same region as the Neon database** (Vercel → Settings → Functions → Region). Every request makes several database round trips, so a cross-ocean gap multiplies.
+   - Production logs show functions running in `iad1` (Washington). If Neon is also in the US, that's consistent.
+   - For learners in Nepal, a Singapore pair (Neon `aws-ap-southeast-1` + Vercel `sin1`) would be faster. Moving Neon means a new project plus a data copy: plan it before launch, not after.
+6. **Things outside your control degrade, not break.** An unconfigured or failing gateway is hidden at checkout (`PAYMENT_ENABLED_GATEWAYS` is the kill switch), and the reconciliation cron completes payments whose redirect was lost.
+7. **Domain.** `www.chiyali.com` is canonical; keep `chiyali.com` redirecting to it, and keep both on this Vercel project only.
 
 ## Before you turn it on
 
