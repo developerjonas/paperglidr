@@ -6,8 +6,6 @@ Last updated: 2026-09-28.
 
 **Legend:** 🔴 blocks taking real money · 🟠 blocks the app store launch · 🟡 needed for a good launch · ⏳ slow (takes weeks), start now
 
-> Items marked **(confirm)** are Nepali legal or tax requirements as we understand them. Check each with a lawyer or accountant before relying on it.
-
 ---
 
 ## TODOS:
@@ -25,16 +23,13 @@ Last updated: 2026-09-28.
 - [ ] 🟡 **Uptime check** on the home page and `/api/v1/config`.
 
 **Things missing in the code**
-- [ ] 🟠 **Delete my account, in the app and on the web.** Both stores reject apps that let users create accounts but not delete them. Play also needs a web page or link for deletion. A `deleteUser` function exists in the database code (it anonymises the user), but no screen or action uses it yet.
 - [ ] 🟠 **Store identifiers in `apps/mobile/app.json`:** `ios.bundleIdentifier` and `android.package` (e.g. `com.chiyali.app`). These can never change after the first upload.
 - [ ] 🟠 **EAS setup:** there is no `eas.json` yet. Run `npx eas-cli@latest build:configure`, then create a production build for each store.
 - [ ] 🟠 **Test on real phones:** the lesson player rotating to landscape, and YouTube/Vimeo videos marking the lesson complete when they end. Neither could be checked on the simulator.
 - [ ] 🟠 **App icon and splash screen:** still the Expo template images from when the app was created. Stores need the real Chiyali icon.
 
 **Store listings**
-- [ ] 🟠 App name, short and full description, category (Education).
 - [ ] 🟠 Screenshots: phone sizes for both stores, plus a Play feature graphic.
-- [ ] 🟠 Privacy Policy URL: `https://www.chiyali.com/privacy`.
 - [ ] 🟠 **Play Data safety form** and **Apple privacy labels:** what the app collects (name, email, username, learning progress; nothing sold).
 - [ ] 🟠 A **demo account** for the store reviewers, with a purchased course, so they can see lessons.
 - [ ] 🟠 Age / content rating questionnaires.
@@ -68,14 +63,3 @@ Last updated: 2026-09-28.
 - [ ] 🟡 **Weekly routine:** creator payouts every Friday; refunds are done by hand in the gateway dashboard, then marked in admin.
 - [ ] 🟡 **Support:** someone answers tickets within 12 hours, with saved replies for "I paid but have no access" and "video won't play".
 - [ ] 🟡 **Tracking:** a simple spreadsheet or saved queries for sign-ups, purchases, conversion, and share of sales via `?ref=`.
-
----
-
-## Order of attack
-
-1. **Today:** start company registration, PAN, bank account, D-U-N-S *(all slow)*. Run the database catch-up and fix the Vercel env.
-2. **This week:** Vercel Pro, Resend domain, Google redirect URI, sandbox end-to-end run. Sign the first 5 creators onto free YouTube-based courses.
-3. **When the company docs arrive:** apply to Khalti and eSewa; lawyer reviews the legal pages.
-4. **In parallel:** build account deletion, app identifiers and EAS; Play Console internal test.
-5. **First gateway approved:** go live, soft launch to creators' own audiences only, aim for the first 100 paid orders.
-6. **Then:** public launch with press and ambassadors; submit to the App Store.
