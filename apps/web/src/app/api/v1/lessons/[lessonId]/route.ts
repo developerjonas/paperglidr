@@ -6,7 +6,7 @@ import { db } from "@/drizzle/db"
 import { UserLessonCompleteTable } from "@/drizzle/schema"
 import { getLessonForViewer } from "@/features/lessons/db/lessons"
 import { canAccessLessonContent } from "@/features/lessons/permissions/lessons"
-import { isFreeTierLesson, mayDeliverAsset } from "@/features/lessons/lib/freeTier"
+import { getLessonVideoRules, mayDeliverAsset } from "@/features/lessons/lib/freeTier"
 
 /**
  * One lesson for the player. Preview lessons open for anyone (signed out
@@ -37,7 +37,10 @@ export const GET = v1Route<{ lessonId: string }>("lesson", async (_req, { params
   // Video the viewer can't be given (hosted video on a free-tier lesson or
   // on preview access only; an embed on a paid lesson) isn't listed at
   // all — the app never learns it exists.
-  const ctx = { freeTier: await isFreeTierLesson(lessonId), hasCourseAccess: access.hasCourseAccess }
+  const ctx = {
+    ...((await getLessonVideoRules(lessonId)) ?? { freeTier: true, embedsAllowed: false }),
+    hasCourseAccess: access.hasCourseAccess,
+  }
   const assets = lesson.assets.filter(asset => mayDeliverAsset(asset, ctx))
 
   const completed =

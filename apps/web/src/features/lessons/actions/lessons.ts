@@ -1,7 +1,7 @@
 "use server"
 import {
   PAID_LESSON_NO_EMBED_MESSAGE,
-  isFreeTierPlacement,
+  getPlacementVideoRules,
   lessonHasEmbed,
   lessonHasHostedVideo,
   needsEmbedMessage,
@@ -53,16 +53,16 @@ export async function updateLesson(
   ) {
     return { error: true, message: "There was an error updating your lesson" }
   }
-  // Free-tier lessons (previews, free courses) use an embed; paid lessons
-  // hosted video. The status or the section (course) may be changing.
-  const freeTier = await isFreeTierPlacement(data)
+  // Previews and free courses use links; paid courses uploaded video;
+  // drafts either. The status or the section (course) may be changing.
+  const { freeTier, embedsAllowed } = await getPlacementVideoRules(data)
   if (freeTier && (await lessonHasHostedVideo(id))) {
     return {
       error: true,
       message: `${needsEmbedMessage(data.status)} Remove the uploaded video before making this change.`,
     }
   }
-  if (!freeTier && (await lessonHasEmbed(id))) {
+  if (!embedsAllowed && (await lessonHasEmbed(id))) {
     return {
       error: true,
       message: `${PAID_LESSON_NO_EMBED_MESSAGE} Replace the video before making this change.`,

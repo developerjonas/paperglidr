@@ -9,8 +9,10 @@
 //
 //   1. Free-tier lessons with hosted video — no longer delivered; the
 //      lesson shows no video until the creator adds a link.
-//   2. Paid lessons with a YouTube/Vimeo link — no longer delivered; the
-//      creator needs to upload an MP4 (or make the lesson a preview).
+//   2. Paid lessons with a YouTube/Vimeo link (non-preview lessons of a
+//      course in a paid product that's live or in review) — not delivered;
+//      the creator needs to upload an MP4 (or make the lesson a preview).
+//      Courses not on sale yet (drafts) may use either.
 //   3. Embeds whose stored ID doesn't validate against @repo/video-embeds.
 //
 // It never deletes or edits anything, and there is no "apply" mode on
@@ -38,6 +40,7 @@ type Row = {
   courseName: string
   authorEmail: string | null
   freeCourse: boolean
+  paidCourse: boolean
 }
 
 const json = process.argv.includes("--json")
@@ -62,18 +65,26 @@ const SQL = `
     from course_products cp
     join products p on p.id = cp."productId"
     where p.status = 'public' and p."priceInRupees" = 0
+  ),
+  paid_courses as (
+    select distinct cp."courseId"
+    from course_products cp
+    join products p on p.id = cp."productId"
+    where p.status in ('public', 'pending_review') and p."priceInRupees" > 0
   )
   select a.id as "assetId", a.provider::text as provider, a.type::text as type, a."externalId",
          a."fileName", a.status::text as "assetStatus",
          l.id as "lessonId", l.name as "lessonName", l.status::text as "lessonStatus",
          c.id as "courseId", c.name as "courseName", u.email as "authorEmail",
-         (fc."courseId" is not null) as "freeCourse"
+         (fc."courseId" is not null) as "freeCourse",
+         (pc."courseId" is not null) as "paidCourse"
   from lesson_assets a
   join lessons l on l.id = a."lessonId"
   join course_sections s on s.id = l."sectionId"
   join courses c on c.id = s."courseId"
   left join "user" u on u.id = c.author_id
   left join free_courses fc on fc."courseId" = c.id
+  left join paid_courses pc on pc."courseId" = c.id
   where a.provider = 'bunny'
      or (a.provider = 'r2' and a.type = 'video_file')
      or a.provider::text = any($1)
@@ -90,7 +101,7 @@ async function main() {
   const freeTier = (r: Row) => r.lessonStatus === "preview" || r.freeCourse
   const report = {
     hostedVideoOnFreeTier: rows.filter(r => !isEmbed(r) && freeTier(r)),
-    embedOnPaidLesson: rows.filter(r => isEmbed(r) && !freeTier(r)),
+    embedOnPaidLesson: rows.filter(r => isEmbed(r) && !freeTier(r) && r.paidCourse),
     invalidEmbed: rows.filter(r => isEmbed(r) && fromStoredEmbed(r) == null),
   }
 
@@ -100,7 +111,9 @@ async function main() {
   }
 
   const why = (r: Row) =>
-    [r.lessonStatus === "preview" && "preview", r.freeCourse && "free course"].filter(Boolean).join(", ") || "paid"
+    [r.lessonStatus === "preview" && "preview", r.freeCourse && "free course", r.paidCourse && !r.freeCourse && "paid course"]
+      .filter(Boolean)
+      .join(", ") || "draft"
   const line = (r: Row) =>
     `  - ${r.courseName} › ${r.lessonName}  [${why(r)}; ${r.provider} ${r.type}${r.assetStatus === "pending" ? ", unfinished upload" : ""}]\n` +
     `      lesson ${r.lessonId}  asset ${r.assetId}  author ${r.authorEmail ?? "?"}`

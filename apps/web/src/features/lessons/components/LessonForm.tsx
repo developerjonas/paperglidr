@@ -27,17 +27,17 @@ import {
 import { lessonSchema } from "../schemas/lessons"
 import { Textarea } from "@/components/ui/textarea"
 import { createLesson, updateLesson } from "../actions/lessons"
-import { LessonAssetManager } from "./LessonAssetManager"
+import { LessonAssetManager, type CourseVideoState } from "./LessonAssetManager"
 
 export function LessonForm({
   sections,
   defaultSectionId,
   onSuccessAction,
   lesson,
-  courseIsFree,
+  courseVideoState,
 }: {
-  /** The course is in a free public product: every lesson is free-tier. */
-  courseIsFree: boolean
+  /** Free, paid or not on sale yet: decides links vs uploaded video. */
+  courseVideoState: CourseVideoState
   sections: {
     id: string
     name: string
@@ -58,7 +58,7 @@ export function LessonForm({
   const [savedLessonId, setSavedLessonId] = useState<string | null>(
     lesson?.id ?? null
   )
-  // The status as saved on the server — with courseIsFree, what decides
+  // The status as saved on the server — with courseVideoState, what decides
   // whether the lesson's video is a YouTube/Vimeo link or an upload.
   const [savedStatus, setSavedStatus] = useState<LessonStatus | null>(
     lesson?.status ?? null
@@ -205,7 +205,8 @@ export function LessonForm({
       {savedLessonId ? (
         <LessonAssetManager
           lessonId={savedLessonId}
-          freeTier={courseIsFree || savedStatus === "preview"}
+          courseVideoState={courseVideoState}
+          isPreview={savedStatus === "preview"}
         />
       ) : (
         <p className="text-sm text-muted-foreground">

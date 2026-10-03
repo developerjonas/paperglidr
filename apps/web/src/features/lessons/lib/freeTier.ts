@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, inArray, ne, or } from "drizzle-orm"
+import { and, eq, gt, inArray, ne, or } from "drizzle-orm"
 import { EMBED_PROVIDER_LABELS, EMBED_PROVIDER_NAMES, isEmbedProvider } from "@repo/video-embeds"
 import { db } from "@/drizzle/db"
 import {
@@ -15,12 +15,17 @@ import {
 } from "@/drizzle/schema"
 
 /**
- * Free-tier lessons use external embeds (YouTube, Vimeo) for their video;
- * Chiyali-hosted video (R2 MP4, Bunny) is for paid, enrolled content only.
+ * Which kind of video a lesson may use, by its course's state:
  *
- * A lesson is free-tier if it's a preview, or its course is in any public
- * product priced at 0 — even if the course is also sold in a paid product,
- * since anyone can get it for nothing.
+ * - Free (in any public product priced at 0, even if also sold in a paid
+ *   one: anyone can get it for nothing): YouTube/Vimeo links only.
+ * - Paid (in a paid product that's live or waiting for review): uploaded
+ *   video only; links are public, so they're allowed on previews only.
+ * - Draft (not on sale yet): both, while the creator builds it. The rule
+ *   is checked when it goes on sale (checkProductFreeTier).
+ *
+ * Previews are always free-tier: links only. "freeTier" = no hosted video;
+ * "embedsAllowed" = links may be used and delivered.
  */
 
 /** Chiyali-hosted video: an uploaded MP4 on R2, or anything on Bunny. PDFs and images aren't. */
@@ -40,11 +45,18 @@ export function isEmbedAsset(asset: { provider: AssetProvider }) {
  */
 export function mayDeliverAsset(
   asset: { provider: AssetProvider; type: AssetType },
-  ctx: { freeTier: boolean; hasCourseAccess: boolean },
+  ctx: VideoRules & { hasCourseAccess: boolean },
 ) {
   if (isHostedVideoAsset(asset)) return mayDeliverHostedVideo(ctx)
-  if (isEmbedAsset(asset)) return ctx.freeTier
+  if (isEmbedAsset(asset)) return ctx.embedsAllowed
   return true
+}
+
+export type VideoRules = {
+  /** Hosted video isn't allowed (a preview, or a free course). */
+  freeTier: boolean
+  /** YouTube/Vimeo links are allowed (anything but a non-preview lesson of a paid course). */
+  embedsAllowed: boolean
 }
 
 export const PREVIEW_NEEDS_EMBED_MESSAGE = `Preview lessons need a ${EMBED_PROVIDER_LABELS} link.`
@@ -71,6 +83,47 @@ export async function getFreeCourseIds(courseIds: string[], { excludeProductId }
 
 export async function isFreeCourse(courseId: string) {
   return (await getFreeCourseIds([courseId])).has(courseId)
+}
+
+/** The courses (of these) in a paid product that's live or waiting for review. */
+export async function getPaidCourseIds(courseIds: string[]) {
+  if (courseIds.length === 0) return new Set<string>()
+  const rows = await db
+    .selectDistinct({ courseId: CourseProductTable.courseId })
+    .from(CourseProductTable)
+    .innerJoin(ProductTable, eq(ProductTable.id, CourseProductTable.productId))
+    .where(
+      and(
+        inArray(CourseProductTable.courseId, courseIds),
+        inArray(ProductTable.status, ["public", "pending_review"]),
+        gt(ProductTable.priceInRupees, 0),
+      ),
+    )
+  return new Set(rows.map(row => row.courseId))
+}
+
+/** A course's state for the video rule: free, paid or draft. */
+export async function getCourseVideoState(courseId: string): Promise<"free" | "paid" | "draft"> {
+  if (await isFreeCourse(courseId)) return "free"
+  return (await getPaidCourseIds([courseId])).has(courseId) ? "paid" : "draft"
+}
+
+/** The video rules for a lesson with this status in a course with this state. */
+export function videoRulesFor(status: LessonStatus, courseState: "free" | "paid" | "draft"): VideoRules {
+  const freeTier = status === "preview" || courseState === "free"
+  return { freeTier, embedsAllowed: freeTier || courseState !== "paid" }
+}
+
+/** The video rules for an existing lesson; null if it doesn't exist. */
+export async function getLessonVideoRules(lessonId: string): Promise<VideoRules | null> {
+  const [row] = await db
+    .select({ status: LessonTable.status, courseId: CourseSectionTable.courseId })
+    .from(LessonTable)
+    .innerJoin(CourseSectionTable, eq(CourseSectionTable.id, LessonTable.sectionId))
+    .where(eq(LessonTable.id, lessonId))
+    .limit(1)
+  if (row == null) return null
+  return videoRulesFor(row.status, await getCourseVideoState(row.courseId))
 }
 
 /** Whether a lesson is free-tier. False for a lesson that doesn't exist. */
@@ -100,14 +153,13 @@ export function mayDeliverHostedVideo({
   return !freeTier && hasCourseAccess
 }
 
-/** Whether a lesson with this status, in this section, would be free-tier. */
-export async function isFreeTierPlacement({ status, sectionId }: { status: LessonStatus; sectionId: string }) {
-  if (status === "preview") return true
+/** The video rules a lesson would have with this status, in this section. */
+export async function getPlacementVideoRules({ status, sectionId }: { status: LessonStatus; sectionId: string }) {
   const section = await db.query.CourseSectionTable.findFirst({
     where: eq(CourseSectionTable.id, sectionId),
     columns: { courseId: true },
   })
-  return section != null && (await isFreeCourse(section.courseId))
+  return videoRulesFor(status, section ? await getCourseVideoState(section.courseId) : "draft")
 }
 
 /** Why hosted video isn't allowed on a free-tier lesson with this status. */
@@ -177,10 +229,10 @@ function listLessons(lessons: ConflictingLesson[]) {
  *
  * - Courses that become free (the product is public at price 0, and they
  *   weren't free already) can't have hosted video in any lesson.
- * - Courses that stop being free while the product stays live (price
- *   raised, course removed) can't have embeds outside previews.
- *   Unpublishing is always allowed; the embeds just stop playing (the
- *   report script lists them).
+ * - Courses that become paid (the product is submitted or live at a
+ *   price, and they aren't free through another product) can't have
+ *   YouTube/Vimeo links outside previews.
+ *   Unpublishing is always allowed: the course becomes a draft again.
  *
  * Returns an error message, or null when the change is fine.
  */
@@ -201,6 +253,7 @@ export async function checkProductFreeTier({
   const beforeCourseIds = before?.courseProducts.map(cp => cp.courseId) ?? []
   const wasFree = before?.status === "public" && before.priceInRupees === 0
   const willBeFree = after.live && after.priceInRupees === 0
+  const willBePaid = after.live && after.priceInRupees > 0
 
   if (willBeFree) {
     const freeElsewhere = await getFreeCourseIds(after.courseIds, { excludeProductId: productId })
@@ -211,12 +264,11 @@ export async function checkProductFreeTier({
     }
   }
 
-  if (wasFree && after.live) {
-    const leaving = beforeCourseIds.filter(id => !willBeFree || !after.courseIds.includes(id))
-    const stillFree = await getFreeCourseIds(leaving, { excludeProductId: productId })
-    const embeds = await conflictingLessons(leaving.filter(id => !stillFree.has(id)), "embed")
+  if (willBePaid) {
+    const freeElsewhere = await getFreeCourseIds(after.courseIds, { excludeProductId: productId })
+    const embeds = await conflictingLessons(after.courseIds.filter(id => !freeElsewhere.has(id)), "embed")
     if (embeds.length > 0) {
-      return `Paid lessons can't use ${EMBED_PROVIDER_LABELS} links. Upload an MP4 (or make the lesson a preview) for ${listLessons(embeds)} first.`
+      return `Paid lessons can't use ${EMBED_PROVIDER_LABELS} links: anyone with the link could watch them. Upload an MP4 (or make the lesson a free preview) for ${listLessons(embeds)} first.`
     }
   }
 

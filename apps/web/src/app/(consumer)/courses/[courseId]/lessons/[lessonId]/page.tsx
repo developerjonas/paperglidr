@@ -1,4 +1,4 @@
-import { isFreeTierLesson, mayDeliverAsset } from "@/features/lessons/lib/freeTier";
+import { getLessonVideoRules, mayDeliverAsset } from "@/features/lessons/lib/freeTier";
 import { ReportButton } from "@/features/reports/components/ReportButton";
 import { ActionButton } from "@/components/ActionButton";
 import { SkeletonButton } from "@/components/Skeleton";
@@ -104,7 +104,7 @@ async function SuspenseBoundary({
   const primaryAsset =
     storedPrimary != null &&
     mayDeliverAsset(storedPrimary, {
-      freeTier: await isFreeTierLesson(lesson.id),
+      ...((await getLessonVideoRules(lesson.id)) ?? { freeTier: true, embedsAllowed: false }),
       hasCourseAccess: await canAccessLessonContent({ userId, role }, lesson.id).then(
         (access) => access.allowed && access.hasCourseAccess,
       ),

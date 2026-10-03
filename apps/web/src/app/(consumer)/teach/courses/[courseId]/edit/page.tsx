@@ -12,7 +12,7 @@ import { getCourseSectionCourseTag } from "@/features/courseSections/db/cache";
 import { LessonFormDialog } from "@/features/lessons/components/LessonFormDialog";
 import { SortableLessonList } from "@/features/lessons/components/SortableLessonList";
 import { getLessonCourseTag } from "@/features/lessons/db/cache/lessons";
-import { isFreeCourse } from "@/features/lessons/lib/freeTier";
+import { getCourseVideoState } from "@/features/lessons/lib/freeTier";
 import { cn } from "@/lib/utils";
 import { asc, eq } from "drizzle-orm";
 import { EyeClosed, PlusIcon } from "lucide-react";
@@ -33,8 +33,9 @@ export default async function EditCoursePage({
 
   if (course == null) return notFound();
   if (course.authorId !== userId) return notFound(); // don't leak that the course exists to non-owners
-  // A free course's lessons all use YouTube/Vimeo links (features/lessons/lib/freeTier).
-  const courseIsFree = await isFreeCourse(course.id);
+  // Free courses use YouTube/Vimeo links, paid ones uploaded video, drafts
+  // either (features/lessons/lib/freeTier).
+  const courseVideoState = await getCourseVideoState(course.id);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -95,7 +96,7 @@ export default async function EditCoursePage({
                     <LessonFormDialog
                       defaultSectionId={section.id}
                       sections={course.courseSections}
-                      courseIsFree={courseIsFree}
+                      courseVideoState={courseVideoState}
                     >
                       <DialogTrigger asChild>
                         <Button variant="outline">
@@ -108,7 +109,7 @@ export default async function EditCoursePage({
                     <SortableLessonList
                       sections={course.courseSections}
                       lessons={section.lessons}
-                      courseIsFree={courseIsFree}
+                      courseVideoState={courseVideoState}
                     />
                   </CardContent>
                 </Card>

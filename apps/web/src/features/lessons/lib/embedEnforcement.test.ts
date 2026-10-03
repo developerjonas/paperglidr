@@ -38,6 +38,7 @@ const { setLessonEmbedVideo, requestLessonAssetUploadUrl, confirmLessonAssetUplo
   "../actions/lessonAssets"
 )
 const { updateLesson } = await import("../actions/lessons")
+const { getLessonVideoRules } = await import("./freeTier")
 const products = await import("@/features/products/actions/products")
 const { approveProduct } = await import("@/features/products/lib/moderation")
 
@@ -287,5 +288,51 @@ describe("products", () => {
     expect(await approveProduct({ productId: pending!.id, adminId: admin.id })).toMatchObject({ outcome: "blocked" })
     const [after] = await db.select().from(ProductTable).where(eq(ProductTable.id, pending!.id))
     expect(after!.status).toBe("pending_review")
+  })
+})
+
+describe("draft courses (not on sale yet)", () => {
+  // createProduct's course is in a live paid product; a draft is a course
+  // whose only product is private.
+  beforeEach(async () => {
+    const { creator, course } = await createProduct({ priceInRupees: 999, status: "private" })
+    creatorId = creator.id
+    courseId = course.id
+    session.userId = creator.id
+    sectionId = (await section(course.id)).id
+  })
+
+  it("take both YouTube/Vimeo links and uploaded video while being built", async () => {
+    const withLink = await lesson("public")
+    expect(await setLessonEmbedVideo(withLink.id, YT)).toMatchObject({ error: false })
+    const withUpload = await lesson("public")
+    expect(await requestLessonAssetUploadUrl(mp4Upload(withUpload.id))).toMatchObject({ error: false })
+    expect(await getLessonVideoRules(withLink.id)).toEqual({ freeTier: false, embedsAllowed: true })
+  })
+
+  it("can't be submitted as a paid product while non-preview lessons use links", async () => {
+    await db.update(UserTable).set({ role: "admin" }).where(eq(UserTable.id, creatorId))
+    const intro = await lesson("preview")
+    await embed(intro.id)
+    const linked = await lesson("public")
+    await embed(linked.id)
+    const input = {
+      name: `Product ${crypto.randomUUID()}`,
+      priceInRupees: 500,
+      description: DESCRIPTION,
+      imageUrl: "/x.png",
+      status: "public" as const,
+      categoryId: null,
+      tagIds: [],
+      courseIds: [courseId],
+    }
+    expect(await products.createProduct(input)).toMatchObject({ error: true, message: expect.stringContaining("Paid lessons can't use") })
+
+    // As free previews, links are fine in a paid course.
+    await db.update(LessonTable).set({ status: "preview" }).where(eq(LessonTable.id, linked.id))
+    await expect(products.createProduct(input)).rejects.toThrow("NEXT_REDIRECT")
+    // Now it's paid: a new non-preview lesson can't take a link.
+    const later = await lesson("public")
+    expect(await setLessonEmbedVideo(later.id, YT)).toMatchObject({ error: true, message: expect.stringContaining("Paid lessons") })
   })
 })

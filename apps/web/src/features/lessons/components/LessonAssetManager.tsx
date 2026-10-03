@@ -41,20 +41,29 @@ type LessonAsset = {
 const isHostedVideo = (asset: LessonAsset) =>
   asset.provider === "bunny" || (asset.provider === "r2" && asset.type === "video_file");
 
+/** Free (a ₹0 product), paid (a paid product, live or in review) or draft (not on sale). */
+export type CourseVideoState = "free" | "paid" | "draft";
+
 /**
- * Step 2 of the lesson form: the lesson's content. Free-tier lessons
- * (previews, and every lesson of a free course) take a YouTube or Vimeo
- * link for their video; paid lessons take an uploaded MP4. Either can use a
- * PDF instead, and both can have attachments. The server enforces all of
- * this (actions/lessonAssets.ts); this only shows the right controls.
+ * Step 2 of the lesson form: the lesson's content. Previews and free
+ * courses take a YouTube or Vimeo link for their video; paid courses take
+ * an uploaded MP4; a course that isn't on sale yet can use either (checked
+ * when it goes on sale). Any lesson can use a PDF instead and have
+ * attachments. The server enforces all of this (lib/freeTier.ts); this only
+ * shows the right controls.
  */
 export function LessonAssetManager({
   lessonId,
-  freeTier,
+  courseVideoState,
+  isPreview,
 }: {
   lessonId: string;
-  freeTier: boolean;
+  courseVideoState: CourseVideoState;
+  isPreview: boolean;
 }) {
+  // Same rule as videoRulesFor in lib/freeTier.ts.
+  const freeTier = isPreview || courseVideoState === "free";
+  const embedsAllowed = freeTier || courseVideoState !== "paid";
   const [assets, setAssets] = useState<LessonAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -183,7 +192,9 @@ export function LessonAssetManager({
         <p className="text-sm text-muted-foreground">
           {freeTier
             ? `This lesson is free to watch (a preview, or in a free course), so its video is a ${EMBED_PROVIDER_LABELS} link. Uploaded video is for paid lessons.`
-            : `Upload the lesson's MP4 video or PDF. Paid lessons can't use ${EMBED_PROVIDER_LABELS} links — anyone with the link could watch them.`}{" "}
+            : embedsAllowed
+              ? `This course isn't on sale yet. If it will be free, use ${EMBED_PROVIDER_LABELS} links; if you'll sell it, upload MP4s (only free preview lessons can use links in a paid course).`
+              : `Upload the lesson's MP4 video or PDF. Paid lessons can't use ${EMBED_PROVIDER_LABELS} links — anyone with the link could watch them.`}{" "}
           You can also attach downloadable files (slides, worksheets).
         </p>
       </div>
@@ -225,7 +236,7 @@ export function LessonAssetManager({
                   This uploaded video won&apos;t play on a free lesson. Replace
                   it with a {EMBED_PROVIDER_LABELS} link.
                 </p>
-              ) : !freeTier && isEmbedProvider(asset.provider) ? (
+              ) : !embedsAllowed && isEmbedProvider(asset.provider) ? (
                 <p className="text-destructive">
                   This link won&apos;t play on a paid lesson. Replace it with an
                   uploaded MP4.
@@ -236,7 +247,7 @@ export function LessonAssetManager({
         </ul>
       )}
 
-      {freeTier ? (
+      {embedsAllowed && (
         <div className="flex flex-col gap-2">
           <label htmlFor={`embed-${lessonId}`} className="text-sm font-medium">
             Embed URL ({EMBED_PROVIDER_LABELS})
@@ -289,8 +300,12 @@ export function LessonAssetManager({
               />
             </div>
           ) : null}
+        </div>
+      )}
 
-          <label className="text-sm font-medium mt-2">Or upload a PDF instead</label>
+      {freeTier ? (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Or upload a PDF instead</label>
           <Input
             type="file"
             accept="application/pdf"
@@ -305,7 +320,7 @@ export function LessonAssetManager({
       ) : (
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">
-            Upload primary content (MP4 video or PDF)
+            {embedsAllowed ? "Or upload an MP4 video or PDF" : "Upload primary content (MP4 video or PDF)"}
           </label>
           <p className="text-sm text-muted-foreground">
             {VIDEO_ENCODING_GUIDANCE} PDFs up to 100 MB.

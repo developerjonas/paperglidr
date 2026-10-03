@@ -174,10 +174,11 @@ Check `embedUrl` with `parseEmbedUrl` from `@repo/video-embeds` before loading i
 
 ### Free lessons and video
 
-A lesson is **free** if it's a preview, or if its course is in any public product priced at 0 (even when the course is also sold in a paid product).
+A course is **free** if it's in any public product priced at 0 (even when it's also sold in a paid product), **paid** if it's in a paid product that's live or waiting for review, and a **draft** otherwise (not on sale yet).
 
-- A free lesson's video is a YouTube or Vimeo link. It's never Chiyali-hosted video.
-- A paid lesson's video is Chiyali-hosted (an uploaded MP4, or Bunny), and only for people who have the course. Having a preview open doesn't count. A paid lesson never gets a YouTube or Vimeo link, because anyone with the link could watch it.
+- A **free lesson** (a preview, or any lesson of a free course): its video is a YouTube or Vimeo link, never Chiyali-hosted video.
+- A **paid lesson** (a non-preview lesson of a paid course): its video is Chiyali-hosted (an uploaded MP4, or Bunny), and only for people who have the course; having a preview open doesn't count. It never gets a YouTube or Vimeo link, because anyone with the link could watch it.
+- A **draft** course's lessons may use either while the creator builds it (only its author and admins can open them). The rule is checked when it goes on sale: a ₹0 product can't contain uploaded video, and a paid product can't have links outside previews.
 - PDFs and image attachments work on any lesson, with the usual access rules.
 
 The server enforces this. Assets that break the rule (older content) aren't listed in `/lessons/:lessonId`, and their asset URL returns 404, the same as a missing asset. So the app never sees a hosted URL for a free lesson, or an embed for a paid one. The allowed providers and hosts are in `packages/video-embeds`, the one allowlist shared by the web app and the app.

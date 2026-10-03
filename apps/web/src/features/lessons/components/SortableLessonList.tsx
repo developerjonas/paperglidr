@@ -2,6 +2,7 @@
 
 import { SortableItem, SortableList } from "@/components/SortableList"
 import { LessonStatus } from "@/drizzle/schema"
+import type { CourseVideoState } from "./LessonAssetManager"
 import { cn } from "@/lib/utils"
 import { EyeClosed, Trash2Icon, VideoIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,9 +14,9 @@ import { deleteLesson, updateLessonOrders } from "../actions/lessons"
 export function SortableLessonList({
   sections,
   lessons,
-  courseIsFree,
+  courseVideoState,
 }: {
-  courseIsFree: boolean
+  courseVideoState: CourseVideoState
   sections: {
     id: string
     name: string
@@ -47,7 +48,7 @@ export function SortableLessonList({
               {lesson.status === "preview" && <VideoIcon className="size-4" />}
               {lesson.name}
             </div>
-            <LessonFormDialog lesson={lesson} sections={sections} courseIsFree={courseIsFree}>
+            <LessonFormDialog lesson={lesson} sections={sections} courseVideoState={courseVideoState}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="ml-auto">
                   Edit

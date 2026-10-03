@@ -6,17 +6,18 @@ import {
   DialogContent,
 } from "@/components/ui/dialog"
 import { LessonStatus } from "@/drizzle/schema"
+import type { CourseVideoState } from "./LessonAssetManager"
 import { ReactNode, useState } from "react"
 import { LessonForm } from "./LessonForm"
 export function LessonFormDialog({
   sections,
   defaultSectionId,
   lesson,
-  courseIsFree,
+  courseVideoState,
   children,
 }: {
   children: ReactNode
-  courseIsFree: boolean
+  courseVideoState: CourseVideoState
   sections: { id: string; name: string }[]
   defaultSectionId?: string
   lesson?: {
@@ -43,7 +44,7 @@ export function LessonFormDialog({
             onSuccessAction={() => setIsOpen(false)}
             lesson={lesson}
             defaultSectionId={defaultSectionId}
-            courseIsFree={courseIsFree}
+            courseVideoState={courseVideoState}
           />
         </div>
       </DialogContent>

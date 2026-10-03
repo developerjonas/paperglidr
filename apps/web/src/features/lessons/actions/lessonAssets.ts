@@ -29,6 +29,7 @@ import { UserFacingError, actionError } from "@/lib/safeError";
 import { EMBED_PROVIDERS, INVALID_EMBED_MESSAGE, parseEmbedUrl, toStoredEmbed } from "@repo/video-embeds";
 import {
   PAID_LESSON_NO_EMBED_MESSAGE,
+  getLessonVideoRules,
   isFreeTierLesson,
   needsEmbedMessage,
 } from "../lib/freeTier";
@@ -180,8 +181,8 @@ async function checkStoredObject({
 }
 
 /**
- * Sets a YouTube or Vimeo video as the lesson's content — free-tier
- * lessons (previews, free courses) only. The link is normalised by
+ * Sets a YouTube or Vimeo video as the lesson's content — anything but a
+ * non-preview lesson of a paid course (features/lessons/lib/freeTier). The link is normalised by
  * @repo/video-embeds; only the video ID, unlisted hash and start time are
  * stored. Replaces the current primary asset (an uploaded file's R2 object
  * is queued for deletion).
@@ -189,7 +190,7 @@ async function checkStoredObject({
 export async function setLessonEmbedVideo(lessonId: string, url: string) {
   try {
     await canEditLessonAssets(lessonId); // throws if unauthorized
-    if (!(await isFreeTierLesson(lessonId))) {
+    if (!(await getLessonVideoRules(lessonId))?.embedsAllowed) {
       throw new UserFacingError(PAID_LESSON_NO_EMBED_MESSAGE);
     }
     const embed = typeof url === "string" ? parseEmbedUrl(url) : null;

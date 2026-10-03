@@ -6,7 +6,7 @@ import { getDownloadUrl } from "@/services/storage/r2";
 import { getBunnyEmbedUrl } from "@/services/bunny/streamToken";
 import { captureEvent } from "@/lib/observability";
 import { buildEmbedUrl, fromStoredEmbed, isEmbedProvider } from "@repo/video-embeds";
-import { isFreeTierLesson, mayDeliverAsset } from "@/features/lessons/lib/freeTier";
+import { getLessonVideoRules, mayDeliverAsset } from "@/features/lessons/lib/freeTier";
 import { routeError } from "@/lib/safeError";
 
 // Signed R2 URLs are the only thing guarding private files once issued,
@@ -56,7 +56,7 @@ async function handle(
   // only. Same answer as a missing asset, so it doesn't reveal what exists.
   if (
     !mayDeliverAsset(asset, {
-      freeTier: await isFreeTierLesson(lessonId),
+      ...((await getLessonVideoRules(lessonId)) ?? { freeTier: true, embedsAllowed: false }),
       hasCourseAccess: access.hasCourseAccess,
     })
   ) {
