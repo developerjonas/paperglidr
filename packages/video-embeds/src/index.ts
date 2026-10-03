@@ -206,6 +206,44 @@ export function isEmbedProvider(provider: string): provider is EmbedProvider {
   return (EMBED_PROVIDER_NAMES as string[]).includes(provider)
 }
 
+const PLAYLIST_ID = /^[A-Za-z0-9_-]{10,64}$/
+
+export type PlaylistLink =
+  | { ok: true; playlistId: string }
+  | { ok: false; reason: "not_a_playlist" | "auto_generated" | "personal" }
+
+/**
+ * The playlist in a YouTube link: …/playlist?list=ID, or a watch / youtu.be
+ * link with &list=ID. Same host and protocol rules as parseEmbedUrl.
+ * YouTube's auto-generated mixes (RD…) and personal lists (Watch later,
+ * Liked videos) can't be read, so they're refused with a reason.
+ */
+export function parseYouTubePlaylistLink(input: string): PlaylistLink {
+  const raw = input.trim()
+  if (raw.length === 0 || raw.length > 2048) return { ok: false, reason: "not_a_playlist" }
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    return { ok: false, reason: "not_a_playlist" }
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") return { ok: false, reason: "not_a_playlist" }
+  if (url.username || url.password || url.port) return { ok: false, reason: "not_a_playlist" }
+  if (providerForHost(url.hostname) !== "youtube") return { ok: false, reason: "not_a_playlist" }
+  const list = url.searchParams.get("list")
+  if (list == null) return { ok: false, reason: "not_a_playlist" }
+  if (list === "WL" || list === "LL" || list === "LM") return { ok: false, reason: "personal" }
+  if (list.startsWith("RD")) return { ok: false, reason: "auto_generated" }
+  if (!PLAYLIST_ID.test(list)) return { ok: false, reason: "not_a_playlist" }
+  return { ok: true, playlistId: list }
+}
+
+export const PLAYLIST_LINK_MESSAGES: Record<Exclude<PlaylistLink, { ok: true }>["reason"], string> = {
+  not_a_playlist: "That isn't a YouTube playlist link (e.g. https://www.youtube.com/playlist?list=…).",
+  auto_generated: "YouTube's automatic Mix playlists can't be imported. Use a playlist you made.",
+  personal: "Watch later and Liked videos are private to your account. Make a normal playlist and use its link.",
+}
+
 /** The message for a link that isn't an allowed video link. */
 export const INVALID_EMBED_MESSAGE = `That isn't a ${EMBED_PROVIDER_LABELS} video link (e.g. https://www.youtube.com/watch?v=… or https://vimeo.com/…).`
 

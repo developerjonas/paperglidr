@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { buildEmbedUrl, fromStoredEmbed, normalizeEmbedUrl, parseEmbedUrl, parseStartTime, toStoredEmbed } from "./index"
+import { buildEmbedUrl, fromStoredEmbed, normalizeEmbedUrl, parseEmbedUrl, parseStartTime, parseYouTubePlaylistLink, toStoredEmbed } from "./index"
 
 const ID = "dQw4w9WgXcQ"
 const YT = `https://www.youtube-nocookie.com/embed/${ID}`
@@ -129,5 +129,36 @@ describe("stored form", () => {
     expect(fromStoredEmbed({ provider: "vimeo", externalId: "123:../../x" })).toBeNull()
     expect(fromStoredEmbed({ provider: "r2", externalId: ID })).toBeNull()
     expect(fromStoredEmbed({ provider: "youtube", externalId: null })).toBeNull()
+  })
+})
+
+describe("parseYouTubePlaylistLink", () => {
+  const PL = "PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG"
+  it.each([
+    `https://www.youtube.com/playlist?list=${PL}`,
+    `https://youtube.com/playlist?list=${PL}&si=track`,
+    `https://m.youtube.com/playlist?list=${PL}`,
+    `https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=${PL}&index=3`,
+    `https://youtu.be/dQw4w9WgXcQ?list=${PL}`,
+    `  https://www.youtube.com/playlist?list=${PL}  `,
+  ])("%s", link => {
+    expect(parseYouTubePlaylistLink(link)).toEqual({ ok: true, playlistId: PL })
+  })
+
+  it("explains mixes and personal lists", () => {
+    expect(parseYouTubePlaylistLink("https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ")).toEqual({ ok: false, reason: "auto_generated" })
+    expect(parseYouTubePlaylistLink("https://www.youtube.com/playlist?list=WL")).toEqual({ ok: false, reason: "personal" })
+    expect(parseYouTubePlaylistLink("https://www.youtube.com/playlist?list=LL")).toEqual({ ok: false, reason: "personal" })
+  })
+
+  it.each([
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    `https://evil.example/playlist?list=${PL}`,
+    `javascript:alert(1)//www.youtube.com/playlist?list=${PL}`,
+    `https://vimeo.com/showcase/123?list=${PL}`,
+    "https://www.youtube.com/playlist?list=<script>",
+    "",
+  ])("rejects %j", link => {
+    expect(parseYouTubePlaylistLink(link)).toMatchObject({ ok: false, reason: "not_a_playlist" })
   })
 })

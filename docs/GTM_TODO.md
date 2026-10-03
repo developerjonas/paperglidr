@@ -17,7 +17,6 @@ Last updated: 2026-10-03.
   ALTER TABLE "instructors" ADD COLUMN IF NOT EXISTS "creator_terms_version" text;
   ALTER TABLE "instructors" ADD COLUMN IF NOT EXISTS "is_founding" boolean DEFAULT false NOT NULL;
   ```
-- [ ] 🔴 **Push and deploy,** then check `https://www.chiyali.com/api/health` shows `"status":"ok"` (a `"schema":"fail"` means a migration is missing).
 - [ ] 🔴 **Payment cron on cron-job.org:** every 5 minutes, `GET https://www.chiyali.com/api/cron/reconcile-payments` with header `Authorization: Bearer <CRON_SECRET>`, timeout 30s. Press **Test run**: 200 = working, 401 = wrong secret. Full steps: [PAYMENTS.md](./PAYMENTS.md) → Cron.
 - [ ] 🟡 **GlitchTip:**
   - set `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_ENVIRONMENT=production` in Vercel;
@@ -30,6 +29,7 @@ Last updated: 2026-10-03.
   - turn on **Founding creator** (and **Verified**) for your first creators at `/admin/creators`;
   - **feature** your best courses at `/admin/products`.
 - [ ] 🟡 **Google Search Console:** verify `www.chiyali.com` and submit `https://www.chiyali.com/sitemap.xml`. Check a course link's share image in Facebook's Sharing Debugger.
+- [ ] 🟡 **YouTube playlist import:** in Google Cloud, create a project, enable **YouTube Data API v3**, create an API key (restrict it to that API), and add it to Vercel as `YOUTUBE_API_KEY`. Free; the daily quota covers thousands of imports. Until then the import button says it isn't set up.
 
 ## 2. Business and money
 
@@ -66,7 +66,7 @@ iOS comes later, once there's an Apple developer account.
 - [ ] 🔴 **10–15 approved courses across at least 3 topics** before the public launch, each with a free preview that plays on a mid-range Android over 4G.
 - [ ] 🟡 **Shortlist 60 creators:** Loksewa, IOE/CEE entrance, EPS-TOPIK/IELTS, Nepali tech YouTubers, accounting/Excel. Ranked by audience size.
 - [ ] 🟡 **Founder calls:** 20 calls → 15 committed → 10–15 published.
-- [ ] 🟡 **The quick win: free courses from existing YouTube videos.** A creator can publish an existing YouTube series as a free course in an hour: no upload, and no payment approval needed. Sell the advanced part later.
+- [ ] 🟡 **The quick win: free courses from existing YouTube playlists.** In the course editor, **Import YouTube playlist** turns a playlist into a section of lessons in one step (free or not-yet-on-sale courses). The creator adds notes or PDFs, publishes it free, and sells a deeper course with uploaded videos alongside it.
 - [ ] 🟡 **White-glove onboarding:** you build their first course from a Google Drive handoff, write the description, make the thumbnail.
 - [ ] 🟡 **Founding-creator deal:** decide the terms (e.g. a lower fee for 90 days). The badge and the home-page feature are built.
 - [ ] 🟡 **Creator launch kit:** their `?ref=` link, a launch promo code, a Reel/Short script, a poster.

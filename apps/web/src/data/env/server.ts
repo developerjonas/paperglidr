@@ -60,6 +60,9 @@ export const env = createEnv({
     // Build time, for source map upload: the error service's base URL
     // (GlitchTip: https://app.glitchtip.com). Unset = sentry.io.
     SENTRY_URL: z.string().url().optional(),
+    // YouTube Data API v3 key (Google Cloud → APIs & Services). Lets
+    // creators import a public playlist as a course. Unset = import off.
+    YOUTUBE_API_KEY: z.string().min(1).optional(),
     // GlitchTip heartbeat monitor URL, pinged after each successful
     // payment reconciliation run. Unset = no heartbeat.
     CRON_HEARTBEAT_URL: z.string().url().optional(),

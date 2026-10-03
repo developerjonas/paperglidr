@@ -10,6 +10,7 @@ import { SectionFormDialog } from "@/features/courseSections/components/SectionF
 import { SortableSectionList } from "@/features/courseSections/components/SortableSectionList";
 import { getCourseSectionCourseTag } from "@/features/courseSections/db/cache";
 import { LessonFormDialog } from "@/features/lessons/components/LessonFormDialog";
+import { ImportPlaylistDialog } from "@/features/lessons/components/ImportPlaylistDialog";
 import { SortableLessonList } from "@/features/lessons/components/SortableLessonList";
 import { getLessonCourseTag } from "@/features/lessons/db/cache/lessons";
 import { getCourseVideoState } from "@/features/lessons/lib/freeTier";
@@ -61,13 +62,16 @@ export default async function EditCoursePage({
             <Card className="border-border bg-card shadow-sm">
               <CardHeader className="flex items-center flex-row justify-between">
                 <CardTitle className="text-lg">Sections</CardTitle>
-                <SectionFormDialog courseId={course.id}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <PlusIcon /> New Section
-                    </Button>
-                  </DialogTrigger>
-                </SectionFormDialog>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <ImportPlaylistDialog courseId={course.id} courseVideoState={courseVideoState} />
+                  <SectionFormDialog courseId={course.id}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <PlusIcon /> New Section
+                      </Button>
+                    </DialogTrigger>
+                  </SectionFormDialog>
+                </div>
               </CardHeader>
               <CardContent>
                 <SortableSectionList

@@ -53,6 +53,7 @@
         "SENTRY_PROJECT",
         "SENTRY_URL",
         "CRON_HEARTBEAT_URL",
+        "YOUTUBE_API_KEY",
         "VERCEL_ENV",
         "CI",
         "BUNNY_STREAM_LIBRARY_ID",
