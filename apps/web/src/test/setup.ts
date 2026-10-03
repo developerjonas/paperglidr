@@ -41,3 +41,5 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
   unstable_cache: (fn: unknown) => fn,
 }))
+// "use cache" functions tag their results; there's no cache in tests.
+vi.mock("next/dist/server/use-cache/cache-tag", () => ({ cacheTag: vi.fn() }))

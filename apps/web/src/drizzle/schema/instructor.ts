@@ -21,6 +21,15 @@ export const InstructorTable = pgTable("instructors", {
   phoneNumber: text("phone_number").unique(),
   phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
 
+  // When they agreed to the Creator Terms (including that they own the
+  // rights to what they upload), and which version — CREATOR_TERMS_VERSION
+  // in config/company.ts. Null until accepted; required to publish.
+  creatorTermsAcceptedAt: timestamp("creator_terms_accepted_at", { withTimezone: true }),
+  creatorTermsVersion: text("creator_terms_version"),
+
+  // "Founding creator" badge, set by an admin (/admin/creators).
+  isFounding: boolean("is_founding").notNull().default(false),
+
 
   createdAt,
   updatedAt,

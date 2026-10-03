@@ -33,14 +33,19 @@ export async function getInstructorByHandle(handle: string) {
 
 export async function upsertInstructor(
   userId: string,
-  data: { handle: string; name: string; bio: string; profileImageUrl: string }
+  data: { handle: string; name: string; bio: string; profileImageUrl: string },
+  // The Creator Terms version accepted with this save, if any.
+  acceptedTermsVersion?: string
 ) {
+  const terms = acceptedTermsVersion
+    ? { creatorTermsAcceptedAt: new Date(), creatorTermsVersion: acceptedTermsVersion }
+    : {};
   const [instructor] = await db
     .insert(InstructorTable)
-    .values({ userId, ...data })
+    .values({ userId, ...data, ...terms })
     .onConflictDoUpdate({
       target: InstructorTable.userId,
-      set: { ...data, updatedAt: new Date() },
+      set: { ...data, ...terms, updatedAt: new Date() },
     })
     .returning();
   if (!instructor) {

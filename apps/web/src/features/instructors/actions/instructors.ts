@@ -3,7 +3,8 @@
 import { getCurrentUser } from "@/services/auth";
 import { instructorSchema, type InstructorFormValues } from "../schemas/instructors";
 import { canCreateInstructorProfile } from "../permissions/instructors";
-import { upsertInstructor, getInstructorByHandle } from "../db/instructors";
+import { upsertInstructor, getInstructorByHandle, getInstructorByUserId } from "../db/instructors";
+import { CREATOR_TERMS_VERSION } from "@/config/company";
 import { CourseProductTable, CourseTable, ProductTable } from "@/drizzle/schema";
 import { db } from "@/drizzle/db";
 import { and, eq } from "drizzle-orm";
@@ -25,7 +26,19 @@ export async function saveInstructorProfile(unsafeData: InstructorFormValues) {
     return { error: true, message: "That handle is already taken." };
   }
 
-  await upsertInstructor(user.userId, data);
+  // The Creator Terms (including owning the rights to what you upload)
+  // must be accepted, once per version.
+  const current = await getInstructorByUserId(user.userId);
+  const mustAccept = current?.creatorTermsVersion !== CREATOR_TERMS_VERSION;
+  if (mustAccept && data.acceptCreatorTerms !== true) {
+    return { error: true, message: "Please accept the Creator Terms to continue." };
+  }
+
+  await upsertInstructor(
+    user.userId,
+    { handle: data.handle, name: data.name, bio: data.bio, profileImageUrl: data.profileImageUrl },
+    mustAccept ? CREATOR_TERMS_VERSION : undefined,
+  );
   return {
     error: false,
     message: "Profile submitted — you'll be able to publish once verified.",

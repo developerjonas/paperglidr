@@ -13,6 +13,9 @@ export const instructorSchema = z.object({
     .string()
     .min(1, "Upload a profile photo")
     .refine(isAllowedImageUrl, imageHostErrorMessage),
+  // Ticked to accept the current Creator Terms. Only required while the
+  // creator hasn't accepted this version (checked on the server).
+  acceptCreatorTerms: z.boolean().optional(),
 });
 
 export type InstructorFormValues = z.infer<typeof instructorSchema>;

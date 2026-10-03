@@ -9,6 +9,7 @@ import {
 } from "@/drizzle/schema"
 import { eq, and, inArray, ne, count } from "drizzle-orm"
 import { EMBED_PROVIDER_LABELS, EMBED_PROVIDER_NAMES } from "@repo/video-embeds"
+import { CREATOR_TERMS_VERSION } from "@/config/company"
 
 export const MIN_DESCRIPTION_LENGTH = 100
 
@@ -57,6 +58,13 @@ export async function canPublishProduct({
   // Admins have no publishing cap, per explicit instruction — one admin
   // account should never be blocked here.
   if (role !== "admin") {
+    const instructor = await db.query.InstructorTable.findFirst({
+      where: eq(InstructorTable.userId, authorId),
+      columns: { creatorTermsVersion: true },
+    })
+    if (instructor?.creatorTermsVersion !== CREATOR_TERMS_VERSION) {
+      reasons.push("Accept the Creator Terms in your creator profile before publishing.")
+    }
     const capCheck = await checkLiveProductCap(authorId, excludeProductId)
     if (!capCheck.ok) reasons.push(capCheck.reason)
   }

@@ -11,6 +11,7 @@ import {
   UserTable,
 } from "@/drizzle/schema"
 import { createUser } from "@/test/fixtures"
+import { CREATOR_TERMS_VERSION } from "@/config/company"
 
 // Task 18: "Publish" from a creator lands in pending_review; only an admin
 // decision makes a product public or sends it back with a reason.
@@ -49,6 +50,8 @@ async function creatorWithPublishableCourse() {
     bio: "bio",
     profileImageUrl: "/x.png",
     phoneVerifiedAt: new Date(),
+    creatorTermsAcceptedAt: new Date(),
+    creatorTermsVersion: CREATOR_TERMS_VERSION,
   })
   const [course] = await db.insert(CourseTable).values({ name: "C", description: "d", authorId: creator.id }).returning()
   const [section] = await db

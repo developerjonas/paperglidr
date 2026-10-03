@@ -47,6 +47,9 @@ export const ProductTable = pgTable("products", {
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   reviewedBy: uuid("reviewed_by").references(() => UserTable.id, { onDelete: "set null" }),
   reviewNote: text("review_note"),
+  // Set by an admin to pin the course to the top of the home page
+  // (newest first); null = not featured.
+  featuredAt: timestamp("featured_at", { withTimezone: true }),
   searchVector: tsvector("search_vector").generatedAlwaysAs(
     (): SQL =>
       sql`setweight(to_tsvector('english', coalesce(${ProductTable.name}, '')), 'A') || setweight(to_tsvector('english', coalesce(${ProductTable.description}, '')), 'B')`,

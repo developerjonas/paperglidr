@@ -13,11 +13,13 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheckIcon, UserIcon } from "lucide-react";
+import { CREATOR_TERMS_VERSION } from "@/config/company";
 
 export default async function InstructorOnboardingPage() {
   const user = await getCurrentUser();
   if (!user?.userId) redirect("/sign-in");
   const instructor = await getInstructorByUserId(user.userId);
+  const mustAcceptTerms = instructor?.creatorTermsVersion !== CREATOR_TERMS_VERSION;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -50,6 +52,12 @@ export default async function InstructorOnboardingPage() {
               <CardDescription>
                 This is what learners will see on your public instructor page.
               </CardDescription>
+              {instructor && mustAcceptTerms && (
+                <p className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+                  Please accept the Creator Terms below and save, to keep using the
+                  Creator Studio.
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <InstructorForm
@@ -63,6 +71,7 @@ export default async function InstructorOnboardingPage() {
                       }
                     : undefined
                 }
+                mustAcceptTerms={mustAcceptTerms}
               />
             </CardContent>
           </Card>
