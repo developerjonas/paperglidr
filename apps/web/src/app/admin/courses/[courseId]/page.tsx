@@ -53,7 +53,7 @@ export default async function AdminCoursePage({ params }: { params: Promise<{ co
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm xl:col-span-2">
+        <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm xl:col-span-2">
           <h2 className="font-semibold">Outline</h2>
           <p className="text-xs text-muted-foreground">
             Lesson links open the lesson as a student would see it; admins can open locked lessons. Editing is done by the creator.
@@ -90,8 +90,8 @@ export default async function AdminCoursePage({ params }: { params: Promise<{ co
           )}
         </section>
 
-        <div className="flex flex-col gap-6">
-          <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
             <h2 className="font-semibold">Sold in</h2>
             {course.products.length === 0 ? (
               <p className="text-sm text-muted-foreground">Not in any product.</p>
@@ -117,7 +117,7 @@ export default async function AdminCoursePage({ params }: { params: Promise<{ co
             </Link>
           </section>
 
-          <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+          <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
             <h2 className="font-semibold">Newest students</h2>
             {course.recentStudents.length === 0 ? (
               <p className="text-sm text-muted-foreground">None yet.</p>
@@ -135,7 +135,7 @@ export default async function AdminCoursePage({ params }: { params: Promise<{ co
             )}
           </section>
 
-          <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 shadow-sm">
+          <section className="flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-card p-4 shadow-sm">
             <h2 className="font-semibold">Description</h2>
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">{course.description}</p>
           </section>

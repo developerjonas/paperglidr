@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,48 +15,68 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { actionToast } from "@/hooks/use-toast"
-import { deleteUserAccount, grantCourseAccess } from "../actions/users"
+import { deleteUserAccount, findCoursesToGrant, grantCourseAccess } from "../actions/users"
 
-/** Pick a course and give it to this user (no purchase is recorded). */
-export function GrantCourseForm({ userId, courses }: { userId: string; courses: { id: string; name: string; author: string }[] }) {
-  const [filter, setFilter] = useState("")
-  const [courseId, setCourseId] = useState("")
+/** Search for a course and give it to this user (no purchase is recorded). */
+export function GrantCourseForm({ userId }: { userId: string }) {
+  const [query, setQuery] = useState("")
+  const [results, setResults] = useState<{ id: string; name: string; author: string }[] | null>(null)
   const [pending, startTransition] = useTransition()
-  const shown = courses.filter((c) => `${c.name} ${c.author}`.toLowerCase().includes(filter.trim().toLowerCase()))
+  const router = useRouter()
+
+  useEffect(() => {
+    if (query.trim().length < 2) return
+    let stale = false
+    const timer = setTimeout(async () => {
+      const found = await findCoursesToGrant(query)
+      if (!stale) setResults(found)
+    }, 250)
+    return () => {
+      stale = true
+      clearTimeout(timer)
+    }
+  }, [query])
+
+  const shown = query.trim().length < 2 ? null : results
 
   return (
-    <form
-      className="flex flex-col gap-2"
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (!courseId) return
-        startTransition(async () => {
-          const data = await grantCourseAccess(userId, courseId)
-          actionToast({ actionData: data })
-          if (!data.error) setCourseId("")
-        })
-      }}
-    >
-      <Input placeholder="Filter courses…" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter courses" />
-      <div className="flex gap-2">
-        <select
-          value={courseId}
-          onChange={(e) => setCourseId(e.target.value)}
-          aria-label="Course to grant"
-          className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm"
-        >
-          <option value="">Choose a course ({shown.length})</option>
-          {shown.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} — {c.author}
-            </option>
-          ))}
-        </select>
-        <Button type="submit" size="sm" disabled={!courseId || pending}>
-          Grant
-        </Button>
-      </div>
-    </form>
+    <div className="flex flex-col gap-2">
+      <Input
+        placeholder="Search courses by name or creator…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        aria-label="Search courses to give"
+      />
+      {shown != null &&
+        (shown.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No courses match.</p>
+        ) : (
+          <ul className="flex max-h-64 flex-col divide-y divide-border overflow-y-auto rounded-md border border-border">
+            {shown.map((c) => (
+              <li key={c.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                <span className="min-w-0">
+                  <span className="block truncate font-medium">{c.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{c.author}</span>
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() =>
+                    startTransition(async () => {
+                      const data = await grantCourseAccess(userId, c.id)
+                      actionToast({ actionData: data })
+                      if (!data.error) router.refresh()
+                    })
+                  }
+                >
+                  Give
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ))}
+    </div>
   )
 }
 

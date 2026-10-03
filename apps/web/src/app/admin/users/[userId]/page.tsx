@@ -3,17 +3,17 @@ import { notFound } from "next/navigation"
 import type { ReactNode } from "react"
 import { ActionButton } from "@/components/ActionButton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { AdminPageHeader, StatusBadge, nprFromPaisa, shortDate, shortDateTime } from "@/features/admin/components/AdminUi"
+import { AdminPageHeader, StatusBadge, nprFromPaisa, shortDate, shortDateTime, gatewayName } from "@/features/admin/components/AdminUi"
 import { DeleteUserButton, GrantCourseForm } from "@/features/admin/components/UserControls"
 import { revokeCourseAccess, sendPasswordResetEmail, setUserRole, signOutEverywhere } from "@/features/admin/actions/users"
-import { getUserDetail, listCoursesForGrant } from "@/features/admin/db/users"
+import { getUserDetail } from "@/features/admin/db/users"
 import { requireAdmin } from "@/services/auth"
 
 const SIGN_IN_LABELS: Record<string, string> = { credential: "Password", google: "Google", github: "GitHub" }
 
 function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+    <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-semibold">{title}</h2>
         {action}
@@ -31,7 +31,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
   const admin = await requireAdmin()
   const { userId } = await params
   if (!/^[0-9a-f-]{36}$/i.test(userId)) notFound()
-  const [detail, grantable] = await Promise.all([getUserDetail(userId), listCoursesForGrant()])
+  const detail = await getUserDetail(userId)
   if (detail == null) notFound()
   const { user, instructor } = detail
   const deleted = user.deletedAt != null
@@ -59,7 +59,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
       </AdminPageHeader>
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <div className="flex flex-col gap-6 xl:col-span-2">
+        <div className="flex min-w-0 flex-col gap-6 xl:col-span-2">
           <Section title="Purchases" action={<span className="text-xs text-muted-foreground">latest 25</span>}>
             {detail.purchases.length === 0 ? (
               <Empty>No purchases.</Empty>
@@ -83,7 +83,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
                           {p.product}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-sm capitalize">{p.gateway}</TableCell>
+                      <TableCell className="text-sm">{gatewayName(p.gateway)}</TableCell>
                       <TableCell className="text-right tabular-nums">{nprFromPaisa(p.paisa)}</TableCell>
                       <TableCell>
                         <StatusBadge status={p.status} />
@@ -138,7 +138,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
             {!deleted && (
               <div className="border-t border-border pt-3">
                 <p className="mb-2 text-sm font-medium">Give a course</p>
-                <GrantCourseForm userId={user.id} courses={grantable} />
+                <GrantCourseForm userId={user.id} />
                 <p className="mt-2 text-xs text-muted-foreground">
                   For support cases and gifts. No purchase or invoice is recorded, and removing access doesn&apos;t refund anything.
                 </p>
@@ -146,7 +146,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
             )}
           </Section>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid min-w-0 gap-6 md:grid-cols-2">
             <Section title="Support tickets">
               {detail.tickets.length === 0 ? (
                 <Empty>None.</Empty>
@@ -204,7 +204,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
           </Section>
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           <Section title="Account">
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
               <dt className="text-muted-foreground">Signs in with</dt>

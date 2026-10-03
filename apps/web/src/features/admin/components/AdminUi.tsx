@@ -9,6 +9,10 @@ import { cn } from "@/lib/utils"
 /** Paisa as rupees, e.g. 149900 → "Rs 1,499" (0 → "Rs 0", not "Free"). */
 export const nprFromPaisa = (paisa: number) => formatPrice(paisa / 100, { showZeroAsNumber: true })
 
+const GATEWAY_NAMES: Record<string, string> = { esewa: "eSewa", khalti: "Khalti", fonepay: "Fonepay", bank: "Bank transfer", free: "Free" }
+/** "esewa" → "eSewa". */
+export const gatewayName = (gateway: string) => GATEWAY_NAMES[gateway] ?? gateway
+
 export const shortDate = (date: Date | string | null | undefined) =>
   date ? new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"
 export const shortDateTime = (date: Date | string | null | undefined) =>

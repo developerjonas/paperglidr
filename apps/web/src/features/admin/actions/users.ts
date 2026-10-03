@@ -12,6 +12,7 @@ import { revalidateUserCache } from "@/features/users/db/cache"
 import { addUserCourseAccess } from "@/features/courses/db/userCourseAccess"
 import { revalidateUserCourseAccessCache } from "@/features/courses/db/cache/userCourseAccess"
 import { deleteAccount, getAccountDeletionBlocker } from "@/features/users/lib/deleteAccount"
+import { searchCoursesForGrant } from "../db/users"
 
 // Admin actions on one user. Each returns { error, message } for ActionButton.
 
@@ -66,6 +67,13 @@ export async function grantCourseAccess(userId: string, courseId: string) {
   } catch (error) {
     return actionError(error, "grantCourseAccess")
   }
+}
+
+/** Courses for the "Give a course" picker. */
+export async function findCoursesToGrant(q: string) {
+  await requireAdmin()
+  if (q.trim().length < 2) return []
+  return searchCoursesForGrant(q.slice(0, 100))
 }
 
 /** Removes a course from a user. Purchases and invoices are untouched. */

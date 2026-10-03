@@ -10,6 +10,7 @@ import {
   StatusBadge,
   nprFromPaisa,
   shortDateTime,
+  gatewayName,
 } from "@/features/admin/components/AdminUi"
 import {
   PAYMENT_GATEWAYS,
@@ -147,7 +148,7 @@ export default async function AdminPaymentsPage({
                       {p.product}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-sm capitalize">{p.gateway}</TableCell>
+                  <TableCell className="text-sm">{gatewayName(p.gateway)}</TableCell>
                   <TableCell className="text-right tabular-nums">{nprFromPaisa(p.paisa)}</TableCell>
                   <TableCell>
                     <StatusBadge status={p.status} />

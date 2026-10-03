@@ -4,7 +4,7 @@ import type { ReactNode } from "react"
 import { ActionButton } from "@/components/ActionButton"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { sendInvoiceNow } from "@/features/admin/actions/payments"
-import { AdminPageHeader, StatusBadge, nprFromPaisa, shortDateTime } from "@/features/admin/components/AdminUi"
+import { AdminPageHeader, StatusBadge, nprFromPaisa, shortDateTime, gatewayName } from "@/features/admin/components/AdminUi"
 import { getPaymentDetail } from "@/features/admin/db/payments"
 import { recheckPurchasePayment } from "@/features/purchases/actions/adminPurchases"
 import { requireAdmin } from "@/services/auth"
@@ -22,7 +22,7 @@ const REVENUE_SOURCE_LABELS: Record<string, string> = { instructor_link: "Creato
 
 function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+    <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-semibold">{title}</h2>
         {action}
@@ -69,7 +69,7 @@ export default async function AdminPaymentPage({ params }: { params: Promise<{ p
         title={`${nprFromPaisa(p.paisa)} · ${p.productName}`}
         description={
           <>
-            {shortDateTime(p.createdAt)} via <span className="capitalize">{p.gateway}</span> · bought by{" "}
+            {shortDateTime(p.createdAt)} via {gatewayName(p.gateway)} · bought by{" "}
             <Link href={`/admin/users/${p.userId}`} className="text-primary hover:underline">
               {p.buyerDeleted ? "a deleted user" : `${p.buyer} (${p.buyerEmail})`}
             </Link>
@@ -87,13 +87,13 @@ export default async function AdminPaymentPage({ params }: { params: Promise<{ p
       {p.status === "disputed" && (
         <p className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
           <strong>Disputed:</strong> the gateway&apos;s amount or transaction didn&apos;t match this purchase, so no access was given. Check the
-          transaction in the {p.gateway} merchant dashboard. If the buyer really paid the right amount, give them the course from their user page
+          transaction in the {gatewayName(p.gateway)} merchant dashboard. If the buyer really paid the right amount, give them the course from their user page
           and note it on a support ticket; if not, leave it.
         </p>
       )}
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <div className="flex flex-col gap-6 xl:col-span-2">
+        <div className="flex min-w-0 flex-col gap-6 xl:col-span-2">
           <Section title="Commission split" action={<Link href="/admin/commissions" className="text-sm text-primary hover:underline">Commissions →</Link>}>
             {p.ledger.length === 0 ? (
               <p className="text-sm text-muted-foreground">
@@ -201,7 +201,7 @@ export default async function AdminPaymentPage({ params }: { params: Promise<{ p
           )}
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           <Section title="Payment">
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
               <Field label="Price paid">{nprFromPaisa(p.paisa)}</Field>

@@ -145,10 +145,13 @@ export async function getUserDetail(userId: string) {
   }
 }
 
-/** Courses an admin can grant (id, name, author), newest first. */
-export async function listCoursesForGrant() {
+/** Courses matching a search, for the "Give a course" picker (name or creator; newest first). */
+export async function searchCoursesForGrant(q: string, limit = 20) {
+  const term = `%${q.trim()}%`
   const result = await db.execute(sql`
-    select c.id, c.name, u.name as author from courses c join "user" u on u.id = c.author_id order by c."createdAt" desc limit 500
+    select c.id, c.name, u.name as author from courses c join "user" u on u.id = c.author_id
+    where c.name ilike ${term} or u.name ilike ${term}
+    order by c."createdAt" desc limit ${limit}
   `)
   return (result.rows as Record<string, unknown>[]).map((r) => ({ id: String(r.id), name: String(r.name), author: String(r.author) }))
 }
