@@ -15,7 +15,8 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/drizzle/seed.ts",
     "test:security-smoke": "node scripts/security-smoke-test.mjs",
-    "report:free-tier-video": "tsx scripts/free-tier-video-report.ts"
+    "report:free-tier-video": "tsx scripts/free-tier-video-report.ts",
+    "reviewer:create": "tsx scripts/create-reviewer-account.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1106.0",
