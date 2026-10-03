@@ -8,6 +8,7 @@ import { api } from '@/api/v1';
 import { useAuth } from '@/auth/auth-context';
 import { CategoryChips } from '@/components/catalog/category-chips';
 import { ProductCarousel } from '@/components/catalog/product-carousel';
+import { Logo } from '@/components/logo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Icon } from '@/components/ui/icon';
@@ -46,6 +47,7 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.three }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />}>
         <View style={styles.column}>
+          <Logo />
           <View style={styles.greeting}>
             <ThemedText type="subtitle" style={styles.hello}>
               {firstName ? `Hi, ${firstName}` : 'Learn something new'}
