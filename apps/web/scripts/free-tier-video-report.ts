@@ -23,6 +23,7 @@
 // Usage (from apps/web, with the same DB_* env as the app, or DATABASE_URL):
 //   pnpm report:free-tier-video           # human-readable
 //   pnpm report:free-tier-video --json    # machine-readable
+import { existsSync } from "node:fs"
 import pg from "pg"
 import { EMBED_PROVIDER_NAMES, fromStoredEmbed } from "@repo/video-embeds"
 
@@ -44,6 +45,10 @@ type Row = {
 }
 
 const json = process.argv.includes("--json")
+
+// tsx doesn't read .env: load apps/web/.env (values already in the
+// environment win), so the script uses the same database as the app.
+if (existsSync(".env")) process.loadEnvFile(".env")
 
 const client = new pg.Client(
   process.env.DATABASE_URL

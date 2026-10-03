@@ -15,6 +15,7 @@
 //   pnpm reviewer:create --yes                 # create / reset
 //   pnpm reviewer:create --yes --product=<product id>
 //   pnpm reviewer:create --yes --email=reviewer@chiyali.com
+import { existsSync } from "node:fs"
 import pg from "pg"
 import { hashPassword } from "better-auth/crypto"
 import { generateStrongPassword } from "@repo/password-policy"
@@ -29,6 +30,10 @@ const write = args.get("yes") === "true"
 const email = (args.get("email") ?? "reviewer@chiyali.com").toLowerCase()
 const username = "store_reviewer"
 const productArg = args.get("product")
+
+// tsx doesn't read .env: load apps/web/.env (values already in the
+// environment win), so the script uses the same database as the app.
+if (existsSync(".env")) process.loadEnvFile(".env")
 
 const client = new pg.Client(
   process.env.DATABASE_URL
@@ -45,6 +50,8 @@ const client = new pg.Client(
 
 async function main() {
   await client.connect()
+  const target = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null
+  console.log(`Database: ${target ? `${target.hostname}${target.pathname}` : `${process.env.DB_HOST}/${process.env.DB_NAME}`}`)
   const q = async <T extends Record<string, unknown>>(text: string, values: unknown[] = []) =>
     (await client.query<T>(text, values)).rows
 
@@ -126,7 +133,9 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error(error instanceof Error ? error.message : error)
+    // A refused connection is an AggregateError with an empty message.
+    const code = (error as { code?: string })?.code
+    console.error(error instanceof Error && error.message ? error.message : `Couldn't connect to the database${code ? ` (${code})` : ""}. Check DB_* or DATABASE_URL in apps/web/.env.`)
     process.exitCode = 1
   })
   .finally(() => client.end())
