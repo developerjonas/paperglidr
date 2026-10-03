@@ -72,11 +72,8 @@ export async function generateMetadata({
     description,
     path: `/products/${product.id}`,
   });
-  return {
-    ...base,
-    openGraph: { ...base.openGraph, images: [{ url: product.imageUrl, alt: product.name }] },
-    twitter: { card: "summary_large_image", title: product.name, description, images: [product.imageUrl] },
-  };
+  // The image comes from ./opengraph-image.tsx (thumbnail, title, price).
+  return base;
 }
 
 export default async function ProductPage({

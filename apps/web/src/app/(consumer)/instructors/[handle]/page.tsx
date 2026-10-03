@@ -1,10 +1,33 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { pageMetadata } from "@/lib/site";
 import {
   getInstructorByHandle,
   getInstructorPublishedCourses,
 } from "@/features/instructors/db/instructors";
 import { InstructorProfileCard } from "@/features/instructors/components/InstructorProfileCard";
 import { InstructorCourseCard } from "@/features/instructors/components/InstructorCourseCard";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ handle: string }>;
+}): Promise<Metadata> {
+  const { handle } = await params;
+  const instructor = await getInstructorByHandle(handle);
+  if (!instructor) return { title: "Instructor not found", robots: { index: false } };
+  const bio = instructor.bio.trim();
+  return pageMetadata({
+    title: `${instructor.name}, instructor`,
+    description:
+      bio.length > 0
+        ? bio.length > 160
+          ? `${bio.slice(0, 157).trimEnd()}…`
+          : bio
+        : `Courses by ${instructor.name} on Chiyali, priced in rupees.`,
+    path: `/instructors/${instructor.handle}`,
+  });
+}
 
 export default async function InstructorProfilePage({
   params,

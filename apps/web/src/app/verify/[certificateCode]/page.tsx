@@ -1,9 +1,30 @@
+import type { Metadata } from "next";
 import { certificateCodeSchema } from "@/features/certificates/schemas/certificates";
 import { getCertificateForVerification } from "@/features/certificates/actions/certificates";
 import { CertificateDocument } from "@/features/certificates/components/CertificateDocument";
 import { CheckCircle2Icon, XCircleIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
+
+// Shared on purpose (CVs, LinkedIn), but personal: kept out of search engines.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ certificateCode: string }>;
+}): Promise<Metadata> {
+  const { certificateCode } = await params;
+  const robots = { index: false, follow: false };
+  if (!certificateCodeSchema.safeParse(certificateCode).success) return { title: "Certificate not found", robots };
+  const { certificate } = await getCertificateForVerification(certificateCode);
+  if (certificate == null) return { title: "Certificate not found", robots };
+  const title = certificate.isRevoked
+    ? "Revoked certificate"
+    : `Certificate: ${certificate.userNameSnapshot}, ${certificate.courseTitleSnapshot}`;
+  const description = certificate.isRevoked
+    ? `This Chiyali certificate (${certificateCode}) has been revoked.`
+    : `${certificate.userNameSnapshot} completed "${certificate.courseTitleSnapshot}" by ${certificate.instructorNameSnapshot} on Chiyali. Verified certificate ${certificateCode}.`;
+  return { title, description, robots, openGraph: { title, description, type: "website" }, twitter: { card: "summary_large_image", title, description } };
+}
 
 export default async function VerifyCertificatePage({
   params,

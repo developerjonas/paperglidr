@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     // authInterrupts: true,
     useCache: true,
   },
+  // The link-preview images read Inter from the brand package at runtime.
+  outputFileTracingIncludes: {
+    "/**/opengraph-image*": ["../../packages/brand/fonts/*.ttf"],
+  },
   images: {
     // Only known hosts — "**" turned /_next/image into an open proxy.
     // Add hosts via NEXT_PUBLIC_IMAGE_HOSTS; see src/lib/imageHosts.ts.

@@ -2,6 +2,7 @@
 
 The single source of Chiyali's logo and colours, for the website and the app.
 
+- `fonts/`: Inter (Regular, Bold, Bold Italic; SIL Open Font License, `fonts/OFL.txt`), used by the web app's link-preview images (`apps/web/src/lib/og.tsx`).
 - `src/index.ts`: the paper-plane mark (`PLANE_MARK`), the wordmark (`WORDMARK`), `BRAND_COLORS`, and `planeSvg()` to draw the mark as an SVG.
 - **Logos in the apps** draw from it: `apps/web/src/components/Logo.tsx` and `apps/mobile/src/components/logo.tsx`.
 - **Icons and splash images** are generated from it. After changing the mark or a colour, run:

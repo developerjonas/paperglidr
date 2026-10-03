@@ -28,6 +28,8 @@ export function pageMetadata({
     description,
     alternates: { canonical: path },
     openGraph: { title, description, url: path, type: "website", siteName: SITE_NAME },
-    twitter: { card: "summary", title, description },
+    // Large image previews; the image is the route's opengraph-image (or
+    // the site's default, app/opengraph-image.tsx).
+    twitter: { card: "summary_large_image", title, description },
   }
 }

@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     url: "/",
   },
-  twitter: { card: "summary" },
+  twitter: { card: "summary_large_image" },
 };
 
 // One sans for body and headings (Tailwind: font-sans / font-display).
