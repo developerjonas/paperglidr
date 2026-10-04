@@ -1,4 +1,5 @@
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { randomUUID } from 'expo-crypto';
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -31,6 +32,9 @@ export default function ProductScreen() {
   const insets = useSafeAreaInsets();
   const { status } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const queryClient = useQueryClient();
+  // One id per visit to this screen: a double tap enrolls once.
+  const [checkoutId] = useState(randomUUID);
 
   const product = useQuery({ queryKey: keys.product(productId), queryFn: () => api.product(productId) });
   const viewer = useQuery({
@@ -46,6 +50,20 @@ export default function ProductScreen() {
     })),
   });
 
+  // Free courses can be added right here. Paid ones have no buy button in
+  // the app (store payment rules); free content may be unlocked freely.
+  const enroll = useMutation({
+    mutationFn: () => api.enrollFree(productId, checkoutId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: keys.me.productState(productId) }),
+        queryClient.invalidateQueries({ queryKey: keys.me.courses }),
+      ]);
+      const first = product.data?.courses[0];
+      if (first) router.push(`/learn/${first.courseId}`);
+    },
+  });
+
   if (product.isPending) return <Frame title="Course"><LoadingState /></Frame>;
   if (product.error) {
     return (
@@ -57,6 +75,7 @@ export default function ProductScreen() {
 
   const p = product.data;
   const owned = viewer.data?.owned ?? false;
+  const isFree = p.priceInRupees === 0;
   const lessonCount = outlines.reduce(
     (sum, o) => sum + (o.data?.sections.reduce((n, s) => n + s.lessons.length, 0) ?? 0),
     0,
@@ -199,6 +218,22 @@ export default function ProductScreen() {
               </ThemedText>
             </View>
             <Button title="Go to My learning" onPress={() => router.navigate('/learning')} />
+          </>
+        ) : isFree ? (
+          <>
+            <View style={styles.flex}>
+              <Button
+                title={status === 'signedIn' ? 'Enroll for free' : 'Sign in to enroll for free'}
+                loading={enroll.isPending}
+                onPress={() => (status === 'signedIn' ? enroll.mutate() : router.push('/sign-in'))}
+              />
+              {enroll.error ? (
+                <ThemedText type="small" style={{ color: theme.danger }}>
+                  {enroll.error.message}
+                </ThemedText>
+              ) : null}
+            </View>
+            <WishlistButton productId={p.id} variant="outline" size={48} />
           </>
         ) : (
           <>

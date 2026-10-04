@@ -59,6 +59,12 @@ export const api = {
     apiFetch<MessageResult>(v1('/me'), { method: 'DELETE', body: { confirmation } }),
   productViewerState: (productId: string) =>
     apiFetch<ProductViewerState>(v1(`/products/${id(productId)}/me`)),
+  /** Free courses only (the server refuses paid ones). `checkoutId`: one UUID per screen, reused on retries. */
+  enrollFree: (productId: string, checkoutId: string) =>
+    apiFetch<{ enrolled: true; alreadyEnrolled: boolean }>(v1(`/products/${id(productId)}/enroll`), {
+      method: 'POST',
+      body: { checkoutId },
+    }),
   myCourses: () => apiFetch<MyCourse[]>(v1('/me/courses')),
   myCourse: (courseId: string) => apiFetch<LearnerCourse>(v1(`/me/courses/${id(courseId)}`)),
 

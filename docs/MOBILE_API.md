@@ -110,6 +110,7 @@ const token = res.headers.get("set-auth-token"); // store it
 | Method | Path | Access | Returns |
 | --- | --- | --- | --- |
 | POST | `/checkout/discount` | User | `{ code, productId }` gives a price preview. Nothing is reserved |
+| POST | `/products/:productId/enroll` | User | **Free courses only** (live, priced Rs 0; anything else is 400/404). `{ checkoutId }` (one UUID per screen) → `{ enrolled: true, alreadyEnrolled }`. This is how the app adds free courses: it never uses `/checkout`, because store rules only allow unlocking free content without in-app purchase |
 | POST | `/checkout` | User | Starts a checkout, see [Checkout](#checkout) |
 | POST | `/purchases/:purchaseId/confirm` | User (owner) | `{ status: "completed" \| "pending" \| "failed" }` |
 | GET | `/purchases` | User | Purchases, newest first |
