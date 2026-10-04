@@ -5,13 +5,6 @@ import {
   ArrowRight,
   BadgeCheck,
   BookOpen,
-  Calculator,
-  Code2,
-  GraduationCap,
-  Landmark,
-  Languages,
-  type LucideIcon,
-  Palette,
   PlayCircle,
   QrCode,
   Search,
@@ -23,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { getHomeCatalog, type HomeCourse, type HomeInstructor } from "@/features/products/db/home";
 import { FoundingBadge } from "@/features/instructors/components/FoundingBadge";
 import { getPublicCategories } from "@/features/categories/db/categories";
+import { categoryStyle } from "@/features/categories/lib/categoryStyle";
 import { POLICY_TERMS } from "@/config/policyTerms";
 import { formatPrice } from "@/lib/formatters";
 import { SITE_DESCRIPTION, SITE_NAME, pageMetadata } from "@/lib/site";
@@ -43,17 +37,6 @@ export const metadata: Metadata = {
 
 const SHELF_SIZE = 12;
 
-/** An icon for a category, guessed from its slug; a book otherwise. */
-function categoryIcon(slug: string): LucideIcon {
-  const s = slug.toLowerCase();
-  if (/loksewa|psc|government|civil/.test(s)) return Landmark;
-  if (/program|coding|code|tech|web|it\b|computer|developer/.test(s)) return Code2;
-  if (/language|english|korean|japanese|ielts|topik|nepali/.test(s)) return Languages;
-  if (/design|art|photo|video|creative/.test(s)) return Palette;
-  if (/account|finance|business|excel|tally|ca\b|market/.test(s)) return Calculator;
-  if (/entrance|exam|school|see|plus-two|neb|iom|ioe|cee/.test(s)) return GraduationCap;
-  return BookOpen;
-}
 
 export default async function HomePage() {
   const [{ courses, instructors }, categories] = await Promise.all([
@@ -148,15 +131,18 @@ export default async function HomePage() {
           <ShelfHeader title="Explore by topic" href="/browse" linkLabel="All courses" />
           <div className="no-scrollbar -mx-4 mt-5 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
             {categories.map((category) => {
-              const Icon = categoryIcon(category.slug);
+              const style = categoryStyle(category.slug);
               return (
                 <Link
                   key={category.id}
                   href={`/browse?category=${category.slug}`}
-                  className="group flex w-36 shrink-0 flex-col gap-3 rounded-2xl border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-accent sm:w-auto"
+                  className={cn(
+                    "group flex w-36 shrink-0 flex-col gap-3 rounded-2xl border bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-md sm:w-auto",
+                    style.hover,
+                  )}
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
+                  <span className={cn("flex h-10 w-10 items-center justify-center rounded-xl", style.tile)}>
+                    <style.icon className="h-5 w-5" />
                   </span>
                   <span className="text-sm font-medium leading-snug">{category.name}</span>
                 </Link>

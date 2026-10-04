@@ -38,7 +38,8 @@ export type AppConfig = {
   };
 };
 
-export type Category = { id: string; name: string; slug: string };
+/** courseCount: live courses in the category (older servers may omit it). */
+export type Category = { id: string; name: string; slug: string; courseCount?: number };
 
 // ---- Catalogue ----
 

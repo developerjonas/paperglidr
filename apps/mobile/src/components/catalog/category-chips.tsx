@@ -5,7 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** "All Courses" plus every category, as the website's browse bar. `selected` null = all. */
+/** "All topics" plus every category, as the website's browse bar. `selected` null = all. */
 export function CategoryChips({
   categories,
   selected,
@@ -17,7 +17,7 @@ export function CategoryChips({
   onSelect: (categoryId: string | null) => void;
   includeAll?: boolean;
 }) {
-  const items = [...(includeAll ? [{ id: null, name: 'All Courses' }] : []), ...categories];
+  const items = [...(includeAll ? [{ id: null, name: 'All topics' }] : []), ...categories];
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
       {items.map((item) => (

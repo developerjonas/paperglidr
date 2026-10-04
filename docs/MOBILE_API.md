@@ -73,7 +73,7 @@ const token = res.headers.get("set-auth-token"); // store it
 | Method | Path | Access | Returns |
 | --- | --- | --- | --- |
 | GET | `/config` | Public | `siteUrl`, `supportEmail`, enabled payment `gateways`, `policy` numbers (refund window, fees, and so on), `legal.pages` (open `siteUrl + path` — the website holds the only copy of the text), `company` details |
-| GET | `/categories` | Public | `[{ id, name, slug }]` |
+| GET | `/categories` | Public | `[{ id, name, slug, courseCount }]` (`courseCount`: live courses in the category) |
 | GET | `/search?q=&categoryId=&minPrice=&maxPrice=&minRating=&sort=&page=` | Public | `{ page, results[] }`, 20 per page. `sort`: `relevance`, `rating`, `newest`, `price_asc`, `price_desc` |
 | GET | `/products?limit=` | Public | All public products, A–Z (the website's featured order), with `avgRating` and `reviewCount` |
 | GET | `/products/:productId` | Public | Details, `authorName` ("Created by"), `instructor` (or `null`), `courses[]`, `averageRating`, `reviewCount` |

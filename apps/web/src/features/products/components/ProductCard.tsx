@@ -13,7 +13,6 @@ import { WishlistButton } from "@/features/wishlist/components/WishlistButton";
 import { StarIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
 
 export function ProductCard({
   id,
@@ -55,9 +54,7 @@ export function ProductCard({
       <CardHeader className="space-y-0 pt-4">
         <div className="flex items-center justify-between gap-2">
           <CardDescription className="text-sm">
-            <Suspense fallback={formatPrice(priceInRupees)}>
-              <Price price={priceInRupees} />
-            </Suspense>
+            <Price price={priceInRupees} />
           </CardDescription>
           {hasRating && (
             <div className="flex items-center gap-1 rounded-md bg-secondary/60 px-1.5 py-0.5 text-xs text-muted-foreground">
@@ -87,16 +84,7 @@ export function ProductCard({
   );
 }
 
-async function Price({ price }: { price: number }) {
-  if (price === 0) {
-    return formatPrice(price);
-  }
-  return (
-    <div className="flex gap-2 items-baseline">
-      <div className="line-through text-xs opacity-50">
-        {formatPrice(price)}
-      </div>
-      <div className="font-medium text-foreground">{formatPrice(price)}</div>
-    </div>
-  );
+function Price({ price }: { price: number }) {
+  // One real price: no strikethrough "was" price, since there's no real discount to show.
+  return <span className="font-medium text-foreground">{formatPrice(price)}</span>;
 }

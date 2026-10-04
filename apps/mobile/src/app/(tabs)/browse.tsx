@@ -9,6 +9,7 @@ import type { SearchParams, SearchSort } from '@/api/types';
 import { api } from '@/api/v1';
 import { CategoryChips, Chip } from '@/components/catalog/category-chips';
 import { ProductRow } from '@/components/catalog/product-card';
+import { TopicCards, TopicIcon } from '@/components/catalog/topic-cards';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Icon } from '@/components/ui/icon';
@@ -66,7 +67,9 @@ export default function BrowseScreen() {
     getNextPageParam: (last) => (last.results.length === PAGE_SIZE ? last.page + 1 : undefined),
   });
   const items = results.data?.pages.flatMap((page) => page.results) ?? [];
-  const categoryName = categories.data?.find((c) => c.id === categoryId)?.name;
+  const category = categories.data?.find((c) => c.id === categoryId);
+  // Topic cards while just browsing; a topic header and chips once a topic or a search is chosen.
+  const showTopics = !q && !categoryId && (categories.data?.length ?? 0) > 0;
 
   const header = (
     <View style={styles.header}>
@@ -90,9 +93,35 @@ export default function BrowseScreen() {
           </Pressable>
         ) : null}
       </View>
-      {categories.data && categories.data.length > 0 ? (
+      {showTopics ? (
+        <View style={styles.topics}>
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Explore by topic
+          </ThemedText>
+          <TopicCards categories={categories.data ?? []} onSelect={setCategoryId} />
+        </View>
+      ) : null}
+      {category ? (
+        <View style={styles.topicHeader}>
+          <TopicIcon slug={category.slug} size={52} />
+          <View style={styles.topicHeaderText}>
+            <ThemedText type="subtitle" style={styles.topicName}>
+              {category.name}
+            </ThemedText>
+            {category.courseCount != null ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                {category.courseCount} {category.courseCount === 1 ? 'course' : 'courses'}
+              </ThemedText>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+      {!showTopics && categories.data && categories.data.length > 0 ? (
         <CategoryChips categories={categories.data} selected={categoryId} onSelect={setCategoryId} />
       ) : null}
+      <ThemedText type="smallBold" style={styles.sectionTitle}>
+        {q ? `Results for “${q}”` : category ? `All ${category.name} courses` : 'All courses'}
+      </ThemedText>
       <FlatList
         horizontal
         data={SORTS}
@@ -101,9 +130,6 @@ export default function BrowseScreen() {
         contentContainerStyle={styles.sorts}
         renderItem={({ item }) => <Chip label={item.label} active={item.value === sort} onPress={() => setSort(item.value)} />}
       />
-      <ThemedText type="smallBold" style={styles.resultsTitle}>
-        {q ? `Results for “${q}”` : categoryName ?? 'All courses'}
-      </ThemedText>
     </View>
   );
 
@@ -154,6 +180,10 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 16, height: '100%' },
   sorts: { gap: Spacing.two },
-  resultsTitle: { fontSize: 18, marginTop: Spacing.two },
+  sectionTitle: { fontSize: 18, marginTop: Spacing.two },
+  topics: { gap: Spacing.three },
+  topicHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  topicHeaderText: { flex: 1, gap: 2 },
+  topicName: { fontSize: 22, lineHeight: 28 },
   more: { marginVertical: Spacing.four },
 });
