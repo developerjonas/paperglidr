@@ -47,25 +47,26 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.three }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />}>
         <View style={styles.column}>
-          <Logo />
+          <View style={styles.header}>
+            <Logo />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Search courses"
+              hitSlop={8}
+              onPress={() => router.navigate('/browse')}
+              style={({ pressed }) => [
+                styles.searchButton,
+                { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
+              ]}>
+              <Icon ios="magnifyingglass" android="search" size={20} color={theme.text} />
+            </Pressable>
+          </View>
           <View style={styles.greeting}>
             <ThemedText type="subtitle" style={styles.hello}>
               {firstName ? `Hi, ${firstName}` : 'Learn something new'}
             </ThemedText>
             <ThemedText themeColor="textSecondary">Courses from Nepali instructors, priced in rupees.</ThemedText>
           </View>
-
-          <Pressable
-            accessibilityRole="search"
-            accessibilityLabel="Search courses"
-            onPress={() => router.navigate('/browse')}
-            style={({ pressed }) => [
-              styles.search,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border, opacity: pressed ? 0.8 : 1 },
-            ]}>
-            <Icon ios="magnifyingglass" android="search" size={18} color={theme.textSecondary} />
-            <ThemedText themeColor="textSecondary">Search courses</ThemedText>
-          </Pressable>
 
           {categories.data && categories.data.length > 0 ? (
             <CategoryChips
@@ -118,13 +119,6 @@ const styles = StyleSheet.create({
   column: { width: '100%', maxWidth: MaxContentWidth, gap: Spacing.four },
   greeting: { gap: Spacing.one },
   hello: { fontSize: 28, lineHeight: 34 },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
-    paddingHorizontal: Spacing.three,
-    height: 48,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  searchButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 });

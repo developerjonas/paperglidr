@@ -7,7 +7,8 @@ import { useTheme } from '@/hooks/use-theme';
 
 /**
  * Paper-plane mark + wordmark, from @repo/brand: the same mark as the
- * website's logo, the app icon and the splash screen.
+ * website's logo, the app icon and the splash screen. In the app the
+ * wordmark is upright (not italic).
  */
 export function Logo({ size = 24 }: { size?: number }) {
   const theme = useTheme();
@@ -31,7 +32,7 @@ export function Logo({ size = 24 }: { size?: number }) {
           fontSize: size * 0.8,
           lineHeight: size,
           fontWeight: String(WORDMARK.fontWeight) as '700',
-          fontStyle: WORDMARK.fontStyle,
+          fontStyle: 'normal',
           letterSpacing: size * 0.8 * WORDMARK.letterSpacingEm,
         }}>
         {BRAND_NAME}
