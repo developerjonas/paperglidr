@@ -35,10 +35,16 @@ export default function PrivacyPolicyPage() {
       <h3>When you create an account</h3>
       <ul>
         <li>
-          <strong>From Google sign-in</strong> (or GitHub, where offered): your
-          name, email address, profile picture and the account identifier the
-          provider gives us, along with the sign-in tokens the provider issues
-          so we can keep you signed in. We never receive your Google password.
+          <strong>If you sign up with email</strong>: your name, email address,
+          the username you choose, and your password. We store only a one-way
+          hash of your password, never the password itself.
+        </li>
+        <li>
+          <strong>If you sign in with Google</strong> (or GitHub, where
+          offered): your name, email address, profile picture and the account
+          identifier the provider gives us, along with the sign-in tokens the
+          provider issues so we can keep you signed in. We never receive your
+          Google password.
         </li>
         <li>
           <strong>Session information</strong>: when you sign in we record the
@@ -96,6 +102,34 @@ export default function PrivacyPolicyPage() {
         </li>
       </ul>
 
+      <h3>When you use the Android app</h3>
+      <ul>
+        <li>
+          <strong>Crash reports</strong>: if the app crashes or hits an error,
+          it sends technical details to our error-monitoring provider (see
+          section 4): the error, the screens and taps leading up to it, your
+          device model, operating system and app version, and a random
+          identifier for the installation. It does not send your IP address,
+          name, email or payment details.
+        </li>
+        <li>
+          <strong>Camera</strong>: used only when you choose to scan a
+          certificate&apos;s QR code. The image is processed on your phone and
+          is never sent or stored.
+        </li>
+        <li>
+          <strong>On your phone</strong>: the app keeps your sign-in in the
+          phone&apos;s secure storage, and saves public course information
+          (such as course listings) so it opens quickly and works offline.
+          Signing out removes your sign-in and your personal data from the
+          app.
+        </li>
+        <li>
+          The app has no advertising and no third-party analytics, and you
+          cannot buy courses in the app.
+        </li>
+      </ul>
+
       <h3>Cookies and similar technologies</h3>
       <ul>
         <li>A session cookie that keeps you signed in.</li>
@@ -124,8 +158,8 @@ export default function PrivacyPolicyPage() {
           a certificate with verify that it is genuine.
         </li>
         <li>
-          To send service emails — invoices, replies to your questions, and
-          support responses. We do not send marketing email without your
+          To send service emails — invoices, password resets, replies to your
+          questions, and support responses. We do not send marketing email without your
           consent.
         </li>
         <li>
@@ -196,11 +230,11 @@ export default function PrivacyPolicyPage() {
           </tr>
           <tr>
             <td>GlitchTip (app.glitchtip.com)</td>
-            <td>Error monitoring: finding and fixing faults in the Platform</td>
+            <td>Error monitoring: finding and fixing faults on the website and in the app</td>
             <td>Technical details of an error, such as the page, browser and device type, and the error message; set up not to receive your IP address, cookies or payment details</td>
           </tr>
           <tr>
-            <td>Our hosting and database providers</td>
+            <td>Vercel (hosting) and Neon (database)</td>
             <td>Running the Platform</td>
             <td>All Platform data, stored on our behalf</td>
           </tr>
@@ -217,8 +251,11 @@ export default function PrivacyPolicyPage() {
       <ul>
         <li>
           Account and profile information: for as long as your account is
-          open, and deleted or anonymised after you ask us to close it, except
-          as below.
+          open. When you delete your account, your name, email address,
+          username, photo, password and sign-in links, sessions, wishlist,
+          course access and progress are deleted, except as below. Reviews
+          and questions you posted stay on the Platform, shown as
+          &quot;Deleted user&quot;.
         </li>
         <li>
           Purchase, payment, invoice, refund and payout records: for as long
@@ -256,7 +293,10 @@ export default function PrivacyPolicyPage() {
         <li>correct information that is inaccurate or incomplete;</li>
         <li>
           delete your information or close your account (we will keep records
-          we are legally required to keep, as described in section 5);
+          we are legally required to keep, as described in section 5). You can
+          delete your account yourself at any time: go to{" "}
+          <Link href="/account/delete">Account → Delete account</Link> on the
+          website, or Account → Delete account in the app;
         </li>
         <li>stop a particular use of your information, where the law allows.</li>
       </ul>

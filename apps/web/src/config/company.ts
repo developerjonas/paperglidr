@@ -16,7 +16,7 @@ export const COMPANY = {
 } as const
 
 /** One date for every policy page. Update it whenever any policy changes. */
-export const LEGAL_LAST_UPDATED = "3 October 2026"
+export const LEGAL_LAST_UPDATED = "4 October 2026"
 
 /**
  * The Creator Terms version a creator accepts. Bump it (to the date of the

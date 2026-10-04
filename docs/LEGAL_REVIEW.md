@@ -16,7 +16,7 @@ Last updated: 2026-10-04.
 | Page | Route | Status | Reviewer | Date |
 |---|---|---|---|---|
 | Terms of Service | `/tos` | ☐ Not reviewed | | |
-| Privacy Policy | `/privacy` | ☐ Not reviewed (needs the updates below first) | | |
+| Privacy Policy | `/privacy` | ☐ Not reviewed (updated 4 Oct, see below) | | |
 | Refund Policy | `/refund-policy` | ☐ Not reviewed | | |
 | Creator Terms | `/creator-terms` | ☐ Not reviewed | | |
 | Content Policy | `/content` | ☐ Not reviewed | | |
@@ -25,14 +25,15 @@ Last updated: 2026-10-04.
 | Legal index | `/legal` | ☐ Not reviewed | | |
 | Footer company block | every page | ☐ Not reviewed | | |
 
-## Where the policies and the product differ (fix before review)
+## Recent changes to review
 
-| Policy says | Product today | What to change |
-|---|---|---|
-| Privacy §1: accounts come **from Google sign-in** (or GitHub) | Sign-up is also by **email, username and password** (stored hashed); the Android app signs in the same way | Add email/username/password sign-up to "When you create an account" |
-| Privacy §5 and §7: deletion and account closure **by email request** to legal@ | **Self-service deletion**: Account → Delete account on the website (`/account/delete`) and in the app. It removes sign-in, name, email, username, photo, sessions, wishlist, course access and progress; keeps purchase, invoice and refund records; reviews and Q&A show as "Deleted user"; issued certificates stay verifiable | Describe self-service deletion and what's kept; Google Play checks this against the Data safety form |
-| Privacy: no mention of the mobile app | The Android app sends crash reports to GlitchTip (device model, OS and app version, a random install ID) and uses the camera only to scan certificate QR codes, on the device | Add a short "Mobile app" paragraph |
-| Privacy: hosting and database providers unnamed | Vercel (hosting) and Neon (database) | Decide whether to name them |
+On 4 October the Privacy Policy was brought up to date with the product. **Confirm the new wording:**
+- **§1:** sign-up by email, username and password (the password stored only as a hash), besides Google.
+- **§1:** a new "When you use the Android app" section: crash reports (device model, OS, app version, a random installation ID; no IP, name or email), the camera used only on the phone to scan certificate QR codes, the sign-in kept in the phone's secure storage, and public course info saved for offline use.
+- **§4:** hosting and database providers named: Vercel and Neon.
+- **§5 and §7:** self-service account deletion (Account → Delete account, on the website and in the app), what's deleted, and what's kept (purchase, invoice and refund records; reviews and Q&A shown as "Deleted user"; issued certificates).
+
+These match the Google Play Data safety answers in [GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md). If the policy changes, keep the two in step.
 
 ## Decisions needed across all pages
 
@@ -55,7 +56,7 @@ Last updated: 2026-10-04.
 - The product page says "Access for as long as Chiyali operates" (not "lifetime access") and offers a "Certificate of completion".
 
 ### Privacy Policy (`/privacy`)
-- After the updates above: every data category and processor matches the code (Google/GitHub and email sign-in; session IP and user agent; instructor phone numbers with only a hash of the OTP; payout bank or wallet details; gateway responses; invoices; progress, certificates and posted content; a session cookie and a 30-day referral cookie; processors eSewa, Khalti, Fonepay, Google, Cloudflare R2, Resend, SMSPasal, GlitchTip, hosting and database).
+- Every data category and processor matches the code (email and Google/GitHub sign-in; the Android app; session IP and user agent; instructor phone numbers with only a hash of the OTP; payout bank or wallet details; gateway responses; invoices; progress, certificates and posted content; a session cookie and a 30-day referral cookie; processors eSewa, Khalti, Fonepay, Google, Cloudflare R2, Resend, SMSPasal, GlitchTip, hosting and database).
 - No analytics or advertising cookies exist today; **update the policy if analytics are added.**
 - Specific retention periods for closed accounts, logs and support tickets.
 - Breach notification "as required by law": what does the law require?
