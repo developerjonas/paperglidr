@@ -12,7 +12,7 @@ const npr = (paisa: number) => formatPrice(paisa / 100, { showZeroAsNumber: true
 const pct = (part: number, whole: number) => (whole === 0 ? "—" : `${Math.round((100 * part) / whole)}%`)
 
 /**
- * Growth at a glance for the launch (docs/GTM_PLAN.md §3.6): sign-ups,
+ * Growth at a glance for the launch (docs/GTM_PLAN.md, "Launch stages and success metrics"): sign-ups,
  * sales, conversion, the share of sales from creators' own ?ref= links,
  * and each creator's sales. Money totals and fees are on /admin/revenue.
  */

@@ -1,4 +1,4 @@
--- Daily watchlist for the first 30 days (docs/GTM_PLAN.md §3.7).
+-- Daily watchlist for the first 30 days (docs/GTM_PLAN.md, "Watchlist for the first 30 days").
 -- Run against the production database with a read-only user. Every query
 -- is read-only. Times are UTC (Nepal is UTC+5:45).
 -- Money columns are in paisa (÷100 for NPR), except products."priceInRupees".
