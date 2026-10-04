@@ -191,7 +191,7 @@ At launch, Chiyali offers [N] courses from [M] teachers, including [two or three
 The Chiyali app is available on Google Play: [Play link]. Teachers can apply at www.chiyali.com/instructors/onboarding.
 
 About Chiyali
-Chiyali is an online course platform for Nepal, run by [legal entity name], [city]. www.chiyali.com
+Chiyali is an online course platform for Nepal, a product of Paperglidr Technology Pvt. Ltd., Lalitpur. www.chiyali.com
 
 Contact
 [Your name], Founder · [phone] · support@chiyali.com

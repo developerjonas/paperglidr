@@ -27,6 +27,8 @@ Last updated: 2026-10-04.
 
 ## Recent changes to review
 
+On 5 October the legal entity was corrected on every page, the footer and invoices: the policies are now between users and **Paperglidr Technology Pvt. Ltd.**, with Chiyali as its product (it previously said "Chiyali Technology Pvt. Ltd."). The Creator Terms version moved to 2026-10-05, so creators accept again. **Confirm** the company name, registered address and that the registration number and PAN can be filled in (`apps/web/src/config/company.ts`).
+
 On 4 October the Privacy Policy was brought up to date with the product. **Confirm the new wording:**
 - **§1:** sign-up by email, username and password (the password stored only as a hash), besides Google.
 - **§1:** a new "When you use the Android app" section: crash reports (device model, OS, app version, a random installation ID; no IP, name or email), the camera used only on the phone to scan certificate QR codes, the sign-in kept in the phone's secure storage, and public course info saved for offline use.

@@ -1,10 +1,12 @@
 /**
  * Every company detail shown on the legal pages and in the footer.
- * Filling in the registration number or PAN later is a one-line change here.
+ * Chiyali is a product of Paperglidr Technology Pvt. Ltd., the legal entity
+ * behind the policies, invoices and payouts. Filling in the registration
+ * number or PAN later is a one-line change here.
  */
 export const COMPANY = {
   brandName: "Chiyali",
-  legalName: "Chiyali Technology Pvt. Ltd.",
+  legalName: "Paperglidr Technology Pvt. Ltd.",
   registeredAddress: "Lalitpur Metropolitan City, Ward No. 22, Lalitpur, Nepal",
   website: "https://chiyali.com",
   // Office of the Company Registrar registration number — null until issued.
@@ -16,14 +18,14 @@ export const COMPANY = {
 } as const
 
 /** One date for every policy page. Update it whenever any policy changes. */
-export const LEGAL_LAST_UPDATED = "4 October 2026"
+export const LEGAL_LAST_UPDATED = "5 October 2026"
 
 /**
  * The Creator Terms version a creator accepts. Bump it (to the date of the
  * change) only when the Creator Terms change: every creator is then asked
  * to accept again. Other policy changes don't need it.
  */
-export const CREATOR_TERMS_VERSION = "2026-09-23"
+export const CREATOR_TERMS_VERSION = "2026-10-05"
 
 /** Shown instead of a number until it is issued — never a fake number. */
 export const REGISTRATION_PENDING = "Registration in progress"
