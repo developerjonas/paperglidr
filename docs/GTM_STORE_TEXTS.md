@@ -2,7 +2,7 @@
 
 Everything to paste into Play Console for the Chiyali Android app (`com.developerjonas.chiyali`), plus the App Store fields for when iOS comes. The **Data safety** and **content rating** answers come from checking what the app's code actually collects and sends (October 2026). If the app starts collecting something new, update this file first.
 
-Last updated: 2026-10-03.
+Last updated: 2026-10-04. Status: all of this is entered in Play Console (Data safety, content rating, listing, Sign in details except the reviewer password).
 
 > **The one rule to keep in mind (Google Play payments policy):** the app must not point people to an outside payment method for courses. The app has no buy button, and every text here avoids "pay with eSewa/Khalti" and "buy on our website". Keep it that way in screenshots, release notes and replies to reviews too. The website itself can say anything.
 
@@ -103,7 +103,7 @@ Choose **"All or some functionality is restricted"** and add instructions:
 ## 4. Content rating (Policy → App content → Content rating, IARC questionnaire)
 
 - **Email:** `support@chiyali.com`
-- **Category:** *Reference, News, or Educational*.
+- **Category:** *All Other App Types* (the IARC form no longer lists "Reference, News, or Educational"). Then: **Downloaded app:** No ratings-relevant content · **User content sharing:** Yes (text reviews and Q&A; no private messaging, no location sharing) · **Online content:** Yes (courses come from Chiyali's servers, admin-approved, none of the restricted content types).
 - **Violence, fear, sexuality, language, controlled substances, crude humour:** No to all. The Content Policy (`/content`) forbids adult, violent and hateful course material, and every course is approved by an admin before going on sale.
 - **Gambling or simulated gambling:** No.
 - **Does the app allow users to interact or exchange content with each other?** **Yes.** Users post reviews and ask and answer questions under lessons, which others can see. (There's no private messaging between users; support tickets go only to the Chiyali team.)
@@ -143,12 +143,13 @@ Answer each type as below; anything not listed: **not collected**.
 | **Messages → Other in-app messages** | Yes | Optional | App functionality | Support tickets to the Chiyali team, and content reports |
 | **App activity → Other user-generated content** | Yes | Optional | App functionality | Course reviews, Q&A questions and replies |
 | **App activity → Other actions** | Yes | Optional | App functionality | Lessons marked complete, wishlist, certificates earned |
+| **App activity → In-app search history** | Yes, **processed ephemerally** | Optional | App functionality | The search text is sent to fetch results and not stored; Google doesn't show ephemeral data on the listing |
 | **App activity → App interactions** | Yes | Required (automatic) | Analytics | Only inside crash reports: the taps leading up to an error, to find the cause |
 | **App info and performance → Crash logs** | Yes | Required (automatic) | Analytics | GlitchTip, from installed builds only |
 | **App info and performance → Diagnostics** | Yes | Required (automatic) | Analytics | Device model, OS version, app version, sent with a crash report |
-| **Device or other IDs** | Yes | Required (automatic) | Analytics | A random ID per installation, sent with crash reports (not a hardware or advertising ID) |
+| **Device or other IDs** | Yes | Required (automatic) | Analytics, Fraud prevention/security | A random ID per installation, sent with crash reports (not a hardware or advertising ID); the server also records each sign-in session's IP address and device |
 
-Not collected, so leave unticked: location, financial info (no payments in the app), health, contacts, calendar, photos and videos (the camera only scans QR codes, on the phone; no image is sent or stored), audio, files and docs, web browsing history, search history (the search text is sent to fetch results but not stored per user), installed apps, and advertising ID.
+Not collected, so leave unticked: location, financial info (no payments in the app), health, contacts, calendar, photos and videos (the camera only scans QR codes, on the phone; no image is sent or stored), audio, files and docs, web browsing history, installed apps, and advertising ID.
 
 **Ephemeral processing:** for the QR scan, if Play asks, the camera image is processed on the device only and never sent.
 

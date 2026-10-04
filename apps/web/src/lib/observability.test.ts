@@ -4,7 +4,7 @@ import { createPendingPurchase, paisa } from "@/test/fixtures"
 import { StubGateway, stubDeps } from "@/test/stubGateway"
 
 // Task 19: what reaches Sentry, and with which tags (the alert rules in
-// docs/OBSERVABILITY.md filter on them).
+// docs/SETUP.md, "Monitoring", filter on them).
 
 const captured = vi.hoisted(() => ({
   exceptions: [] as { error: unknown; tags: Record<string, string> }[],

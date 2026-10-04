@@ -4,7 +4,7 @@
 // the HTTP status.
 //
 // WRITES TEST DATA and installs/drops a temporary trigger. Run only against
-// a throwaway database. See docs/DB_SETUP.md ("Security smoke test").
+// a throwaway database. See docs/SETUP.md ("Tests").
 //
 // Prerequisites:
 //   1. an empty Postgres, migrated (pnpm db:migrate) and seeded (pnpm db:seed)

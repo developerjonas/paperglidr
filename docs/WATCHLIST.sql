@@ -43,7 +43,7 @@ ORDER BY 1 DESC, 2;
 
 -- 4. Verify-call errors per gateway per day (last 7 days).
 --    Latency isn't stored in the database: see Sentry (area:payments,
---    payment_event:gateway_error / verify_error) — docs/OBSERVABILITY.md.
+--    payment_event:gateway_error / verify_error) — docs/SETUP.md, "Monitoring".
 SELECT date_trunc('day', "createdAt")::date AS day, gateway, source,
        count(*) AS errors
 FROM payment_events

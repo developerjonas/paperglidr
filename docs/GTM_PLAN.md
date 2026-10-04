@@ -28,7 +28,7 @@ Last updated: 2026-10-04. The checklist of what's left is [GTM_TODO.md](./GTM_TO
   - the admin panel.
 - **The Android app** (1.0.1) is in Google Play testing. It wasn't in the original launch plan.
 
-The details live in the code and in [PAYMENTS.md](./PAYMENTS.md) (including the per-gateway go-live checklist), [OBSERVABILITY.md](./OBSERVABILITY.md) and [MOBILE_API.md](./MOBILE_API.md).
+The details live in the code and in [PAYMENTS.md](./PAYMENTS.md) (including the per-gateway go-live checklist), [SETUP.md](./SETUP.md) (database, storage, monitoring, deploys) and [MOBILE_API.md](./MOBILE_API.md).
 
 **What's left is supply, demand and time:** courses from real creators, testers for Google's 14-day closed test, and the launch push.
 

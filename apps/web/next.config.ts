@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Sentry (docs/OBSERVABILITY.md). Everything is optional: with no DSN the
+// Sentry/GlitchTip (docs/SETUP.md, "Monitoring"). Everything is optional: with no DSN the
 // SDK is never initialised, and with no SENTRY_AUTH_TOKEN source maps are
 // not uploaded, so the app builds and runs with Sentry unset.
 export default withSentryConfig(nextConfig, {

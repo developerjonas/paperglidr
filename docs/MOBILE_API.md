@@ -4,7 +4,7 @@ The API the Chiyali React Native app uses. Everything lives under `/api/v1` on t
 
 ## Turning it on
 
-User routes (anything that needs a signed-in user) return **404** unless `MOBILE_API_ENABLED=true` is set. Public catalogue routes are always on. Set it in `.env.local` while you build the app, and in Vercel when the app ships.
+User routes (anything that needs a signed-in user) return **404** unless `MOBILE_API_ENABLED=true` is set. **It is set in production** (Vercel), since the Android app uses these routes. Public catalogue routes are always on. Set it in `.env.local` too when running the app against a local server.
 
 ## Conventions
 

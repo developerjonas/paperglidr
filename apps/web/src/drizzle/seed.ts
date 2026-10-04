@@ -3,7 +3,7 @@
 // admin promotion is a plain UPDATE.
 //
 // Needs only the DB_* variables (see src/data/env/db.ts) plus, optionally,
-// ADMIN_EMAIL. See docs/DB_SETUP.md.
+// ADMIN_EMAIL. See docs/SETUP.md ("Database").
 import { sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/drizzle/db"

@@ -25,7 +25,7 @@ How money moves through Chiyali, how to configure it, and how to test it.
 
 **Zero price.** Free products, and paid products discounted to ₹0, skip the gateway: `features/purchases/lib/freeEnrollment.ts` enrolls the buyer directly. The discount code's limits are re-checked under a row lock.
 
-**Statuses:** `pending` → `completed` | `failed` | `disputed`, and `refunded` via the admin revoke.
+**Statuses:** `pending` → `completed` | `failed` | `disputed`, and `refunded` when an admin approves a refund at `/admin/refunds`.
 - A `failed` purchase can still become `completed` if the gateway later confirms the payment (late success wins).
 - `disputed` and `refunded` are terminal for automated flows.
 - `not_found` from a gateway only becomes `failed` after 30 minutes.
@@ -40,7 +40,7 @@ Every gateway answer is appended to `payment_events`, which is the record to use
 | `PAYMENT_MODE` | Behaviour |
 |---|---|
 | `sandbox` | Env values override `SANDBOX_DEFAULTS`. eSewa works with nothing set (the public `EPAYTEST` merchant). Khalti needs `KHALTI_SECRET_KEY`, a per-merchant test key. Fonepay needs all its credentials. |
-| `live` | **Env values only.** A gateway with any value missing is disabled and hidden at checkout; it never falls back to sandbox. Any sandbox URL, `EPAYTEST`, the public eSewa test key or a non-https URL **disables that gateway** and reports it at boot (`src/services/payments/bootCheck.ts`, Sentry tag `area=startup`, see `docs/OBSERVABILITY.md`). The site and correctly configured gateways keep working. |
+| `live` | **Env values only.** A gateway with any value missing is disabled and hidden at checkout; it never falls back to sandbox. Any sandbox URL, `EPAYTEST`, the public eSewa test key or a non-https URL **disables that gateway** and reports it at boot (`src/services/payments/bootCheck.ts`, GlitchTip tag `area=startup`, see [SETUP.md](./SETUP.md#3-monitoring-glitchtip)). The site and correctly configured gateways keep working. |
 
 - `PAYMENT_ENABLED_GATEWAYS=esewa,khalti` is a kill switch: it can only switch gateways off.
 - The boot log line shows what's enabled and why the rest aren't, for example `[payments] mode=live enabled=esewa,khalti { fonepay: 'missing FONEPAY_MERCHANT_CODE, …' }`.
@@ -51,9 +51,9 @@ These are sent per request. Register or whitelist them where the gateway's dashb
 
 | Gateway | URL |
 |---|---|
-| eSewa success | `https://chiyali.com/api/payments/esewa/return/*` |
-| eSewa failure | `https://chiyali.com/api/payments/esewa/failure/*` |
-| Khalti `return_url` | `https://chiyali.com/api/payments/khalti/return/*` (`website_url`: `https://chiyali.com`) |
+| eSewa success | `https://www.chiyali.com/api/payments/esewa/return/*` |
+| eSewa failure | `https://www.chiyali.com/api/payments/esewa/failure/*` |
+| Khalti `return_url` | `https://www.chiyali.com/api/payments/khalti/return/*` (`website_url`: `https://www.chiyali.com`) |
 | Fonepay | none: QR plus status polling. Ask Fonepay whether they whitelist server IPs. |
 
 ### Cron
@@ -62,7 +62,8 @@ These are sent per request. Register or whitelist them where the gateway's dashb
   - URL: `https://www.chiyali.com/api/cron/reconcile-payments`, method GET.
   - Schedule: every 5 minutes.
   - Advanced → Headers: `Authorization` = `Bearer <CRON_SECRET>` (the same value as in Vercel).
-  - Advanced → Timeout: 30 seconds (the maximum). Notifications: on failure, after 2 in a row.
+  - Advanced → Timeout: 30 seconds (the maximum).
+  - Notifications: on failure (after 2–3 in a row), on success after failing, and when the job is disabled. This is the cron's alerting: a failed run answers 500 and a wrong secret 401.
   - Use **Test run** after saving: it should answer 200 with a summary. 401 means the header or secret is wrong.
 - Each run is kept short for that 30-second limit: up to 25 payments, and it stops starting new checks after 20 seconds. Anything left (`"deferred": N` in the summary) is picked up 5 minutes later. Invoice retries and upload cleanup only run if time is left.
 - Any other scheduler works the same way: `curl -H "Authorization: Bearer $CRON_SECRET" https://www.chiyali.com/api/cron/reconcile-payments`. Overlapping runs are safe: each purchase is fulfilled exactly once.
@@ -70,11 +71,11 @@ These are sent per request. Register or whitelist them where the gateway's dashb
 - The same run also does housekeeping, each step isolated so one failure doesn't stop the others:
   - **Invoice retry.** Invoices whose PDF or email failed (`emailed_at` still null) are retried at most 5 times, at least 10 minutes apart, for 30 days. An atomic claim means the cron and the post-payment send never email the same invoice twice. After the 5th failure Sentry gets `area=invoices`, `invoice_event=gave_up`. The error is in `invoices.last_delivery_error`.
   - **Upload cleanup.** Lesson uploads still `pending` after 24 hours (never confirmed) are deleted, both the R2 object and the row. The R2 objects of replaced or removed lesson files are deleted 4 hours later, via the `storage_deletions` queue. The delay is longer than any signed playback URL, so nobody's video stops mid-lesson.
-- After each successful run it pings the GlitchTip heartbeat monitor (`CRON_HEARTBEAT_URL`), which alerts when runs stop. See `docs/OBSERVABILITY.md`.
+- Optional: with `CRON_HEARTBEAT_URL` set, each successful run also pings a GlitchTip heartbeat monitor. It isn't used today (see [SETUP.md](./SETUP.md#alerts)).
 
 ## Tests
 
-Both suites need a **throwaway** Postgres, migrated with `pnpm db:migrate`, and refuse to run without an explicit flag. Setup is in `docs/DB_SETUP.md`.
+Both suites need a **throwaway** Postgres, migrated with `pnpm db:migrate`, and refuse to run without an explicit flag. Setup is in [SETUP.md](./SETUP.md#tests).
 
 ```sh
 cd apps/web
@@ -98,4 +99,4 @@ The stub gateway lives in `src/test/` only. A test fails if any app file imports
 4. **Closed-tab test:** pay, then close the tab before the redirect. Access should appear after the next cron run, within 5 minutes.
 5. **Replay test:** reload the return URL. The purchase stays completed with one ledger row.
 6. **Cancel test:** cancel at the gateway. You reach the failure page, and the purchase later becomes `failed`.
-7. Refund the test payment in the merchant dashboard, then use Admin → revoke to remove access and reverse the ledger.
+7. Refund the test payment: request a refund from the purchase page, approve it at `/admin/refunds` (access ends and the ledger is reversed), return the money in the merchant dashboard, then mark it returned.

@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/nextjs"
 
 /**
- * Tags used by the alert rules in docs/OBSERVABILITY.md. Keep the names in
+ * Tags used for triage in docs/SETUP.md ("Monitoring"). Keep the names in
  * sync with that doc.
  * - area: payments | deliver | action | route | startup | invoices | cleanup | health
  * - payment_event (area=payments): verify_error | gateway_error |

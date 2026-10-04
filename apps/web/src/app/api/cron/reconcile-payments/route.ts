@@ -16,7 +16,7 @@ const BATCH_SIZE = 25;
 
 // Scheduled every 5 minutes on cron-job.org (docs/PAYMENTS.md, "Cron"),
 // not Vercel Cron: the Hobby plan only allows daily runs. The GlitchTip
-// heartbeat monitor's interval must match (docs/OBSERVABILITY.md).
+// heartbeat monitor's interval must match (docs/SETUP.md, "Alerts").
 
 // Constant-time compare that doesn't leak the secret's length.
 function secretMatches(presented: string, secret: string) {
@@ -69,7 +69,7 @@ async function handle(request: Request) {
     console.info("[payments] cron reconcile", summary);
     // Tell the GlitchTip heartbeat monitor this run succeeded. It alerts
     // when a run fails or the scheduler stops calling this at all
-    // (docs/OBSERVABILITY.md). Unset = no heartbeat.
+    // (docs/SETUP.md, "Alerts"). Unset = no heartbeat.
     await sendHeartbeat();
     return NextResponse.json(summary);
   } catch (error) {

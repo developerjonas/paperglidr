@@ -36,7 +36,7 @@ function withTimeout<T>(promise: Promise<T>) {
  * 200 `{ status: "ok" }` when the app can reach the database and its
  * schema matches the code; 503 `{ status: "fail" }` otherwise, naming the
  * check that failed but never the error. Public, cheap, uncached.
- * docs/OBSERVABILITY.md has the monitor settings.
+ * docs/SETUP.md ("Uptime checks") has the monitor settings.
  */
 async function check() {
   const started = Date.now()

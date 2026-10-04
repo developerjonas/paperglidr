@@ -25,7 +25,7 @@ import {
 // confirmImageUpload checks the object and copies it to the public bucket.
 // Nothing reaches the public domain unchecked. Staged objects are deleted
 // after the copy; an R2 lifecycle rule on "image-uploads/" cleans up
-// uploads that were never confirmed (see docs/R2_SETUP.md).
+// uploads that were never confirmed (see docs/SETUP.md, "File storage").
 const STAGING_PREFIX = "image-uploads"
 
 function stagingPrefix(purpose: ImageUploadPurpose, userId: string) {
