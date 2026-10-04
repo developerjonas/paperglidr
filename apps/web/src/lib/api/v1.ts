@@ -5,6 +5,7 @@ import type { UserRole } from "@/drizzle/schema"
 import { getCurrentUser } from "@/services/auth"
 import { mobileApiDisabled } from "@/lib/mobileApi"
 import { safeErrorMessage } from "@/lib/safeError"
+import { SITE_URL } from "@/lib/site"
 
 /**
  * Shared plumbing for /api/v1 (the mobile app's API). Every response is
@@ -16,8 +17,22 @@ import { safeErrorMessage } from "@/lib/safeError"
 // Per-user answers must never be cached by a proxy.
 const noStore = { "Cache-Control": "private, no-store" }
 
+// Image fields may hold a path on this site (e.g. "/courses/x.png"), which
+// next/image on the web resolves itself. The app can't, so the API sends
+// those as absolute URLs. Absolute URLs (R2, OAuth avatars) pass through.
+const IMAGE_FIELDS = new Set(["imageUrl", "profileImageUrl", "image"])
+
+function absoluteImageUrls(key: string, value: unknown) {
+  return IMAGE_FIELDS.has(key) && typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
+    ? `${SITE_URL}${value}`
+    : value
+}
+
 export function apiJson(body: unknown, status = 200) {
-  return NextResponse.json(body, { status, headers: noStore })
+  return new NextResponse(JSON.stringify(body, absoluteImageUrls), {
+    status,
+    headers: { ...noStore, "Content-Type": "application/json" },
+  })
 }
 
 export function apiError(status: number, message: string) {
