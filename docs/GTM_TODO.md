@@ -8,7 +8,7 @@ Last updated: 2026-10-05.
 
 ---
 
-**The critical path now:** testers opted in on 5 Oct → keep **12+ of them opted in for 14 days** (until about **19 Oct**) → apply for production → Google's review. Realistic Play launch: **late October**. Meanwhile: courses and creators (section 2).
+**The critical path now:** fix the **Misleading Claims rejection** (below) → testers keep running the 14 days (until about **19 Oct**) → apply for production → Google's review. Realistic Play launch: **late October**. Meanwhile: courses and creators (section 2).
 
 **Done on 4 Oct:** the first course is live (PHP for Beginners, free, by @devjonas); the reviewer account (`reviewer@chiyali.com`) is created and its password is in Play's Sign in details; free courses can be added in the app ("Enroll for free"); new Browse pages with topic cards.
 
@@ -24,13 +24,17 @@ Last updated: 2026-10-05.
 
 ## 1. This week
 
-- [ ] 🟠 **Keep 12+ testers opted in until about 19 Oct.** Google counts testers who stay opted in for the full 14 days. Nudge them to open the app a few times; check Play Console → Testing → Closed testing for the count.
+- [ ] 🟠 **Play rejection, 5 Oct: Misleading Claims policy** ("Missing source link for government information", "Missing clear disclaimer of non-official status"). The description named government exams (Loksewa/PSC, IOE, CEE, EPS-TOPIK) with no disclaimer or official links. Fixed in code and text; to finish:
+  1. Push (the website footer, the exam topic pages and `/api/v1/config` carry the notice).
+  2. Play Console → Main store listing: paste the new short and full descriptions from [GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md) §1.
+  3. Build app **1.0.2** (the notice on Home, Account, Terms and policies and the exam topics in Browse; plus the Bunny player, screen-capture block, Enroll for free, topic cards) and upload it to closed testing.
+  4. Send both for review together (Publishing overview → Send changes for review). Appeal only if it's rejected again after that.
+- [x] 🟠 **Testers:** 12+ opted in on 5 Oct. Keep them opted in until about 19 Oct; check whether the rejection paused the 14-day count (Play Console → Dashboard).
 - [ ] 🟡 **Second admin:** no account with `jonasawasthi@icloud.com` exists in production yet (checked 5 Oct). Sign up once with exactly that email (or Google with that address), or tell Claude the address the account really uses.
 - [ ] 🔴 **Real-money run-through on production:**
   - a Rs 10–50 eSewa purchase, then refund it;
   - upload a real paid video and play it on web and in the app;
   - password reset email, SMS OTP, a certificate, and a payout request.
-- [ ] 🟡 **App 1.0.2** (Bunny player with watermark, screen-capture block, Enroll for free, topic cards in Browse): build and upload to closed testing **after** Google finishes the current review. Claude can run the build.
 
 ## 2. During the 14 days
 

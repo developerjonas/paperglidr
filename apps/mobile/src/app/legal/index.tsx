@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { Linking } from 'react-native';
 
+import { NotGovernmentNotice } from '@/components/official-info';
 import { ThemedText } from '@/components/themed-text';
 import { ListRow, ListSection } from '@/components/ui/list';
 import { Screen } from '@/components/ui/screen';
@@ -42,6 +43,7 @@ export default function LegalScreen() {
                 />
               ))}
             </ListSection>
+            <NotGovernmentNotice />
             <ThemedText type="small" themeColor="textSecondary">
               Questions about any of them:{' '}
               <ThemedText

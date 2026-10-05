@@ -2,7 +2,7 @@
 
 Everything to paste into Play Console for the Chiyali Android app (`com.developerjonas.chiyali`), plus the App Store fields for when iOS comes. The **Data safety** and **content rating** answers come from checking what the app's code actually collects and sends (October 2026). If the app starts collecting something new, update this file first.
 
-Last updated: 2026-10-04. Status: all of this is entered in Play Console (Data safety, content rating, listing, Sign in details except the reviewer password).
+Last updated: 2026-10-05 (store listing rewritten for the Misleading Claims policy). Status: all of this is entered in Play Console (Data safety, content rating, listing, Sign in details except the reviewer password).
 
 > **The one rule to keep in mind (Google Play payments policy):** the app must not point people to an outside payment method for courses. The app has no buy button, and every text here avoids "pay with eSewa/Khalti" and "buy on our website". Keep it that way in screenshots, release notes and replies to reviews too. The website itself can say anything.
 
@@ -14,16 +14,27 @@ Last updated: 2026-10-04. Status: all of this is entered in Play Console (Data s
 
 **Short description** (max 80):
 ```
-Learn from Nepali teachers: Loksewa, entrance prep, languages and tech.
+Courses from Nepali teachers: exam prep, languages, tech and more.
 ```
-(71 characters.) Alternative: `Courses from Nepal's best teachers. Free lessons, QR-verified certificates.` (75)
+(66 characters. No exam or government body names here: there's no room for the disclaimer that has to go with them.)
 
 **Full description** (max 4,000):
+
+> **Google Play's Misleading Claims policy (enforced 5 Oct 2026):** because the app covers government exams, the description must (1) say clearly that Chiyali is not a government app and (2) link the official source for each exam it names. Keep both blocks below, near the top. Only name exams that are listed under OFFICIAL SOURCES (each link checked to load); CEE/MECEE was removed because mec.gov.np didn't load from outside Nepal. The same notice is in the app (Account, Home, Terms and policies, and the exam topics in Browse) and on the website, from `apps/web/src/config/officialSources.ts`.
+
 ```
-Chiyali is Nepal's course platform: learn from Nepali teachers, in the subjects that matter here, on your phone.
+Chiyali is a course app from Nepal: learn from Nepali teachers, on your phone.
+
+NOT A GOVERNMENT APP
+Chiyali is a private education app made by Paperglidr Technology Pvt. Ltd. It does not represent, and is not affiliated with, endorsed by or acting for, the Government of Nepal, the Public Service Commission (Lok Sewa Aayog), any university or any exam body. Courses are made by independent teachers. For official notices, syllabuses, exam dates and results, always use the official sources below.
+
+OFFICIAL SOURCES
+• Loksewa (civil service exams): Public Service Commission, Government of Nepal: https://psc.gov.np
+• IOE engineering entrance: Institute of Engineering, Tribhuvan University: https://ioe.tu.edu.np
+• EPS-TOPIK (work in Korea): EPS Section, Department of Foreign Employment, Government of Nepal: https://epsnepal.gov.np
 
 LEARN WHAT YOU NEED
-• Loksewa (PSC) preparation, IOE and CEE entrance prep, EPS-TOPIK and IELTS, programming, design, accounting and Excel, and more
+• Preparation courses for Loksewa, the IOE entrance and EPS-TOPIK, plus IELTS, programming, design, accounting and Excel, and more
 • Courses made by Nepali teachers, in a way that fits how you study
 • Free courses and free preview lessons, so you can see the teacher before you start
 
@@ -49,7 +60,7 @@ YOUR ACCOUNT
 • Get help through support tickets right in the app
 • Delete your account any time from Account → Delete account
 
-Chiyali works in light and dark mode.
+Chiyali works in light and dark mode. The notice above and the official links are also in the app, under Account.
 
 Questions? Write to support@chiyali.com or visit www.chiyali.com.
 ```
@@ -66,7 +77,7 @@ Before pasting, check it: the courses it names should actually be on the site at
 - Feature graphic (1024×500): brand blue (#0055ff), the white plane and "Chiyali", and the line *"Learn from Nepal's best teachers."* No payment logos, no prices.
 - Phone screenshots (at least 2, ideally 6–8, 9:16, from a real phone or the emulator with real courses). Suggested order and captions:
   1. Home: *"Courses from Nepali teachers"*
-  2. Browse by topic: *"Loksewa, entrance, languages, tech and more"*
+  2. Browse by topic: *"Exam prep, languages, tech and more"* (an exam topic's screen shows the "not a government app" note; that's fine to show)
   3. A course page: *"Watch a free preview first"*
   4. The lesson player: *"Learn on your phone, full screen"*
   5. Lesson Q&A: *"Ask the teacher"*
@@ -181,8 +192,8 @@ Passwords: Play's form has no type for them, so nothing to declare. They're sent
 
 - **Name** (30): `Chiyali: Courses in Nepal`
 - **Subtitle** (30): `Learn from Nepali teachers` (26)
-- **Promotional text** (170): `Free preview lessons, Q&A with the teacher, and certificates anyone can verify with a QR code. Loksewa, entrance prep, languages, tech and more.`
-- **Keywords** (100, comma-separated, no spaces after commas): `loksewa,psc,entrance,ioe,cee,eps topik,ielts,nepali,courses,exam prep,certificate,learn,nepal`
+- **Promotional text** (170): `Free preview lessons, Q&A with the teacher, and certificates anyone can verify with a QR code. Exam prep, languages, tech and more.` (Name government exams only next to the disclaimer and official links, as in the Play description.)
+- **Keywords** (100, comma-separated, no spaces after commas): `loksewa,psc,entrance,ioe,eps topik,ielts,nepali,courses,exam prep,certificate,learn,nepal`
 - **Description:** the Play full description above works as is.
 - **Category:** Education. **Age rating:** answer as in section 4; expect 4+ or 12+ (because of user-generated content).
 - **App Privacy ("nutrition labels"):** the same types as section 6.

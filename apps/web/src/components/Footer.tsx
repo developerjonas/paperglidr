@@ -8,6 +8,7 @@ import { db } from "@/drizzle/db";
 import { InstructorTable } from "@/drizzle/schema";
 import { COMPANY, companyRegistrationDisplay } from "@/config/company";
 import { LEGAL_PAGES } from "@/config/legalPages";
+import { NOT_GOVERNMENT_DISCLAIMER, OFFICIAL_SOURCES } from "@/config/officialSources";
 
 type FooterProps = {
   isAdminPage?: boolean;
@@ -137,7 +138,19 @@ export async function Footer({ isAdminPage = false }: FooterProps) {
           ))}
         </div>
 
-        <div className="mt-12 border-t pt-6">
+        <div className="mt-12 space-y-3 border-t pt-6">
+          <p className="max-w-4xl text-xs leading-relaxed text-muted-foreground">
+            {NOT_GOVERNMENT_DISCLAIMER} Official sources:{" "}
+            {OFFICIAL_SOURCES.map((source, i) => (
+              <span key={source.url}>
+                {i > 0 && " · "}
+                {source.exam}:{" "}
+                <a href={source.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
+                  {source.url.replace(/^https:\/\//, "")}
+                </a>
+              </span>
+            ))}
+          </p>
           <p className="text-xs text-muted-foreground">
             &copy; {currentYear} {COMPANY.legalName}. All rights reserved.
           </p>

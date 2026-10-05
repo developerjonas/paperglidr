@@ -8,6 +8,9 @@ export type ISODate = string;
 
 export type Gateway = 'esewa' | 'khalti' | 'fonepay';
 
+/** An official source for a government exam that Chiyali's courses prepare for. */
+export type OfficialSource = { topicSlug: string; exam: string; body: string; url: string };
+
 export type AppConfig = {
   siteName: string;
   siteUrl: string;
@@ -27,6 +30,8 @@ export type AppConfig = {
   };
   /** The policies; the text lives on the website (open siteUrl + path). */
   legal: { lastUpdated: string; pages: { path: string; title: string; summary: string }[] };
+  /** Not a government app, and where the official information is (older servers omit it). */
+  officialInfo?: { disclaimer: string; sources: OfficialSource[] };
   company: {
     brandName: string;
     legalName: string;

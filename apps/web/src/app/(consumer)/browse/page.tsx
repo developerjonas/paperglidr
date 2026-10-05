@@ -9,6 +9,7 @@ import { getPublicCategories, getPublicCategoryCounts } from "@/features/categor
 import { categoryStyle } from "@/features/categories/lib/categoryStyle";
 import { pageMetadata } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import { OfficialSourceNote } from "@/components/OfficialSourceNote";
 
 export const metadata: Metadata = pageMetadata({
   title: "Browse courses",
@@ -68,6 +69,7 @@ export default async function BrowsePage({
                   </p>
                 </div>
               </div>
+              <OfficialSourceNote topicSlug={current.slug} />
             </div>
           ) : (
             <>

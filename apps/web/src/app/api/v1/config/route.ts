@@ -8,6 +8,7 @@ import {
   companyRegistrationDisplay,
 } from "@/config/company"
 import { LEGAL_PAGES } from "@/config/legalPages"
+import { NOT_GOVERNMENT_DISCLAIMER, OFFICIAL_SOURCES } from "@/config/officialSources"
 import { SITE_NAME, SITE_URL } from "@/lib/site"
 
 /**
@@ -26,6 +27,12 @@ export const GET = v1Route("config", async () =>
     legal: {
       lastUpdated: LEGAL_LAST_UPDATED,
       pages: LEGAL_PAGES.map(({ href, title, summary }) => ({ path: href, title, summary })),
+    },
+    // Not a government app; official sources for the government exams
+    // (Google Play's Misleading Claims policy; config/officialSources.ts).
+    officialInfo: {
+      disclaimer: NOT_GOVERNMENT_DISCLAIMER,
+      sources: OFFICIAL_SOURCES,
     },
     company: {
       brandName: COMPANY.brandName,

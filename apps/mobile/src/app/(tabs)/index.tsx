@@ -9,6 +9,7 @@ import { useAuth } from '@/auth/auth-context';
 import { CategoryChips } from '@/components/catalog/category-chips';
 import { ProductCarousel } from '@/components/catalog/product-carousel';
 import { Logo } from '@/components/logo';
+import { NotGovernmentNotice } from '@/components/official-info';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Icon } from '@/components/ui/icon';
@@ -107,6 +108,7 @@ export default function HomeScreen() {
               />
             </>
           )}
+          <NotGovernmentNotice />
         </View>
       </ScrollView>
     </ThemedView>

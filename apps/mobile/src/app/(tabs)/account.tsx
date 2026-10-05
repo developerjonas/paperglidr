@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { NotGovernmentNotice } from '@/components/official-info';
 import { ListRow, ListSection } from '@/components/ui/list';
 import { Screen } from '@/components/ui/screen';
 import { Spacing } from '@/constants/theme';
@@ -81,6 +82,7 @@ export default function AccountScreen() {
         <ListRow label="Verify a certificate" onPress={() => router.push('/verify')} />
         <ListRow label="Terms and policies" onPress={() => router.push('/legal')} last />
       </ListSection>
+      <NotGovernmentNotice />
 
       {signedIn ? (
         <ListSection>

@@ -10,6 +10,7 @@ import { api } from '@/api/v1';
 import { CategoryChips, Chip } from '@/components/catalog/category-chips';
 import { ProductRow } from '@/components/catalog/product-card';
 import { TopicCards, TopicIcon } from '@/components/catalog/topic-cards';
+import { OfficialSourceNote } from '@/components/official-info';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Icon } from '@/components/ui/icon';
@@ -116,6 +117,7 @@ export default function BrowseScreen() {
           </View>
         </View>
       ) : null}
+      {category ? <OfficialSourceNote topicSlug={category.slug} /> : null}
       {!showTopics && categories.data && categories.data.length > 0 ? (
         <CategoryChips categories={categories.data} selected={categoryId} onSelect={setCategoryId} />
       ) : null}
