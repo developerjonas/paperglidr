@@ -58,6 +58,10 @@ const SECRET = process.env.BETTER_AUTH_SECRET
 const manifest = JSON.parse(
   readFileSync(path.join(webRoot, ".next/server/server-reference-manifest.json"), "utf8"),
 ).node
+// Publishing needs the current Creator Terms (src/config/company.ts).
+const CREATOR_TERMS_VERSION = readFileSync(path.join(webRoot, "src/config/company.ts"), "utf8").match(
+  /CREATOR_TERMS_VERSION = "([^"]+)"/,
+)[1]
 
 const db = new pg.Client({
   host: process.env.DB_HOST,
@@ -258,11 +262,19 @@ async function main() {
       status,
       liveSection.id,
     ])
-  const addAsset = async (lessonId, status = "ready") =>
+  // R2 serves PDFs (and older MP4s); uploaded video is on Bunny.
+  const addAsset = async (lessonId, status = "ready", type = "pdf") =>
     one(
       `insert into lesson_assets("lessonId", type, provider, role, "storageKey", "fileName", "mimeType", status)
-       values ($1, 'video_file', 'r2', 'primary', $2, 'v.mp4', 'video/mp4', $3) returning id`,
-      [lessonId, `courses/${courseB.id}/lessons/${lessonId}/smoke-${run}.mp4`, status],
+       values ($1, $4, 'r2', 'primary', $2, $5, $6, $3) returning id`,
+      [
+        lessonId,
+        `courses/${courseB.id}/lessons/${lessonId}/smoke-${run}-${type}`,
+        status,
+        type,
+        type === "pdf" ? "notes.pdf" : "v.mp4",
+        type === "pdf" ? "application/pdf" : "video/mp4",
+      ],
     )
   const previewLesson = await addLesson("B preview", "preview")
   const lockedLesson = await addLesson("B locked", "public")
@@ -271,6 +283,7 @@ async function main() {
   const pendingAsset = await addAsset(previewLesson.id, "pending")
   const lockedAsset = await addAsset(lockedLesson.id)
   const privateAsset = await addAsset(privateLesson.id)
+  const previewVideo = await addAsset(previewLesson.id, "ready", "video_file")
 
   const deliver = async (lessonId, assetId, token) => {
     const response = await fetch(`${BASE_URL}/api/lessons/${lessonId}/assets/${assetId}/deliver`, {
@@ -282,10 +295,12 @@ async function main() {
   }
 
   let d = await deliver(previewLesson.id, previewAsset.id)
-  check("preview lesson plays signed out", d.status === 200 && typeof d.body.url === "string", `http ${d.status}`)
+  check("preview lesson's PDF opens signed out", d.status === 200 && typeof d.body.url === "string", `http ${d.status}`)
   check("deliver responses are private, no-store", d.cacheControl.includes("no-store") && d.cacheControl.includes("private"), d.cacheControl)
   const expires = Number(new URL(d.body.url ?? "http://x/?X-Amz-Expires=0").searchParams.get("X-Amz-Expires"))
-  check("signed video URL is short-lived (<= 3 h)", expires > 0 && expires <= 3 * 60 * 60, `X-Amz-Expires=${expires}`)
+  check("signed file URL is short-lived (<= 3 h)", expires > 0 && expires <= 3 * 60 * 60, `X-Amz-Expires=${expires}`)
+  d = await deliver(previewLesson.id, previewVideo.id)
+  check("uploaded video on a preview lesson is never served", d.status === 404, `http ${d.status}`)
   d = await deliver(previewLesson.id, pendingAsset.id)
   check("pending (unconfirmed) upload is not served", d.status === 404, `http ${d.status}`)
   d = await deliver(lockedLesson.id, lockedAsset.id)
@@ -311,18 +326,18 @@ async function main() {
   const assetCount = async () => (await one(`select count(*)::int n from lesson_assets where "lessonId" = $1`, [lockedLesson.id])).n
   const assetsBefore = await assetCount()
   const uploadInput = over => [{
-    lessonId: lockedLesson.id, fileName: "v.mp4", mimeType: "video/mp4", fileSizeBytes: 1000,
+    lessonId: lockedLesson.id, fileName: "notes.pdf", mimeType: "application/pdf", fileSizeBytes: 1000,
     role: "primary", downloadable: false, durationSeconds: 60, ...over,
   }]
-  up = await call("requestLessonAssetUploadUrl", uploadInput({ mimeType: "video/quicktime", fileName: "v.mov" }), creatorB.token)
-  check("lesson upload: non-MP4 video rejected", message(up.body)?.includes("MP4") && (await assetCount()) === assetsBefore, message(up.body))
-  up = await call("requestLessonAssetUploadUrl", uploadInput({ fileSizeBytes: 2 * 1024 ** 3 + 1 }), creatorB.token)
-  check("lesson upload: MP4 over 2 GB rejected", message(up.body)?.includes("2 GB") && (await assetCount()) === assetsBefore, message(up.body))
+  up = await call("requestLessonAssetUploadUrl", uploadInput({ mimeType: "video/mp4", fileName: "v.mp4" }), creatorB.token)
+  check("lesson upload: video can't go to R2 (Bunny only)", message(up.body)?.includes("video uploader") && (await assetCount()) === assetsBefore, message(up.body))
+  up = await call("requestLessonAssetUploadUrl", uploadInput({ fileSizeBytes: 100 * 1024 ** 2 + 1 }), creatorB.token)
+  check("lesson upload: PDF over 100 MB rejected", message(up.body)?.includes("100 MB") && (await assetCount()) === assetsBefore, message(up.body))
   up = await call("requestLessonAssetUploadUrl", uploadInput({}), attacker.token)
   check("lesson upload: non-author can't request an upload URL", (await assetCount()) === assetsBefore, `http ${up.status}`)
   up = await call("requestLessonAssetUploadUrl", uploadInput({}), creatorB.token)
   const newAsset = await one(`select status from lesson_assets where "lessonId" = $1 order by "createdAt" desc limit 1`, [lockedLesson.id])
-  check("lesson upload: valid MP4 starts as pending", (await assetCount()) === assetsBefore + 1 && newAsset?.status === "pending", newAsset?.status)
+  check("lesson upload: valid PDF starts as pending", (await assetCount()) === assetsBefore + 1 && newAsset?.status === "pending", newAsset?.status)
   check("lesson upload: presigned PUT signs content-length", /X-Amz-SignedHeaders=[^&]*content-length/.test(decoded(up.body)), "")
 
   up = await call("requestImageUploadUrl", [{ purpose: "product", mimeType: "image/gif", fileSizeBytes: 1000 }], creatorB.token)
@@ -466,8 +481,8 @@ async function main() {
   // Moderation (task 18): a verified creator's "Publish" lands in review.
   const creatorC = await createUser("creator-c", run)
   await q(
-    `insert into instructors("userId", handle, name, bio, "profileImageUrl", phone_verified_at) values ($1, $2, 'C', 'bio', '/c.png', now())`,
-    [creatorC.id, `smoke_c_${run}`],
+    `insert into instructors("userId", handle, name, bio, "profileImageUrl", phone_verified_at, creator_terms_accepted_at, creator_terms_version) values ($1, $2, 'C', 'bio', '/c.png', now(), now(), $3)`,
+    [creatorC.id, `smoke_c_${run}`, CREATOR_TERMS_VERSION],
   )
   const courseC = await one(`insert into courses(name, description, author_id) values ('C course', 'd', $1) returning id`, [creatorC.id])
   const sectionC = await one(`insert into course_sections(name, "order", "courseId", status) values ('C s', 0, $1, 'public') returning id`, [courseC.id])
@@ -519,10 +534,12 @@ async function main() {
   res1 = await act("initiatePurchase", [{ productId: productB.id, gateway: "esewa", idempotencyKey: `${crypto.randomUUID()}:esewa` }], creatorA.token)
   check("initiatePurchase rejects a product the buyer already owns", res1.msg?.includes("already own"), res1.msg)
 
-  // YouTube on free previews only
-  res1 = await act("setLessonYouTubeVideo", [lockedLesson.id, "https://youtu.be/dQw4w9WgXcQ"], creatorB.token)
-  check("YouTube refused on a paid lesson", res1.msg?.includes("free preview lessons"), res1.msg)
-  res1 = await act("setLessonYouTubeVideo", [previewLesson.id, "https://youtu.be/dQw4w9WgXcQ"], attacker.token)
+  // YouTube/Vimeo links on free-tier lessons only. Course B is also in a
+  // free product (so it counts as free); course C is paid only (product C).
+  const paidLessonC = await one(`insert into lessons(name, "order", status, "sectionId") values ('C paid', 1, 'public', $1) returning id`, [sectionC.id])
+  res1 = await act("setLessonEmbedVideo", [paidLessonC.id, "https://youtu.be/dQw4w9WgXcQ"], creatorC.token)
+  check("YouTube refused on a paid lesson", res1.msg?.includes("Paid lessons can't use"), res1.msg)
+  res1 = await act("setLessonEmbedVideo", [previewLesson.id, "https://youtu.be/dQw4w9WgXcQ"], attacker.token)
   check("YouTube can't be set on another creator's lesson", !(await q(`select 1 from lesson_assets where "lessonId" = $1 and provider = 'youtube'`, [previewLesson.id])).length)
 
   // Teach product pages are owner-only. Profiles are inserted with SQL,
@@ -531,10 +548,11 @@ async function main() {
   // (owner of product C) and a fresh creator D.
   const creatorD = await createUser("creator-d", run)
   await q(
-    `insert into instructors("userId", handle, name, bio, "profileImageUrl") values ($1, $2, 'D', 'bio', '/d.png')`,
-    [creatorD.id, `smoke_d_${run}`],
+    `insert into instructors("userId", handle, name, bio, "profileImageUrl", creator_terms_accepted_at, creator_terms_version) values ($1, $2, 'D', 'bio', '/d.png', now(), $3)`,
+    [creatorD.id, `smoke_d_${run}`, CREATOR_TERMS_VERSION],
   )
-  check("another creator's product editor -> 404", (await getStatus(`/teach/products/${productC.id}/edit`, creatorD.token)) === 404)
+  let st = await getStatus(`/teach/products/${productC.id}/edit`, creatorD.token)
+  check("another creator's product editor -> 404", st === 404, `http ${st}`)
   check("owner opens their product editor", (await getStatus(`/teach/products/${productC.id}/edit`, creatorC.token)) === 200)
   const emptyProductC = await one(
     `insert into products(name, description, "imageUrl", "priceInRupees", status, author_id)
@@ -542,7 +560,8 @@ async function main() {
     [creatorC.id],
   )
   check("author opens the editor of a product with no courses", (await getStatus(`/teach/products/${emptyProductC.id}/edit`, creatorC.token)) === 200)
-  check("another creator can't open it", (await getStatus(`/teach/products/${emptyProductC.id}/edit`, creatorD.token)) === 404)
+  st = await getStatus(`/teach/products/${emptyProductC.id}/edit`, creatorD.token)
+  check("another creator can't open it", st === 404, `http ${st}`)
   const teachList = await (await fetch(`${BASE_URL}/teach/products`, { headers: { Cookie: sessionCookie(creatorD.token) } })).text()
   check("/teach/products lists only your own products", !teachList.includes(productName) && !teachList.includes("B product"))
 

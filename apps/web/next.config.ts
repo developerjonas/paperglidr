@@ -2,7 +2,27 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import { allowedImageHosts } from "./src/lib/imageHosts";
 
+// Sent with every response. The CSP only restricts what can't break the
+// site: no framing of Chiyali (clickjacking), no plugins, no <base>
+// hijacking, https only. Scripts, frames and connections aren't
+// allow-listed: YouTube, Bunny, eSewa and GlitchTip all load from
+// elsewhere. Referrer: Bunny's referrer check needs the origin.
+const securityHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests",
+  },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
+];
+
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
   // Workspace packages ship TypeScript source.
   transpilePackages: ["@repo/brand", "@repo/password-policy", "@repo/video-embeds"],
   experimental: {
