@@ -81,20 +81,24 @@ export const STORAGE_DELETION_DELAY_MS = 4 * 60 * 60 * 1000;
 
 type Tx = Omit<typeof db, "$client">;
 
-async function queueStorageDeletion(
-  rows: { storageKey: string | null }[],
-  reason: "replaced" | "removed",
-  trx: Tx,
-) {
-  const keys = rows.map((row) => row.storageKey).filter((key): key is string => key != null);
-  if (keys.length === 0) return;
+type StoredFile = { storageKey: string | null; provider: string; externalId: string | null };
+
+/** Queues the stored files behind these asset rows: R2 objects by key, Bunny videos by GUID. */
+async function queueStorageDeletion(rows: StoredFile[], reason: "replaced" | "removed", trx: Tx) {
   const deleteAfter = new Date(Date.now() + STORAGE_DELETION_DELAY_MS);
-  await trx
-    .insert(StorageDeletionTable)
-    .values(keys.map((storageKey) => ({ storageKey, reason, deleteAfter })));
+  const values: (typeof StorageDeletionTable.$inferInsert)[] = [];
+  for (const row of rows) {
+    if (row.provider === "bunny" && row.externalId) {
+      values.push({ storageKey: row.externalId, provider: "bunny", reason, deleteAfter });
+    } else if (row.provider === "r2" && row.storageKey) {
+      values.push({ storageKey: row.storageKey, provider: "r2", reason, deleteAfter });
+    }
+  }
+  if (values.length === 0) return;
+  await trx.insert(StorageDeletionTable).values(values);
 }
 
-/** Deletes the row; its R2 object is queued for deletion (see above). */
+/** Deletes the row; its R2 object or Bunny video is queued for deletion (see above). */
 export async function deleteLessonAsset(id: string) {
   const deleted = await db.transaction(async (trx) => {
     const [row] = await trx
@@ -113,14 +117,22 @@ export async function deleteLessonAsset(id: string) {
 
 /**
  * A confirmed upload goes live. A lesson shows one primary asset, so a new
- * ready primary replaces the previous ones. Their R2 objects are queued
- * for deletion after STORAGE_DELETION_DELAY_MS, not deleted in-request.
+ * ready primary replaces the previous ones. Their files are queued for
+ * deletion after STORAGE_DELETION_DELAY_MS, not deleted in-request.
+ * `details` are facts learned on the way (a Bunny video's length).
  */
-export async function markLessonAssetReady(id: string) {
+export async function markLessonAssetReady(
+  id: string,
+  details: { durationSeconds?: number | null } = {},
+) {
   const ready = await db.transaction(async (tx) => {
     const [asset] = await tx
       .update(LessonAssetTable)
-      .set({ status: "ready" })
+      .set({
+        status: "ready",
+        updatedAt: new Date(),
+        ...(details.durationSeconds != null ? { durationSeconds: details.durationSeconds } : {}),
+      })
       .where(and(eq(LessonAssetTable.id, id), eq(LessonAssetTable.status, "pending")))
       .returning();
     if (asset == null) return null;
@@ -136,7 +148,11 @@ export async function markLessonAssetReady(id: string) {
             ne(LessonAssetTable.id, asset.id)
           )
         )
-        .returning({ storageKey: LessonAssetTable.storageKey });
+        .returning({
+          storageKey: LessonAssetTable.storageKey,
+          provider: LessonAssetTable.provider,
+          externalId: LessonAssetTable.externalId,
+        });
       await queueStorageDeletion(replaced, "replaced", tx);
     }
     return asset;
@@ -144,4 +160,23 @@ export async function markLessonAssetReady(id: string) {
 
   if (ready) revalidateLessonAssetCache({ id: ready.id, lessonId: ready.lessonId });
   return ready;
+}
+
+/**
+ * Bunny couldn't encode the upload: the row stays (as "failed") so the
+ * editor can say so; its Bunny video is queued for deletion right away and
+ * stops counting against the creator's storage.
+ */
+export async function markLessonAssetFailed(id: string) {
+  const failed = await db.transaction(async (tx) => {
+    const [asset] = await tx
+      .update(LessonAssetTable)
+      .set({ status: "failed", updatedAt: new Date() })
+      .where(and(eq(LessonAssetTable.id, id), eq(LessonAssetTable.status, "pending")))
+      .returning();
+    if (asset) await queueStorageDeletion([asset], "removed", tx);
+    return asset ?? null;
+  });
+  if (failed) revalidateLessonAssetCache({ id: failed.id, lessonId: failed.lessonId });
+  return failed;
 }

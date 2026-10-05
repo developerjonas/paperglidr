@@ -76,9 +76,14 @@ export const env = createEnv({
       .default("false")
       .transform(value => value === "true"),
 
-    // --- Bunny Stream (not used at launch) ---
+    // --- Bunny Stream: paid lesson video ---
+    // Unset = video uploads are off
+    // (services/bunny/stream.ts). See docs/SETUP.md, "Video (Bunny Stream)".
     BUNNY_STREAM_LIBRARY_ID: z.string().min(1).optional(),
     BUNNY_STREAM_TOKEN_AUTH_KEY: z.string().min(1).optional(),
+    BUNNY_STREAM_API_KEY: z.string().min(1).optional(),
+    // The library's Read-Only API key: Bunny signs its webhooks with it.
+    BUNNY_STREAM_READ_ONLY_API_KEY: z.string().min(1).optional(),
 
     // --- Email (Resend) ---
     RESEND_API_KEY: z.string().min(1),

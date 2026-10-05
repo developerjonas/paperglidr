@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { actionToast } from "@/hooks/use-toast"
-import { deleteUserAccount, findCoursesToGrant, grantCourseAccess } from "../actions/users"
+import { deleteUserAccount, findCoursesToGrant, grantCourseAccess, setCreatorStorageLimit } from "../actions/users"
 
 /** Search for a course and give it to this user (no purchase is recorded). */
 export function GrantCourseForm({ userId }: { userId: string }) {
@@ -124,5 +124,55 @@ export function DeleteUserButton({ userId, email }: { userId: string; email: str
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+/** Shows a creator's storage use and lets an admin change their limit (GB). */
+export function StorageLimitForm({ userId, usedBytes, limitBytes }: { userId: string; usedBytes: number; limitBytes: number }) {
+  const GB = 1024 ** 3
+  const [value, setValue] = useState(String(Number((limitBytes / GB).toFixed(1))))
+  const [pending, startTransition] = useTransition()
+  const router = useRouter()
+  const percent = Math.min(100, Math.round((usedBytes / limitBytes) * 100))
+  const fmt = (bytes: number) => (bytes >= GB ? `${Number((bytes / GB).toFixed(1))} GB` : `${Math.round(bytes / 1024 ** 2)} MB`)
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>
+          {fmt(usedBytes)} of {fmt(limitBytes)} used
+        </span>
+        <span>{percent}%</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
+        <div className={percent >= 90 ? "h-full bg-destructive" : "h-full bg-primary"} style={{ width: `${percent}%` }} />
+      </div>
+      <form
+        className="flex items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault()
+          startTransition(async () => {
+            const data = await setCreatorStorageLimit(userId, Number(value))
+            actionToast({ actionData: data })
+            if (!data.error) router.refresh()
+          })
+        }}
+      >
+        <Input
+          type="number"
+          min={1}
+          max={1000}
+          step={0.5}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          aria-label="Storage limit in GB"
+          className="h-8 w-24"
+        />
+        <span className="text-sm text-muted-foreground">GB</span>
+        <Button type="submit" size="sm" variant="outline" disabled={pending}>
+          Save limit
+        </Button>
+      </form>
+    </div>
   )
 }

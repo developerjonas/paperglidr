@@ -89,7 +89,11 @@ export async function getUserDetail(userId: string) {
     q(sql`select provider_id from account where user_id = ${userId}`),
     q(sql`select count(*) as n, max(updated_at) as last_seen from session where user_id = ${userId} and expires_at > now()`),
     q(sql`select handle, name, "isVerified", is_founding as "isFounding", phone_verified_at as "phoneVerifiedAt",
-            creator_terms_accepted_at as "termsAcceptedAt"
+            creator_terms_accepted_at as "termsAcceptedAt", storage_limit_bytes as "storageLimitBytes",
+            (select coalesce(sum(a."fileSizeBytes"), 0) from lesson_assets a
+               join lessons l on l.id = a."lessonId" join course_sections s on s.id = l."sectionId"
+               join courses c on c.id = s."courseId"
+               where c.author_id = ${userId} and a.provider in ('r2', 'bunny') and a.status in ('pending', 'ready')) as "storageUsedBytes"
           from instructors where "userId" = ${userId}`),
     q(sql`select id, status, gateway, "pricePaidInPaisa" as paisa, "createdAt" as created_at, "productDetails"->>'name' as product
           from purchases where "userId" = ${userId} order by "createdAt" desc limit 25`),
@@ -117,6 +121,8 @@ export async function getUserDetail(userId: string) {
       isFounding: boolean
       phoneVerifiedAt: Date | null
       termsAcceptedAt: Date | null
+      storageLimitBytes: number | string
+      storageUsedBytes: number | string
     },
     purchases: purchases.map((p) => ({
       id: String(p.id),

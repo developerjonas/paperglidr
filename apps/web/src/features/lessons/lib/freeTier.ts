@@ -61,7 +61,7 @@ export type VideoRules = {
 
 export const PREVIEW_NEEDS_EMBED_MESSAGE = `Preview lessons need a ${EMBED_PROVIDER_LABELS} link.`
 export const FREE_COURSE_NEEDS_EMBED_MESSAGE = `Lessons in a free course need a ${EMBED_PROVIDER_LABELS} link.`
-export const PAID_LESSON_NO_EMBED_MESSAGE = `Paid lessons can't use a ${EMBED_PROVIDER_LABELS} link — anyone with the link could watch it. Upload an MP4 instead.`
+export const PAID_LESSON_NO_EMBED_MESSAGE = `Paid lessons can't use a ${EMBED_PROVIDER_LABELS} link — anyone with the link could watch it. Upload the video instead.`
 
 /** The courses (of these) that are in a public product priced at 0. */
 export async function getFreeCourseIds(courseIds: string[], { excludeProductId }: { excludeProductId?: string } = {}) {
@@ -268,7 +268,7 @@ export async function checkProductFreeTier({
     const freeElsewhere = await getFreeCourseIds(after.courseIds, { excludeProductId: productId })
     const embeds = await conflictingLessons(after.courseIds.filter(id => !freeElsewhere.has(id)), "embed")
     if (embeds.length > 0) {
-      return `Paid lessons can't use ${EMBED_PROVIDER_LABELS} links: anyone with the link could watch them. Upload an MP4 (or make the lesson a free preview) for ${listLessons(embeds)} first.`
+      return `Paid lessons can't use ${EMBED_PROVIDER_LABELS} links: anyone with the link could watch them. Upload the video (or make the lesson a free preview) for ${listLessons(embeds)} first.`
     }
   }
 

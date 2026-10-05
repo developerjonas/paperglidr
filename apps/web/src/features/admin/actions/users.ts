@@ -4,7 +4,7 @@ import { and, count, eq, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/drizzle/db"
-import { SessionTable, UserCourseAccessTable, UserTable } from "@/drizzle/schema"
+import { InstructorTable, SessionTable, UserCourseAccessTable, UserTable } from "@/drizzle/schema"
 import { auth } from "@/lib/auth"
 import { actionError, UserFacingError } from "@/lib/safeError"
 import { requireAdmin } from "@/services/auth"
@@ -131,5 +131,23 @@ export async function deleteUserAccount(userId: string, confirmation: string) {
     return done(userId, "Account deleted.")
   } catch (error) {
     return actionError(error, "deleteUserAccount")
+  }
+}
+
+/** Sets how much lesson content (video and files) a creator may upload, in GB. */
+export async function setCreatorStorageLimit(userId: string, gigabytes: number) {
+  await requireAdmin()
+  try {
+    const gb = z.number().min(1).max(1000).parse(gigabytes)
+    const [updated] = await db
+      .update(InstructorTable)
+      .set({ storageLimitBytes: Math.round(gb * 1024 ** 3), updatedAt: new Date() })
+      .where(eq(InstructorTable.userId, uuid.parse(userId)))
+      .returning({ id: InstructorTable.id })
+    if (updated == null) throw new UserFacingError("This user isn't a creator.")
+    return done(userId, `Storage limit set to ${gb} GB.`)
+  } catch (error) {
+    if (error instanceof z.ZodError) return { error: true, message: "Enter a limit between 1 and 1000 GB." }
+    return actionError(error, "setCreatorStorageLimit")
   }
 }

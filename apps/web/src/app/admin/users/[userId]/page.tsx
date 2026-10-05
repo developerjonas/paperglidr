@@ -4,7 +4,7 @@ import type { ReactNode } from "react"
 import { ActionButton } from "@/components/ActionButton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AdminPageHeader, StatusBadge, nprFromPaisa, shortDate, shortDateTime, gatewayName } from "@/features/admin/components/AdminUi"
-import { DeleteUserButton, GrantCourseForm } from "@/features/admin/components/UserControls"
+import { DeleteUserButton, GrantCourseForm, StorageLimitForm } from "@/features/admin/components/UserControls"
 import { revokeCourseAccess, sendPasswordResetEmail, setUserRole, signOutEverywhere } from "@/features/admin/actions/users"
 import { getUserDetail } from "@/features/admin/db/users"
 import { requireAdmin } from "@/services/auth"
@@ -238,6 +238,14 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
                 <dt className="text-muted-foreground">Creator terms</dt>
                 <dd>{instructor.termsAcceptedAt ? `Accepted ${shortDate(instructor.termsAcceptedAt)}` : "Not accepted"}</dd>
               </dl>
+              <div className="border-t border-border pt-3">
+                <p className="mb-2 text-sm font-medium">Upload storage</p>
+                <StorageLimitForm
+                  userId={user.id}
+                  usedBytes={Number(instructor.storageUsedBytes)}
+                  limitBytes={Number(instructor.storageLimitBytes)}
+                />
+              </div>
               <Link href={`/admin/commissions?creator=${user.id}`} className="text-sm text-primary hover:underline">
                 Earnings and balance →
               </Link>

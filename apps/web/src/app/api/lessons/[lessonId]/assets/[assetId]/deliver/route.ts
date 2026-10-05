@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/services/auth";
 import { getLessonAsset } from "@/features/lessons/db/lessonAssets";
 import { canAccessLessonContent } from "@/features/lessons/permissions/lessons";
 import { getDownloadUrl } from "@/services/storage/r2";
-import { getBunnyEmbedUrl } from "@/services/bunny/streamToken";
+import { bunnyEmbedUrl, canPlayBunnyVideos } from "@/services/bunny/stream";
 import { captureEvent } from "@/lib/observability";
 import { buildEmbedUrl, fromStoredEmbed, isEmbedProvider } from "@repo/video-embeds";
 import { getLessonVideoRules, mayDeliverAsset } from "@/features/lessons/lib/freeTier";
@@ -15,6 +15,9 @@ import { routeError } from "@/lib/safeError";
 const DOCUMENT_EXPIRY_SECONDS = 60 * 15;
 const DEFAULT_VIDEO_EXPIRY_SECONDS = 60 * 30;
 const MAX_VIDEO_EXPIRY_SECONDS = 60 * 60 * 3;
+// Bunny's player link only has to stay valid while the player loads (and
+// reloads, e.g. after rotating): twice the video's length, 1–3 hours.
+const MIN_BUNNY_EXPIRY_SECONDS = 60 * 60;
 
 // A signed URL must never be cached by the browser or a proxy.
 const noStore = { "Cache-Control": "private, no-store" };
@@ -33,7 +36,7 @@ async function handle(
   { params }: { params: Promise<{ lessonId: string; assetId: string }> },
 ) {
   const { lessonId, assetId } = await params;
-  const { userId, role } = await getCurrentUser();
+  const { userId, role, user } = await getCurrentUser({ allData: true });
 
   const access = await canAccessLessonContent({ userId, role }, lessonId);
   if (!access.allowed) {
@@ -76,8 +79,20 @@ async function handle(
 
   if (asset.provider === "bunny") {
     if (!asset.externalId) return json({ error: "Asset has no Bunny video ID" }, 500);
-    const { embedUrl } = getBunnyEmbedUrl({ videoId: asset.externalId });
-    return json({ type: "bunny_embed", url: embedUrl });
+    if (!canPlayBunnyVideos()) return json({ error: "Video playback isn't configured" }, 500);
+    const validFor = Math.min(
+      Math.max((asset.durationSeconds ?? 0) * 2, MIN_BUNNY_EXPIRY_SECONDS),
+      MAX_VIDEO_EXPIRY_SECONDS,
+    );
+    const { url, expires } = bunnyEmbedUrl(asset.externalId, validFor);
+    return json({
+      type: "bunny_embed",
+      url,
+      expiresAt: new Date(expires * 1000).toISOString(),
+      // Shown over the video so a recording names whose account it came
+      // from. Paid video is never delivered signed out, so there's a user.
+      watermark: watermarkFor(user),
+    });
   }
 
   if (asset.provider === "r2") {
@@ -125,4 +140,10 @@ export async function GET(
     });
   }
   return response;
+}
+
+/** "Sita Sharma · sita@example.com" (or the username if there's no email). */
+function watermarkFor(user: { name: string; email: string; username: string | null } | null | undefined) {
+  if (user == null) return "Chiyali";
+  return [user.name, user.email || user.username].filter(Boolean).join(" · ");
 }

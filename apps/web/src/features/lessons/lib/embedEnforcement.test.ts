@@ -7,6 +7,7 @@ import {
   LessonAssetTable,
   LessonTable,
   ProductTable,
+  StorageDeletionTable,
   UserTable,
 } from "@/drizzle/schema"
 import { createProduct, createUser } from "@/test/fixtures"
@@ -34,9 +35,32 @@ vi.mock("@/services/storage/r2", () => ({
   deleteObject: async (key: string) => void r2.deleted.push(key),
 }))
 
-const { setLessonEmbedVideo, requestLessonAssetUploadUrl, confirmLessonAssetUpload } = await import(
-  "../actions/lessonAssets"
-)
+// Bunny Stream is never reached for real: videos are "created" here, and
+// read back as encoded (status 4) unless a test says otherwise.
+const bunny = vi.hoisted(() => ({ created: [] as string[], deleted: [] as string[] }))
+vi.mock("@/services/bunny/stream", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/services/bunny/stream")>()
+  return {
+    ...actual,
+    getBunnyConfig: () => ({ libraryId: "lib", apiKey: "key", tokenAuthKey: "token", readOnlyApiKey: "ro" }),
+    createBunnyVideo: async () => {
+      const guid = crypto.randomUUID()
+      bunny.created.push(guid)
+      return { guid, status: 0, length: 0, storageSize: 0, availableResolutions: null, encodeProgress: 0 }
+    },
+    getBunnyVideo: async (guid: string) => ({ guid, status: 4, length: 125, storageSize: 1000, availableResolutions: "720p", encodeProgress: 100 }),
+    deleteBunnyVideo: async (guid: string) => void bunny.deleted.push(guid),
+    bunnyUploadCredentials: (videoId: string) => ({ endpoint: "https://video.bunnycdn.com/tusupload", libraryId: "lib", videoId, expires: 4102444800, signature: "sig" }),
+  }
+})
+
+const {
+  setLessonEmbedVideo,
+  requestLessonAssetUploadUrl,
+  confirmLessonAssetUpload,
+  requestLessonVideoUpload,
+  confirmLessonVideoUpload,
+} = await import("../actions/lessonAssets")
 const { updateLesson } = await import("../actions/lessons")
 const { getLessonVideoRules } = await import("./freeTier")
 const products = await import("@/features/products/actions/products")
@@ -75,6 +99,7 @@ async function makeFree(ofCourse: string) {
   await db.insert(CourseProductTable).values({ courseId: ofCourse, productId: free!.id })
   return free!
 }
+const videoUpload = (lessonId: string) => ({ lessonId, fileName: "lesson.mp4", mimeType: "video/mp4", fileSizeBytes: 1000 })
 const mp4Upload = (lessonId: string) => ({
   lessonId,
   fileName: "v.mp4",
@@ -144,17 +169,19 @@ describe("setLessonEmbedVideo", () => {
 describe("uploads", () => {
   it("a preview can't get an uploaded video", async () => {
     const preview = await lesson("preview")
-    expect(await requestLessonAssetUploadUrl(mp4Upload(preview.id))).toMatchObject({
+    const created = bunny.created.length
+    expect(await requestLessonVideoUpload(videoUpload(preview.id))).toMatchObject({
       error: true,
       message: "Preview lessons need a YouTube or Vimeo link.",
     })
     expect(await assetsOf(preview.id)).toHaveLength(0)
+    expect(bunny.created).toHaveLength(created) // nothing created in Bunny
   })
 
   it("nor can a lesson of a free course", async () => {
     await makeFree(courseId)
     const regular = await lesson("public")
-    expect(await requestLessonAssetUploadUrl(mp4Upload(regular.id))).toMatchObject({
+    expect(await requestLessonVideoUpload(videoUpload(regular.id))).toMatchObject({
       error: true,
       message: expect.stringContaining("free course"),
     })
@@ -168,14 +195,36 @@ describe("uploads", () => {
     expect(await requestLessonAssetUploadUrl(image)).toMatchObject({ error: false })
   })
 
-  it("a paid lesson takes an uploaded video", async () => {
+  it("a paid lesson takes an uploaded video, which goes to Bunny and is ready once encoded", async () => {
     const paid = await lesson("public")
-    const requested = await requestLessonAssetUploadUrl(mp4Upload(paid.id))
-    expect(requested).toMatchObject({ error: false })
-    expect(await confirmLessonAssetUpload((requested as { assetId: string }).assetId, paid.id)).toMatchObject({ error: false })
+    const requested = await requestLessonVideoUpload(videoUpload(paid.id))
+    expect(requested).toMatchObject({ error: false, upload: { endpoint: "https://video.bunnycdn.com/tusupload", signature: "sig" } })
+    const { assetId } = requested as { assetId: string }
+    expect(await assetsOf(paid.id)).toEqual([expect.objectContaining({ id: assetId, provider: "bunny", status: "pending" })])
+    expect(await confirmLessonVideoUpload(assetId, paid.id)).toEqual({ error: false, status: "ready" })
+    expect(await assetsOf(paid.id)).toEqual([expect.objectContaining({ status: "ready", durationSeconds: 125 })])
   })
 
-  it("an upload that finishes after the lesson became free-tier is refused and removed", async () => {
+  it("videos can't go to R2 any more", async () => {
+    const paid = await lesson("public")
+    expect(await requestLessonAssetUploadUrl(mp4Upload(paid.id))).toMatchObject({
+      error: true,
+      message: "Upload videos with the video uploader.",
+    })
+  })
+
+  it("a video that finishes after its lesson became free-tier is removed, not published", async () => {
+    const paid = await lesson("public")
+    const { assetId } = (await requestLessonVideoUpload(videoUpload(paid.id))) as { assetId: string }
+    const [asset] = await assetsOf(paid.id)
+    await db.update(LessonTable).set({ status: "preview" }).where(eq(LessonTable.id, paid.id))
+    expect(await confirmLessonVideoUpload(assetId, paid.id)).toMatchObject({ error: true, message: expect.stringContaining("free now") })
+    expect(await assetsOf(paid.id)).toHaveLength(0)
+    const queued = await db.select().from(StorageDeletionTable).where(eq(StorageDeletionTable.storageKey, asset!.externalId!))
+    expect(queued).toEqual([expect.objectContaining({ provider: "bunny" })])
+  })
+
+  it("an older R2 video that finishes after the lesson became free-tier is refused and removed", async () => {
     const paid = await lesson("public")
     const pending = await hostedVideo(paid.id, "pending")
     await db.update(LessonTable).set({ status: "preview" }).where(eq(LessonTable.id, paid.id))
@@ -306,7 +355,7 @@ describe("draft courses (not on sale yet)", () => {
     const withLink = await lesson("public")
     expect(await setLessonEmbedVideo(withLink.id, YT)).toMatchObject({ error: false })
     const withUpload = await lesson("public")
-    expect(await requestLessonAssetUploadUrl(mp4Upload(withUpload.id))).toMatchObject({ error: false })
+    expect(await requestLessonVideoUpload(videoUpload(withUpload.id))).toMatchObject({ error: false })
     expect(await getLessonVideoRules(withLink.id)).toEqual({ freeTier: false, embedsAllowed: true })
   })
 

@@ -6,7 +6,9 @@ import { GET as deliverAsset } from "@/app/api/lessons/[lessonId]/assets/[assetI
  * A short-lived URL for one lesson asset — the web player's delivery route,
  * with errors in the v1 `{ message }` shape. Success is one of:
  *   { type: "inline" | "download", url }   signed file URL (R2)
- *   { type: "bunny_embed", url }           Bunny Stream player URL
+ *   { type: "bunny_embed", url, expiresAt, watermark }
+ *                                          Bunny Stream player URL (paid lessons) and the
+ *                                          viewer label to show over it
  *   { type: "youtube" | "vimeo", externalId, startSeconds, embedUrl }
  *                                          free-tier lessons only
  * Ask again when a URL expires; never cache it.

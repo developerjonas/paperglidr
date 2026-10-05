@@ -1,7 +1,9 @@
-import { pgTable, text, uuid, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, boolean, timestamp, bigint } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createdAt, id, updatedAt } from "../schemaHelpers";
 import { UserTable } from "./user";
+
+export const DEFAULT_CREATOR_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
 
 export const InstructorTable = pgTable("instructors", {
   id: id(),
@@ -29,6 +31,11 @@ export const InstructorTable = pgTable("instructors", {
 
   // "Founding creator" badge, set by an admin (/admin/creators).
   isFounding: boolean("is_founding").notNull().default(false),
+  // How much lesson content (video and files) the creator may upload, in
+  // bytes. 5 GB by default; admins raise it per creator in /admin/users.
+  storageLimitBytes: bigint("storage_limit_bytes", { mode: "number" })
+    .notNull()
+    .default(DEFAULT_CREATOR_STORAGE_LIMIT_BYTES),
 
 
   createdAt,

@@ -1,11 +1,12 @@
 # Setup and operations
 
-How Chiyali's infrastructure is set up and kept running: the database, file storage, monitoring, and deploys. Payments have their own doc, [PAYMENTS.md](./PAYMENTS.md). Commands run from `apps/web/` unless they say otherwise.
+How Chiyali's infrastructure is set up and kept running: the database, file storage, paid video, monitoring, and deploys. Payments have their own doc, [PAYMENTS.md](./PAYMENTS.md). Commands run from `apps/web/` unless they say otherwise.
 
 **Production today:**
 - Vercel (website and API) at `https://www.chiyali.com`; `chiyali.com` redirects there.
 - Postgres on Neon.
-- Cloudflare R2 for files.
+- Cloudflare R2 for files (PDFs, invoices, images).
+- Bunny Stream for paid lesson video (free lessons use YouTube/Vimeo links).
 - GlitchTip for errors, with alerts to Discord.
 - cron-job.org for the payment cron.
 - EAS (Expo) for the Android app.
@@ -29,7 +30,7 @@ To change the schema:
 2. Run `pnpm db:generate --name short_description` and read the SQL. Drizzle can miss generated columns, custom SQL and data backfills; edit the file by hand if needed.
 3. Run `pnpm db:migrate` against your local database and test.
 4. Commit the schema change together with `src/drizzle/migrations/**`, including `meta/`.
-5. **In production, run the migration before deploying the code that needs it** (see section 4).
+5. **In production, run the migration before deploying the code that needs it** (see section 5).
 
 ### Environment
 
@@ -84,7 +85,7 @@ Two buckets:
 
 | Bucket | Env var | Holds | Who can read it |
 |---|---|---|---|
-| Private (e.g. `chiyali-private`) | `R2_BUCKET_NAME` | Lesson videos, PDFs and attachments, invoice PDFs, and image uploads waiting to be checked (`image-uploads/`) | Nobody directly. The app hands out short-lived signed URLs after an access check |
+| Private (e.g. `chiyali-private`) | `R2_BUCKET_NAME` | Lesson PDFs and attachments, invoice PDFs, image uploads waiting to be checked (`image-uploads/`), and older MP4 lesson videos (new videos go to Bunny Stream, section 3) | Nobody directly. The app hands out short-lived signed URLs after an access check |
 | Public (e.g. `chiyali-images`) | `R2_PUBLIC_BUCKET_NAME` | Product thumbnails (`products/`) and instructor photos (`instructors/`) | Anyone, at `R2_PUBLIC_BASE_URL` (e.g. `https://images.chiyali.com`) |
 
 **Why two buckets:** R2 makes a whole bucket public or private; there's no public folder. Two buckets keep the rule simple: nothing in the private bucket is ever reachable without a signed URL.
@@ -124,15 +125,62 @@ Two buckets:
 
 1. Upload an instructor photo: the saved URL starts with `R2_PUBLIC_BASE_URL/instructors/`.
 2. Rename a `.txt` to `.png` and upload it: rejected with "That file isn't a valid image".
-3. Upload a lesson MP4: it appears in the editor without "upload not finished", and plays.
-4. An expired signed URL returns 403. Documents last 15 minutes; videos 2× their length, up to 3 hours.
+3. Upload a lesson PDF: it appears in the editor without "upload not finished", and opens.
+4. An expired signed URL returns 403. Documents last 15 minutes.
 5. `image-uploads/` stays empty after successful uploads.
 
 The payment cron also cleans up lesson uploads that were never confirmed, and deletes replaced lesson files 4 hours later (see PAYMENTS.md, "Cron").
 
 ---
 
-## 3. Monitoring (GlitchTip)
+---
+
+## 3. Video (Bunny Stream)
+
+Paid lesson videos live in **Bunny Stream**; free lessons and previews stay on YouTube/Vimeo links (cost 0). Creators upload straight from the lesson editor to Bunny (resumable TUS uploads, signed by our server so the API key never reaches the browser); Bunny encodes 240p–720p HLS; students watch in Bunny's player through a signed link that the server issues only after the access check (`/api/lessons/…/deliver`). Code: `src/services/bunny/stream.ts`, `src/features/lessons/lib/bunnyVideos.ts`, `src/app/api/webhooks/bunny-stream/route.ts`.
+
+**Protection, in layers:**
+- **No public file:** Bunny serves streaming chunks, never an MP4 (MP4 fallback off), and only to a signed player link (token authentication) from our domains.
+- **Paid only, never unlockable:** a lesson with an uploaded video can't become a free preview or join a free course (`features/lessons/lib/freeTier.ts`), and the deliver route never sends it on preview access. A video that finishes encoding after its lesson became free is deleted, not published.
+- **Traceable:** the viewer's name and email drift across every paid video (website and app).
+- **App:** screenshots and screen recording are blocked while a paid video is on screen (`expo-screen-capture`).
+- **Accounts:** at most 2 signed-in devices (`features/users/lib/sessionLimit.ts`); a third sign-in signs out the oldest. Admins are exempt.
+- **Later, if needed:** MediaCage Enterprise DRM (Widevine/FairPlay) can be switched on for the same library without re-uploading ($99/month + per licence).
+
+**No surprise bills:**
+- Each creator can upload **5 GB** (videos and files together, uploads in progress included); admins change it per creator in `/admin/users/[id]` → Creator profile → Upload storage.
+- Uploads not finished within 24 hours are deleted from Bunny; replaced or removed videos are deleted 4 hours later; failed encodes are deleted at once (the editor shows "couldn't be processed" for 7 days).
+- The player doesn't preload: bandwidth is used only when someone presses play.
+
+### Steps (Bunny dashboard)
+
+1. **Stream → Add Video Library** (e.g. `chiyali-lessons`), storage region closest to Nepal; no extra replication regions.
+2. **Encoding:** resolutions 240p, 360p, 480p, 720p (no 1080p); **keep original files: on** (lets you re-encode, e.g. for DRM, without re-uploads).
+3. **Security:**
+   - **Token authentication: on**: its key is `BUNNY_STREAM_TOKEN_AUTH_KEY`.
+   - **Allowed domains:** `www.chiyali.com`, `chiyali.com` (the app loads the player with the site as its base, so it matches).
+   - **Block direct URL file access: on**, **MP4 fallback: off**, **MediaCage Basic: on** if offered.
+4. **Player:** download button off.
+5. **Webhook URL:** `https://www.chiyali.com/api/webhooks/bunny-stream` (Bunny signs it with the library's Read-Only API key).
+6. **CDN (the library's pull zone):** a **monthly bandwidth limit** (e.g. 500 GB to start; raise it with sales). Account → Billing: turn on billing alerts.
+7. **Env vars in Vercel** (Production), then redeploy:
+   ```
+   BUNNY_STREAM_LIBRARY_ID=…          # library → API
+   BUNNY_STREAM_TOKEN_AUTH_KEY=…      # library → Security → Token Authentication Key
+   BUNNY_STREAM_API_KEY=…             # library → API → API Key (secret)
+   BUNNY_STREAM_READ_ONLY_API_KEY=…   # library → API → Read-Only API Key (webhook signing)
+   ```
+   Without them, the editor says video uploads aren't available yet; everything else works.
+
+### Check it works
+
+1. As a creator, open a lesson of a paid (or not-yet-published) course → **Upload the lesson video**: a progress bar, then "Processing for streaming…". Reloading mid-upload and choosing the same file continues from where it stopped.
+2. Within a few minutes (webhook, or the editor's 15-second refresh, or the 5-minute cron) the lesson shows the video as ready.
+3. As a buyer, the lesson plays with your name drifting across it; as a signed-in non-buyer, "Buy this course to watch"; signed out, "Sign in".
+4. In the Android app (preview or production build), the paid video plays and a screenshot comes out black.
+5. In Bunny, the library's video list shows the video; delete the lesson's video in the editor and it disappears from Bunny about 4 hours later.
+
+## 4. Monitoring (GlitchTip)
 
 Errors go to **GlitchTip** (app.glitchtip.com), which speaks Sentry's protocol: the website uses `@sentry/nextjs` and the app `@sentry/react-native`. With the variables unset, nothing is reported and everything still works.
 
@@ -182,7 +230,7 @@ JavaScript and render errors, unhandled promise rejections, and native crashes, 
 - **Startup:** a live gateway was switched off at boot. The event says which variable is wrong; fix it in Vercel and redeploy.
 - **Lesson delivery:** usually an R2 credential or bucket problem, so students can't play anything.
 - **Invoices (`gave_up`):** the buyer has access but no invoice. Check `last_delivery_error`, fix it, then use "Send invoice now" on the payment's admin page.
-- **Health:** the database is unreachable or a migration is missing (section 4).
+- **Health:** the database is unreachable or a migration is missing (section 5).
 
 ### Uptime checks (optional)
 
@@ -193,7 +241,7 @@ GlitchTip's Uptime Monitors (or UptimeRobot) on the canonical host `https://www.
 
 ---
 
-## 4. Deploying without downtime
+## 5. Deploying without downtime
 
 Vercel deploys are zero-downtime, and **Instant Rollback** (Deployments → ⋯) switches back in seconds. Downtime comes from what's around the code:
 

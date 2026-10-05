@@ -6,6 +6,8 @@ import { routeError } from "@/lib/safeError";
 import { captureError } from "@/lib/observability";
 import { retryInvoiceDeliveries } from "@/features/invoices/lib/deliverInvoice";
 import { cleanUpUploads } from "@/features/lessons/lib/uploadCleanup";
+import { syncPendingBunnyVideos } from "@/features/lessons/lib/bunnyVideos";
+import { getBunnyConfig } from "@/services/bunny/stream";
 
 // Each run is kept short enough for an external scheduler's request
 // timeout (cron-job.org gives up after 30s): payment checks stop starting
@@ -45,8 +47,16 @@ async function runJobs() {
   // Housekeeping only if there's time left; otherwise next run.
   const timeLeft = () => Date.now() - startedAt < RUN_BUDGET_MS;
   const invoices = timeLeft() ? await step("invoice retry", () => retryInvoiceDeliveries()) : { skipped: "time budget" };
+  // Lesson videos whose Bunny webhook was missed: before the cleanup, so a
+  // finished video is made ready instead of being deleted as abandoned.
+  const videos =
+    getBunnyConfig() == null
+      ? { skipped: "bunny not configured" }
+      : timeLeft()
+        ? await step("upload cleanup", () => syncPendingBunnyVideos())
+        : { skipped: "time budget" };
   const uploads = timeLeft() ? await step("upload cleanup", () => cleanUpUploads()) : { skipped: "time budget" };
-  return { ...payments, invoices, uploads };
+  return { ...payments, invoices, videos, uploads };
 }
 
 /**

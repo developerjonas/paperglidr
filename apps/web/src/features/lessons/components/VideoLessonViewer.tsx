@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import { BunnyPlayer } from "./BunnyPlayer";
 
 type DeliverResponse =
   | { type: "inline" | "download"; url: string }
-  | { type: "bunny_embed"; url: string }
+  | { type: "bunny_embed"; url: string; watermark: string }
   | { error: string };
 
 // The error variant never actually reaches state — it's caught and thrown
@@ -63,14 +64,7 @@ export function VideoLessonViewer({
   }
 
   if (data.type === "bunny_embed") {
-    return (
-      <iframe
-        src={data.url}
-        className="h-full w-full rounded-md bg-black"
-        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-        allowFullScreen
-      />
-    );
+    return <BunnyPlayer url={data.url} watermark={data.watermark} onEnded={onFinishedVideo} />;
   }
 
   return (

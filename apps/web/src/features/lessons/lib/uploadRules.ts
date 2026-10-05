@@ -30,9 +30,10 @@ const RULES: Record<string, UploadRule> = {
   "image/webp": { assetType: "image", maxBytes: 10 * MB, label: "WebP image", looksLike: isWebp },
 }
 
-// Primary = what the lesson player shows. Attachments = downloadable extras.
+// Files stored in R2. Primary = what the lesson player shows (a PDF; video
+// goes to Bunny Stream, see VIDEO_UPLOAD). Attachments = downloadable extras.
 export const ALLOWED_MIME_TYPES: Record<AssetRole, readonly string[]> = {
-  primary: ["video/mp4", "application/pdf"],
+  primary: ["application/pdf"],
   attachment: ["application/pdf", "image/jpeg", "image/png", "image/webp"],
 }
 
@@ -41,12 +42,28 @@ export function getUploadRule(role: AssetRole, mimeType: string): UploadRule | n
 }
 
 export function formatBytes(bytes: number) {
-  return bytes >= GB ? `${bytes / GB} GB` : `${Math.round(bytes / MB)} MB`
+  return bytes >= GB ? `${Number((bytes / GB).toFixed(1))} GB` : `${Math.round(bytes / MB)} MB`
+}
+
+/**
+ * Paid lesson video: uploaded straight to Bunny Stream, which re-encodes
+ * it for streaming, so common camera and screen-recorder formats are fine.
+ * Bunny checks the file itself (an unplayable one fails encoding).
+ */
+export const VIDEO_UPLOAD = {
+  mimeTypes: ["video/mp4", "video/quicktime", "video/webm", "video/x-matroska"] as readonly string[],
+  extensions: ".mp4,.mov,.webm,.mkv",
+  maxBytes: 4 * GB,
+  label: "Video",
+}
+
+export function isAllowedVideoUpload(mimeType: string) {
+  return VIDEO_UPLOAD.mimeTypes.includes(mimeType)
 }
 
 /** Shown to creators in the upload UI. */
 export const VIDEO_ENCODING_GUIDANCE =
-  "Upload MP4 video encoded with H.264 (AAC audio) at 720p, around 1.5–2.5 Mbps, up to 2 GB. That keeps lessons watchable on mobile data; higher bitrates make students buffer and don't look better on a phone."
+  "Upload the lesson video as MP4, MOV, WebM or MKV, up to 4 GB. 720p is plenty for phones: Chiyali converts it for smooth streaming on mobile data, from 240p to 720p."
 
 export const SIGNATURE_BYTES = 16
 

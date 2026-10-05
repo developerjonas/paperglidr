@@ -12,7 +12,9 @@ import { relations } from "drizzle-orm";
 import { LessonTable } from "./lesson";
 
 // youtube / vimeo = an external embed (free-tier lessons only — see
-// @repo/video-embeds); video_file = Chiyali-hosted video (paid lessons only)
+// @repo/video-embeds); video_file = Chiyali-hosted video (paid lessons only):
+// new uploads go to Bunny Stream (externalId = the Bunny video GUID), older
+// ones may be MP4s in R2 (storageKey)
 export const assetTypes = [
   "youtube",
   "vimeo",
@@ -35,10 +37,11 @@ export const assetRoles = ["primary", "attachment"] as const;
 export type AssetRole = (typeof assetRoles)[number];
 export const assetRoleEnum = pgEnum("asset_role", assetRoles);
 
-// pending = row created, file not yet confirmed in storage; ready = size
-// and type checked (confirmLessonAssetUpload). Only ready assets are shown
-// or delivered.
-export const assetStatuses = ["pending", "ready"] as const;
+// pending = row created, file not yet confirmed in storage (R2) or still
+// uploading/encoding (Bunny); ready = checked and playable; failed = Bunny
+// couldn't encode it (the creator uploads again). Only ready assets are
+// shown or delivered.
+export const assetStatuses = ["pending", "ready", "failed"] as const;
 export type AssetStatus = (typeof assetStatuses)[number];
 export const assetStatusEnum = pgEnum("asset_status", assetStatuses);
 

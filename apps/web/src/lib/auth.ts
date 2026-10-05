@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { bearer, haveIBeenPwned, username } from "better-auth/plugins";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 import { sendNotification } from "@/services/email/notifications";
+import { enforceSessionLimit } from "@/features/users/lib/sessionLimit";
 import { SITE_NAME } from "@/lib/site";
 import { db } from "@/drizzle/db";
 import * as schema from "@/drizzle/schema";
@@ -82,6 +83,19 @@ export const auth = betterAuth({
       : {}),
   },
   trustedOrigins,
+  databaseHooks: {
+    session: {
+      create: {
+        // At most two signed-in devices per account (features/users/lib/sessionLimit.ts).
+        // Never blocks the sign-in itself if the check fails.
+        after: async (session) => {
+          await enforceSessionLimit(session.userId, session.id).catch((error) =>
+            console.error("[auth] session limit check failed", error),
+          );
+        },
+      },
+    },
+  },
   socialProviders: {
     google: {
       clientId: env.GOOGLE_CLIENT_ID,

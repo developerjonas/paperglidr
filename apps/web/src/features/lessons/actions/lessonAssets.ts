@@ -22,9 +22,24 @@ import {
 import {
   ALLOWED_MIME_TYPES,
   SIGNATURE_BYTES,
+  VIDEO_UPLOAD,
   formatBytes,
   getUploadRule,
+  isAllowedVideoUpload,
 } from "../lib/uploadRules";
+import { z } from "zod";
+import { db } from "@/drizzle/db";
+import { LessonAssetTable } from "@/drizzle/schema";
+import { and, eq, inArray } from "drizzle-orm";
+import { assertStorageAvailable, getCreatorStorage } from "../lib/creatorStorage";
+import { syncBunnyLessonAsset } from "../lib/bunnyVideos";
+import { revalidateLessonAssetCache } from "../db/cache/lessonAssets";
+import {
+  bunnyUploadCredentials,
+  createBunnyVideo,
+  deleteBunnyVideo,
+  getBunnyConfig,
+} from "@/services/bunny/stream";
 import { UserFacingError, actionError } from "@/lib/safeError";
 import { EMBED_PROVIDERS, INVALID_EMBED_MESSAGE, parseEmbedUrl, toStoredEmbed } from "@repo/video-embeds";
 import {
@@ -53,7 +68,9 @@ export async function requestLessonAssetUploadUrl(
     if (rule == null) {
       throw new UserFacingError(
         parsed.role === "primary"
-          ? "Lesson content must be an MP4 video or a PDF."
+          ? isAllowedVideoUpload(parsed.mimeType)
+            ? "Upload videos with the video uploader."
+            : "Lesson content must be a video or a PDF."
           : "Attachments must be a PDF, JPEG, PNG or WebP file."
       );
     }
@@ -74,20 +91,28 @@ export async function requestLessonAssetUploadUrl(
       fileName: parsed.fileName,
     });
 
-    const asset = await insertLessonAsset({
-      lessonId: parsed.lessonId,
-      type: rule.assetType,
-      provider: "r2", // youtube assets never go through this upload path
-      role: parsed.role,
-      status: "pending",
-      storageKey,
-      fileName: parsed.fileName,
-      mimeType: parsed.mimeType,
-      fileSizeBytes: parsed.fileSizeBytes,
-      downloadable: parsed.downloadable,
-      durationSeconds:
-        rule.assetType === "video_file" ? (parsed.durationSeconds ?? null) : null,
+    // Counts against the course author's storage limit.
+    const [asset] = await db.transaction(async (trx) => {
+      await assertStorageAvailable(lesson.section.course.authorId, parsed.fileSizeBytes, trx);
+      return trx
+        .insert(LessonAssetTable)
+        .values({
+          lessonId: parsed.lessonId,
+          type: rule.assetType,
+          provider: "r2", // youtube assets never go through this upload path
+          role: parsed.role,
+          status: "pending",
+          storageKey,
+          fileName: parsed.fileName,
+          mimeType: parsed.mimeType,
+          fileSizeBytes: parsed.fileSizeBytes,
+          downloadable: parsed.downloadable,
+          durationSeconds: null,
+        })
+        .returning();
     });
+    if (asset == null) throw new Error("Failed to create lesson asset");
+    revalidateLessonAssetCache({ id: asset.id, lessonId: asset.lessonId });
 
     const uploadUrl = await getUploadUrl({
       storageKey,
@@ -180,6 +205,102 @@ async function checkStoredObject({
   return null;
 }
 
+const videoUploadSchema = z.object({
+  lessonId: z.string().uuid(),
+  fileName: z.string().trim().min(1).max(255),
+  mimeType: z.string().min(1),
+  fileSizeBytes: z.number().int().positive(),
+});
+
+/**
+ * Step 1 of a video upload (paid lessons only): creates the video in Bunny
+ * Stream and returns a 24-hour TUS signature for this one video, so the
+ * creator's browser uploads straight to Bunny (resumable; the API key
+ * never leaves the server). The asset row is `pending` until Bunny has
+ * encoded it (webhook, editor refresh, or the cron: syncBunnyLessonAsset).
+ */
+export async function requestLessonVideoUpload(input: z.infer<typeof videoUploadSchema>) {
+  try {
+    const parsed = videoUploadSchema.parse(input);
+    const lesson = await canEditLessonAssets(parsed.lessonId); // throws if unauthorized
+    if (getBunnyConfig() == null) {
+      throw new UserFacingError("Video uploads aren't available yet. Please try again later.");
+    }
+    if (!isAllowedVideoUpload(parsed.mimeType)) {
+      throw new UserFacingError("Upload an MP4, MOV, WebM or MKV video.");
+    }
+    if (parsed.fileSizeBytes > VIDEO_UPLOAD.maxBytes) {
+      throw new UserFacingError(`Videos can be at most ${formatBytes(VIDEO_UPLOAD.maxBytes)}.`);
+    }
+    // Uploaded video is for paid lessons; free-tier lessons use YouTube/Vimeo.
+    if (await isFreeTierLesson(parsed.lessonId)) {
+      throw new UserFacingError(needsEmbedMessage(lesson.status));
+    }
+
+    const authorId = lesson.section.course.authorId;
+    // Checked before creating anything in Bunny, and again under lock when saved.
+    await db.transaction((trx) => assertStorageAvailable(authorId, parsed.fileSizeBytes, trx));
+
+    const video = await createBunnyVideo(`${lesson.section.course.name} — ${lesson.name}`);
+    let asset;
+    try {
+      [asset] = await db.transaction(async (trx) => {
+        await assertStorageAvailable(authorId, parsed.fileSizeBytes, trx);
+        return trx
+          .insert(LessonAssetTable)
+          .values({
+            lessonId: parsed.lessonId,
+            type: "video_file",
+            provider: "bunny",
+            role: "primary",
+            status: "pending",
+            externalId: video.guid,
+            fileName: parsed.fileName,
+            mimeType: parsed.mimeType,
+            fileSizeBytes: parsed.fileSizeBytes,
+          })
+          .returning();
+      });
+    } catch (error) {
+      await deleteBunnyVideo(video.guid).catch(() => {});
+      throw error;
+    }
+    if (asset == null) throw new Error("Failed to create lesson asset");
+    revalidateLessonAssetCache({ id: asset.id, lessonId: asset.lessonId });
+
+    return { error: false as const, assetId: asset.id, upload: bunnyUploadCredentials(video.guid) };
+  } catch (error) {
+    return actionError(error, "requestLessonVideoUpload", "Couldn't start the upload.");
+  }
+}
+
+/**
+ * Step 2: the browser finished uploading to Bunny. Checks with Bunny right
+ * away; usually the video is still encoding ("processing").
+ */
+export async function confirmLessonVideoUpload(assetId: string, lessonId: string) {
+  try {
+    await canEditLessonAssets(lessonId); // throws if unauthorized
+    const asset = await getLessonAsset(assetId);
+    if (asset == null || asset.lessonId !== lessonId || asset.provider !== "bunny") {
+      throw new UserFacingError("Upload not found.");
+    }
+    const status = await syncBunnyLessonAsset(asset);
+    if (status === "removed") {
+      throw new UserFacingError("This lesson is free now, so it can't use an uploaded video. Use a YouTube or Vimeo link.");
+    }
+    return { error: false as const, status };
+  } catch (error) {
+    return actionError(error, "confirmLessonVideoUpload", "Couldn't check the upload.");
+  }
+}
+
+/** The course author's storage, for the editor ("2.1 GB of 5 GB used"). */
+export async function getLessonStorageUsage(lessonId: string) {
+  const lesson = await canEditLessonAssets(lessonId); // throws if unauthorized
+  return getCreatorStorage(lesson.section.course.authorId);
+}
+
 /**
  * Sets a YouTube or Vimeo video as the lesson's content — anything but a
  * non-preview lesson of a paid course (features/lessons/lib/freeTier). The link is normalised by
@@ -238,5 +359,17 @@ export async function removeLessonAsset(assetId: string, lessonId: string) {
  */
 export async function listLessonAssetsForEditor(lessonId: string) {
   await canEditLessonAssets(lessonId); // throws if unauthorized
+  // Videos still encoding: ask Bunny now, so "processing" turns into ready
+  // (or failed) as soon as the creator looks.
+  const pending = await db.query.LessonAssetTable.findMany({
+    where: and(
+      eq(LessonAssetTable.lessonId, lessonId),
+      eq(LessonAssetTable.provider, "bunny"),
+      inArray(LessonAssetTable.status, ["pending"]),
+    ),
+  });
+  for (const asset of pending) {
+    await syncBunnyLessonAsset(asset).catch((error) => console.error("[bunny] editor sync failed", error));
+  }
   return getLessonAssetsForLesson(lessonId);
 }

@@ -166,10 +166,10 @@ const html = `<form id="f" method="POST" action="${next.url}">${Object.entries(n
 | --- | --- |
 | `inline` | A signed file URL (video or PDF). Play or view it directly. It expires, so ask again after a long pause. |
 | `download` | A signed URL for a downloadable file |
-| `bunny_embed` | A Bunny Stream player URL. Load it in a WebView. |
+| `bunny_embed` | `{ url, expiresAt, watermark }`: a paid lesson's signed Bunny Stream player link. Load it in a WebView whose base URL is the site (Bunny checks the domain), through a page that loads Bunny's player.js first so it can report `ended` (`src/components/lesson/embed.tsx`). Draw `watermark` (the viewer's name and email) over it, moving; don't let the WebView go fullscreen (the lesson screen fills the screen itself); block screen capture while it's shown. Fetch a new link after `expiresAt`. |
 | `youtube` / `vimeo` | `{ externalId, startSeconds, embedUrl }`. `embedUrl` is the canonical player URL (`www.youtube-nocookie.com/embed/…?start=…` or `player.vimeo.com/video/…[?h=…][#t=…s]`). Free lessons only. |
 
-Video URLs last up to twice the video's length, with a 3-hour cap. Documents last 15 minutes.
+Video links last twice the video's length (Bunny: at least 1 hour), with a 3-hour cap. Documents last 15 minutes.
 
 Check `embedUrl` with `parseEmbedUrl` from `@repo/video-embeds` before loading it, and play it through the provider's player API so you know when it ends: the YouTube IFrame API (`onStateChange` → `ENDED`) or Vimeo's `player.js` (`ended`). The app does this in `src/components/lesson/video-embed.tsx`: a small HTML page in a WebView whose `baseUrl` is the site, because YouTube refuses to play without a referrer. When the video ends, call `POST /lessons/:lessonId/complete`, as the website does.
 
@@ -178,7 +178,7 @@ Check `embedUrl` with `parseEmbedUrl` from `@repo/video-embeds` before loading i
 A course is **free** if it's in any public product priced at 0 (even when it's also sold in a paid product), **paid** if it's in a paid product that's live or waiting for review, and a **draft** otherwise (not on sale yet).
 
 - A **free lesson** (a preview, or any lesson of a free course): its video is a YouTube or Vimeo link, never Chiyali-hosted video.
-- A **paid lesson** (a non-preview lesson of a paid course): its video is Chiyali-hosted (an uploaded MP4, or Bunny), and only for people who have the course; having a preview open doesn't count. It never gets a YouTube or Vimeo link, because anyone with the link could watch it.
+- A **paid lesson** (a non-preview lesson of a paid course): its video is Chiyali-hosted (Bunny Stream; older ones may be R2 MP4s), and only for people who have the course; having a preview open doesn't count. It never gets a YouTube or Vimeo link, because anyone with the link could watch it.
 - A **draft** course's lessons may use either while the creator builds it (only its author and admins can open them). The rule is checked when it goes on sale: a ₹0 product can't contain uploaded video, and a paid product can't have links outside previews.
 - PDFs and image attachments work on any lesson, with the usual access rules.
 
