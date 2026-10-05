@@ -41,8 +41,8 @@ The details live in the code and in [PAYMENTS.md](./PAYMENTS.md) (including the 
 | Payouts | Creator requests; the founder pays by bank transfer or eSewa on a fixed weekly day, then marks it paid in `/admin/payouts` | More than 50 payouts a month, or payouts take more than 2 hours a week |
 | Refunds | Money returned in the gateway's merchant dashboard; `/admin/refunds` fixes access and the ledger | More than 20 refunds a month |
 | Moderation | Manual approval queue plus the report button; the founder checks the preview, description and creator | More than 30 submissions a week, or the first real piracy case |
-| Video | Progressive MP4 from R2 with upload limits; free tier uses YouTube or Vimeo links | Playback complaints in more than 5% of tickets, or a piracy incident (Bunny code exists in `services/bunny/`) |
-| Watermarking | None; short-lived signed URLs | The first confirmed leak of a paid course |
+| Video | Paid video on Bunny Stream (adaptive quality, signed player links, 5 GB per creator); free tier uses YouTube or Vimeo links | Bunny's bill passes about NPR 5,000 a month (then try its volume network), or creators need more than 5 GB as standard |
+| Watermarking | The viewer's name and email drift over paid video; screen capture blocked in the app; 2 signed-in devices per account. No DRM | The first confirmed leak despite the watermark (then Bunny's MediaCage DRM) |
 | Founding-creator deal | Badge and a home-page spot; any reduced fee is a manual top-up at payout time, tracked in a spreadsheet | More than one permanent commission tier |
 | VAT on invoices | Not charged (`vatRatePercent: null`) | VAT registration (turnover threshold) |
 | Gateways | eSewa only | Khalti and Fonepay as their merchant approvals come through (env vars only; see PAYMENTS.md) |
@@ -114,7 +114,7 @@ In priority order:
 | Not enough Play testers, or they drop out | Medium / delays the app | Recruit 15–20, not 12; ask creators and their students |
 | Paid but no access (tab closed, network drop) | Medium / destroys trust | Payment cron every 5 minutes, admin Re-check, "I was charged" support path, daily watchlist |
 | Creators leave after slow first sales | High / supply collapses | Launch kit, founder check-ins, home-page features, weekly payouts |
-| Piracy: screen recordings or reuploads | High eventually / creators leave | DMCA page and fast takedown; Bunny and watermarking on the first confirmed leak |
+| Piracy: screen recordings or reuploads | High eventually / creators leave | Signed Bunny links, a name-and-email watermark, screen capture blocked in the app, 2 devices per account; DMCA page and fast takedown; close the leaking account |
 | Video playback on slow mobile data | Medium / refunds | 720p H.264 guidance and upload limits; YouTube links for free and preview lessons |
 | The 50% fee on Chiyali-sourced sales feels high | Medium | Lead with "70% on your own audience"; review the rates after 90 days with data |
 | Content-rights disputes | Medium | Rights promise in the Creator Terms; manual approval; fast takedown |

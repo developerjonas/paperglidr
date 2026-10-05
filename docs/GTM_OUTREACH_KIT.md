@@ -85,7 +85,7 @@ Hi [Name], just checking in about putting your course on Chiyali. Happy to do th
 
 ### 1.5 Onboarding checklist (you, with each creator)
 - [ ] Teacher profile created, phone verified, Creator Terms accepted.
-- [ ] First course: from a YouTube playlist (free) or uploaded MP4s (paid, 720p H.264 recommended).
+- [ ] First course: from a YouTube playlist (free) or uploaded videos (paid: MP4, MOV, WebM or MKV up to 4 GB each, 5 GB per creator to start; 720p H.264 recommended).
 - [ ] One **preview** lesson, a description of at least 100 characters, and a thumbnail (Claude can make one).
 - [ ] Price set; course submitted; approved at `/admin/products`.
 - [ ] Founding creator badge turned on at `/admin/creators`; course featured if it's strong.

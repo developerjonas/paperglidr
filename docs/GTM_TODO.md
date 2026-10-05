@@ -8,7 +8,7 @@ Last updated: 2026-10-05.
 
 ---
 
-**The critical path now:** closed test approved → 12+ testers opted in for 14 days → apply for production. Realistic Play launch: **late October**.
+**The critical path now:** testers opted in on 5 Oct → keep **12+ of them opted in for 14 days** (until about **19 Oct**) → apply for production → Google's review. Realistic Play launch: **late October**. Meanwhile: courses and creators (section 2).
 
 **Done on 4 Oct:** the first course is live (PHP for Beginners, free, by @devjonas); the reviewer account (`reviewer@chiyali.com`) is created and its password is in Play's Sign in details; free courses can be added in the app ("Enroll for free"); new Browse pages with topic cards.
 
@@ -17,21 +17,19 @@ Last updated: 2026-10-05.
 - Both R2 buckets are tested end to end: images on `images.chiyali.com`, private files signed only, upload CORS for both domains.
 - Paid video is on Bunny Stream, tested: signed player links only, a watermark, screen capture blocked in the app, 5 GB per creator, and 2 devices per account.
 - Security: Next.js 15.5.27 (critical fixes), security headers, and patched dependencies; all tests and the 181-check security smoke test pass.
+- Testers collected and the closed-test opt-in link sent; the Creator Terms accepted.
+- The leaked Neon password and YouTube key rotated (Vercel and `.env` updated).
+- Safety nets: Neon point-in-time restore, test alerts to Discord and email, billing alerts on Bunny, Cloudflare, Vercel and Neon.
+- Docs and legal pages follow the move to Bunny: the privacy policy lists Bunny and YouTube/Vimeo, the watermark and the 2-device limit (also in the Terms); unit economics recalculated with Bunny's costs.
 
 ## 1. This week
 
-- [ ] 🟠⏳ **Testers: collect 15–20 Gmail addresses now** (message in [GTM_OUTREACH_KIT.md](./GTM_OUTREACH_KIT.md) §2) and send the opt-in link as soon as the closed test is approved.
-- [ ] 🔴 **Rotate the leaked keys:** the Neon database password and the YouTube API key were pasted in a chat. Neon → Roles → `neondb_owner` → Reset password; Google Cloud → Credentials → regenerate the key (or restrict it to the YouTube Data API). Then update Vercel and `apps/web/.env`.
-- [ ] 🟡 **Second admin:** sign up with `jonasawasthi@icloud.com`, then Claude makes it admin.
+- [ ] 🟠 **Keep 12+ testers opted in until about 19 Oct.** Google counts testers who stay opted in for the full 14 days. Nudge them to open the app a few times; check Play Console → Testing → Closed testing for the count.
+- [ ] 🟡 **Second admin:** no account with `jonasawasthi@icloud.com` exists in production yet (checked 5 Oct). Sign up once with exactly that email (or Google with that address), or tell Claude the address the account really uses.
 - [ ] 🔴 **Real-money run-through on production:**
   - a Rs 10–50 eSewa purchase, then refund it;
   - upload a real paid video and play it on web and in the app;
   - password reset email, SMS OTP, a certificate, and a payout request.
-- [ ] 🔴 **Safety nets:**
-  - Neon point-in-time restore on (7+ days);
-  - a test alert reaching Discord (GlitchTip) and email (cron-job.org);
-  - billing alerts on Bunny, Cloudflare, Vercel and Neon.
-- [ ] 🟡 **Accept the Creator Terms** in your own creator profile (`/instructors/onboarding`) before publishing more courses.
 - [ ] 🟡 **App 1.0.2** (Bunny player with watermark, screen-capture block, Enroll for free, topic cards in Browse): build and upload to closed testing **after** Google finishes the current review. Claude can run the build.
 
 ## 2. During the 14 days

@@ -97,6 +97,18 @@ export default function PrivacyPolicyPage() {
           issued).
         </li>
         <li>
+          <strong>Paid videos</strong>: while you watch a paid lesson, your
+          name and email address are shown faintly over the video, on your
+          own screen only, so that a recording can be traced to the account
+          it came from. The app also blocks screenshots and screen recording
+          on paid video lessons.
+        </li>
+        <li>
+          <strong>Signed-in devices</strong>: an account can be signed in on
+          at most two devices at once. Signing in on a third signs out the
+          one used longest ago.
+        </li>
+        <li>
           Content you post: reviews, questions and replies on lessons, support
           tickets, reports about content, and your wishlist.
         </li>
@@ -217,6 +229,16 @@ export default function PrivacyPolicyPage() {
             <td>Cloudflare (R2 storage)</td>
             <td>Storing course files and invoice PDFs</td>
             <td>Uploaded course files and invoices (which contain your name and email)</td>
+          </tr>
+          <tr>
+            <td>Bunny.net (Bunny Stream)</td>
+            <td>Storing and streaming paid lesson videos</td>
+            <td>The videos instructors upload; while you watch, your IP address, browser or device details and which video you are watching. Not your name or email</td>
+          </tr>
+          <tr>
+            <td>YouTube (privacy-enhanced mode) and Vimeo</td>
+            <td>Playing free lessons and previews that use their videos</td>
+            <td>When you play such a video: your IP address and browser or device details, under their own privacy policies</td>
           </tr>
           <tr>
             <td>Resend</td>

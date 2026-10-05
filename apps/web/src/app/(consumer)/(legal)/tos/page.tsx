@@ -57,7 +57,11 @@ export default function TermsOfServicePage() {
           People under 18 may use the Platform only with the involvement and
           consent of a parent or guardian.
         </li>
-        <li>Give accurate information, and do not share your account.</li>
+        <li>
+          Give accurate information, and do not share your account. An account
+          can be signed in on at most two devices at once; signing in on a
+          third signs out the one used longest ago.
+        </li>
       </ul>
 
       <h2>3. Buying a course</h2>
@@ -107,6 +111,11 @@ export default function TermsOfServicePage() {
         <li>
           Share, resell, publicly post or otherwise redistribute Course
           content you bought, including downloadable files.
+        </li>
+        <li>
+          Record, screenshot or re-upload paid videos. Paid videos show the
+          viewer&apos;s name and email, so a copy can be traced to the
+          account it came from, and that account may be closed.
         </li>
         <li>
           Circumvent access controls, download restrictions or payment

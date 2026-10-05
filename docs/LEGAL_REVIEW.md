@@ -58,7 +58,7 @@ These match the Google Play Data safety answers in [GTM_STORE_TEXTS.md](./GTM_ST
 - The product page says "Access for as long as Chiyali operates" (not "lifetime access") and offers a "Certificate of completion".
 
 ### Privacy Policy (`/privacy`)
-- Every data category and processor matches the code (email and Google/GitHub sign-in; the Android app; session IP and user agent; instructor phone numbers with only a hash of the OTP; payout bank or wallet details; gateway responses; invoices; progress, certificates and posted content; a session cookie and a 30-day referral cookie; processors eSewa, Khalti, Fonepay, Google, Cloudflare R2, Resend, SMSPasal, GlitchTip, hosting and database).
+- Every data category and processor matches the code (email and Google/GitHub sign-in; the Android app; session IP and user agent; instructor phone numbers with only a hash of the OTP; payout bank or wallet details; gateway responses; invoices; progress, certificates and posted content; a session cookie and a 30-day referral cookie; processors eSewa, Khalti, Fonepay, Google, Cloudflare R2, Bunny Stream, YouTube and Vimeo embeds, Resend, SMSPasal, GlitchTip, hosting and database; the paid-video watermark and the 2-device limit, added 5 Oct).
 - No analytics or advertising cookies exist today; **update the policy if analytics are added.**
 - Specific retention periods for closed accounts, logs and support tickets.
 - Breach notification "as required by law": what does the law require?

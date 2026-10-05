@@ -38,11 +38,17 @@ To change the schema:
 
 `drizzle.config.ts` and the seed read only the database variables (validated in `src/data/env/db.ts`): `DB_HOST`, `DB_PORT` (default 5432), `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL` (default `true`; `false` only for a local Postgres without TLS), and `ADMIN_EMAIL` for the seed. `drizzle.config.ts` also accepts `DATABASE_URL`, which wins over the `DB_*` variables.
 
-`drizzle-kit` and the seed **don't read `.env` files**, so export the variables first:
+> **⚠️ `drizzle-kit` reads `apps/web/.env` by itself, and a `DATABASE_URL` in it beats `DB_*` on the command line.** If `.env` holds the production `DATABASE_URL`, then `DB_HOST=localhost … pnpm db:migrate` still runs against **production**. This happened on 2026-10-05; it was harmless only because production was already up to date. To target another database, set **`DATABASE_URL`** itself (a variable you set wins over the file):
+> ```sh
+> DATABASE_URL=postgres://postgres:postgres@localhost:5432/chiyali_test pnpm db:migrate
+> ```
+> Every `drizzle-kit` command prints `[drizzle] database: <host>/<name>` first. Check that line.
+
+The seed doesn't read `.env` files, so export its variables first:
 ```sh
 cd apps/web
 set -a; source .env.local; set +a
-pnpm db:migrate
+pnpm db:seed
 ```
 (The scripts in `apps/web/scripts/` do load `apps/web/.env` themselves, and print which database they're using before writing anything.)
 
@@ -65,7 +71,7 @@ Then set `DB_HOST=localhost DB_USER=postgres DB_PASSWORD=postgres DB_NAME=chiyal
 
 ### Tests
 
-Both suites write data, so they need a **throwaway** Postgres (migrated with `pnpm db:migrate`) and refuse to run without an explicit flag.
+Both suites write data, so they need a **throwaway** Postgres (migrated with `DATABASE_URL=<the throwaway database> pnpm db:migrate`; see the warning above) and refuse to run without an explicit flag. Use a real Postgres: the concurrency tests in `features/purchases` fail on PGlite.
 
 ```sh
 cd apps/web
@@ -77,7 +83,7 @@ TEST_DB_IS_THROWAWAY=1 DB_HOST=… DB_NAME=… pnpm test
 SMOKE_TEST_DB_IS_THROWAWAY=1 BASE_URL=http://localhost:3000 CRON_SECRET=… pnpm test:security-smoke
 ```
 
-The smoke test checks that `/admin` is a 404 for non-admins, that admin-only and owner-only actions change nothing when called by others, discount scoping, and that a forced mid-transaction failure rolls back. Run it after upgrading Next.js, Better Auth or Drizzle, and after changing authorization or purchase code.
+The smoke test checks that `/admin` is a 404 for non-admins, that admin-only and owner-only actions change nothing when called by others, discount scoping, and that a forced mid-transaction failure rolls back. Run it after upgrading Next.js, Better Auth or Drizzle, and after changing authorization or purchase code. Sign-in is rate limited in memory, so for back-to-back runs restart the app first.
 
 ---
 
