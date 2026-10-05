@@ -2,7 +2,7 @@
 
 A plain checklist of what's left before go-to-market. The strategy is in [GTM_PLAN.md](./GTM_PLAN.md), ready-to-send messages in [GTM_OUTREACH_KIT.md](./GTM_OUTREACH_KIT.md); legal review status is in [LEGAL_REVIEW.md](./LEGAL_REVIEW.md).
 
-Last updated: 2026-10-04.
+Last updated: 2026-10-05.
 
 **Legend:** 🔴 blocks the launch · 🟠 blocks the Play Store launch · 🟡 needed for a good launch · ⏳ slow (takes weeks), start now · ✍️ Claude can draft or prepare it; you review and finish
 
@@ -12,14 +12,27 @@ Last updated: 2026-10-04.
 
 **Done on 4 Oct:** the first course is live (PHP for Beginners, free, by @devjonas); the reviewer account (`reviewer@chiyali.com`) is created and its password is in Play's Sign in details; free courses can be added in the app ("Enroll for free"); new Browse pages with topic cards.
 
+**Done on 5 Oct:**
+- `thedeveloperjonas@gmail.com` is admin in production.
+- Both R2 buckets are tested end to end: images on `images.chiyali.com`, private files signed only, upload CORS for both domains.
+- Paid video is on Bunny Stream, tested: signed player links only, a watermark, screen capture blocked in the app, 5 GB per creator, and 2 devices per account.
+- Security: Next.js 15.5.27 (critical fixes), security headers, and patched dependencies; all tests and the 181-check security smoke test pass.
+
 ## 1. This week
 
 - [ ] 🟠⏳ **Testers: collect 15–20 Gmail addresses now** (message in [GTM_OUTREACH_KIT.md](./GTM_OUTREACH_KIT.md) §2) and send the opt-in link as soon as the closed test is approved.
 - [ ] 🔴 **Rotate the leaked keys:** the Neon database password and the YouTube API key were pasted in a chat. Neon → Roles → `neondb_owner` → Reset password; Google Cloud → Credentials → regenerate the key (or restrict it to the YouTube Data API). Then update Vercel and `apps/web/.env`.
-- [ ] 🔴 **Make yourself admin in production** (no one is admin there yet, so `/admin` is a 404 for you): `ADMIN_EMAIL=hi@developerjonas.com pnpm db:seed` in `apps/web` with the production database variables.
-- [ ] 🔴 **Public image bucket (R2)** for course thumbnails and teacher photos: `images.chiyali.com` doesn't exist yet, so other creators can't upload images. Steps: [SETUP.md](./SETUP.md) §2 (create the bucket and domain, then set `R2_PUBLIC_BUCKET_NAME`, `R2_PUBLIC_BASE_URL` and `NEXT_PUBLIC_IMAGE_HOSTS=images.chiyali.com` in Vercel and redeploy). Also check the private bucket's CORS allows `https://www.chiyali.com`.
+- [ ] 🟡 **Second admin:** sign up with `jonasawasthi@icloud.com`, then Claude makes it admin.
+- [ ] 🔴 **Real-money run-through on production:**
+  - a Rs 10–50 eSewa purchase, then refund it;
+  - upload a real paid video and play it on web and in the app;
+  - password reset email, SMS OTP, a certificate, and a payout request.
+- [ ] 🔴 **Safety nets:**
+  - Neon point-in-time restore on (7+ days);
+  - a test alert reaching Discord (GlitchTip) and email (cron-job.org);
+  - billing alerts on Bunny, Cloudflare, Vercel and Neon.
 - [ ] 🟡 **Accept the Creator Terms** in your own creator profile (`/instructors/onboarding`) before publishing more courses.
-- [ ] 🟡 **App 1.0.2** (Enroll for free, and topic cards in Browse): build and upload to closed testing **after** Google finishes the current review. Claude can run the build.
+- [ ] 🟡 **App 1.0.2** (Bunny player with watermark, screen-capture block, Enroll for free, topic cards in Browse): build and upload to closed testing **after** Google finishes the current review. Claude can run the build.
 
 ## 2. During the 14 days
 
