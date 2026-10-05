@@ -25,6 +25,8 @@ How Chiyali's infrastructure is set up and kept running: the database, file stor
 | `pnpm db:push` | **a local throwaway database only** | Pushes the schema with no migration file. Never against production. |
 | `pnpm db:studio` | anywhere | Drizzle Studio in the browser. |
 
+**One baseline, safe to re-run.** `src/drizzle/migrations/0000_baseline.sql` holds the whole schema (migrations 0000–0014 squashed on 2026-10-05), and every statement in it only creates what's missing. So `pnpm db:migrate` brings any database up to date in one go: an empty one, an old one, or one whose migrations were applied by hand. It's also safe to paste into a SQL console as-is. New changes go in new migration files after it.
+
 To change the schema:
 1. Edit `src/drizzle/schema/*.ts`.
 2. Run `pnpm db:generate --name short_description` and read the SQL. Drizzle can miss generated columns, custom SQL and data backfills; edit the file by hand if needed.
@@ -249,6 +251,6 @@ Vercel deploys are zero-downtime, and **Instant Rollback** (Deployments → ⋯)
 2. **Preview before production.** Point preview deployments at a Neon **branch** of production, so migrations are tried on real data first.
 3. **Roll back the code, not the database.** Because migrations only add, old code still works on the new schema.
 4. **Neon:** on a paid plan, turn off scale-to-zero for production (or the first request after idle waits); use the **pooled** connection string; know how point-in-time restore works before you need it.
-5. **Region:** keep Vercel Functions in the same region as the database. For learners in Nepal, Singapore (Neon `aws-ap-southeast-1` + Vercel `sin1`) is fastest; moving Neon means a new project and a data copy.
+5. **Region:** Vercel Functions run in Singapore (`sin1`, set in `apps/web/vercel.json`), next to the Neon database (`aws-ap-southeast-1`). Every page makes several database round trips, so keep the two together.
 6. **Degrade, don't break:** an unconfigured or failing gateway is hidden at checkout (`PAYMENT_ENABLED_GATEWAYS` is the kill switch), and the cron completes payments whose redirect was lost.
 7. **Domain:** `www.chiyali.com` is canonical; keep `chiyali.com` redirecting to it. The app always calls `www` (a redirect can drop its sign-in header).

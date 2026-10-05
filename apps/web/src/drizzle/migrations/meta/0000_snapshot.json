@@ -1,5 +1,5 @@
 {
-  "id": "53eb941a-4ee9-486f-aaf1-41f2dd9aa87d",
+  "id": "7f1078a5-77fc-4bd8-9ce1-f46b205e997e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -353,6 +353,36 @@
           "primaryKey": false,
           "notNull": true
         },
+        "submitted_for_review_at": {
+          "name": "submitted_for_review_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reviewed_by": {
+          "name": "reviewed_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_note": {
+          "name": "review_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "featured_at": {
+          "name": "featured_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "search_vector": {
           "name": "search_vector",
           "type": "tsvector",
@@ -378,7 +408,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "products_search_vector_idx": {
+          "name": "products_search_vector_idx",
+          "columns": [
+            {
+              "expression": "search_vector",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "products_category_id_categories_id_fk": {
           "name": "products_category_id_categories_id_fk",
@@ -404,6 +450,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "products_reviewed_by_user_id_fk": {
+          "name": "products_reviewed_by_user_id_fk",
+          "tableFrom": "products",
+          "tableTo": "user",
+          "columnsFrom": [
+            "reviewed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -557,6 +616,27 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "purchases_status_created_at_idx": {
+          "name": "purchases_status_created_at_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "createdAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -847,6 +927,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_username": {
+          "name": "display_username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "email_verified": {
           "name": "email_verified",
           "type": "boolean",
@@ -898,6 +990,13 @@
           "nullsNotDistinct": false,
           "columns": [
             "email"
+          ]
+        },
+        "user_username_unique": {
+          "name": "user_username_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "username"
           ]
         }
       },
@@ -1165,6 +1264,32 @@
           "primaryKey": false,
           "notNull": false
         },
+        "creator_terms_accepted_at": {
+          "name": "creator_terms_accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creator_terms_version": {
+          "name": "creator_terms_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_founding": {
+          "name": "is_founding",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "storage_limit_bytes": {
+          "name": "storage_limit_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 5368709120
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp with time zone",
@@ -1413,6 +1538,19 @@
           "primaryKey": false,
           "notNull": true
         },
+        "payout_method": {
+          "name": "payout_method",
+          "type": "payout_method",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payout_details": {
+          "name": "payout_details",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "paidAt": {
           "name": "paidAt",
           "type": "timestamp with time zone",
@@ -1653,6 +1791,14 @@
           "notNull": true,
           "default": "'primary'"
         },
+        "status": {
+          "name": "status",
+          "type": "asset_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
         "externalId": {
           "name": "externalId",
           "type": "text",
@@ -1692,6 +1838,12 @@
         },
         "durationSeconds": {
           "name": "durationSeconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "startSeconds": {
+          "name": "startSeconds",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -1881,6 +2033,25 @@
           "primaryKey": false,
           "notNull": false
         },
+        "delivery_attempts": {
+          "name": "delivery_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_delivery_attempt_at": {
+          "name": "last_delivery_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_delivery_error": {
+          "name": "last_delivery_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp with time zone",
@@ -1976,6 +2147,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "product_id": {
+          "name": "product_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "reason": {
           "name": "reason",
           "type": "report_reason",
@@ -2058,6 +2235,19 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
+        "reports_product_id_products_id_fk": {
+          "name": "reports_product_id_products_id_fk",
+          "tableFrom": "reports",
+          "tableTo": "products",
+          "columnsFrom": [
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "reports_reviewedBy_user_id_fk": {
           "name": "reports_reviewedBy_user_id_fk",
           "tableFrom": "reports",
@@ -2073,6 +2263,82 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.refund_request_courses": {
+      "name": "refund_request_courses",
+      "schema": "",
+      "columns": {
+        "refund_request_id": {
+          "name": "refund_request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "course_id": {
+          "name": "course_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "refund_request_courses_course_idx": {
+          "name": "refund_request_courses_course_idx",
+          "columns": [
+            {
+              "expression": "course_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "refund_request_courses_refund_request_id_refund_requests_id_fk": {
+          "name": "refund_request_courses_refund_request_id_refund_requests_id_fk",
+          "tableFrom": "refund_request_courses",
+          "tableTo": "refund_requests",
+          "columnsFrom": [
+            "refund_request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "refund_request_courses_course_id_courses_id_fk": {
+          "name": "refund_request_courses_course_id_courses_id_fk",
+          "tableFrom": "refund_request_courses",
+          "tableTo": "courses",
+          "columnsFrom": [
+            "course_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "refund_request_courses_refund_request_id_course_id_pk": {
+          "name": "refund_request_courses_refund_request_id_course_id_pk",
+          "columns": [
+            "refund_request_id",
+            "course_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -2157,6 +2423,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "processed_by": {
+          "name": "processed_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processed_at": {
+          "name": "processed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp with time zone",
@@ -2172,7 +2450,24 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "refund_requests_open_purchase_idx": {
+          "name": "refund_requests_open_purchase_idx",
+          "columns": [
+            {
+              "expression": "purchaseId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"refund_requests\".\"status\" in ('pending', 'approved', 'processed')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "refund_requests_purchaseId_purchases_id_fk": {
           "name": "refund_requests_purchaseId_purchases_id_fk",
@@ -2219,6 +2514,19 @@
           "tableTo": "user",
           "columnsFrom": [
             "reviewedBy"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "refund_requests_processed_by_user_id_fk": {
+          "name": "refund_requests_processed_by_user_id_fk",
+          "tableFrom": "refund_requests",
+          "tableTo": "user",
+          "columnsFrom": [
+            "processed_by"
           ],
           "columnsTo": [
             "id"
@@ -3318,6 +3626,176 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.payment_events": {
+      "name": "payment_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "purchaseId": {
+          "name": "purchaseId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "payment_event_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gateway": {
+          "name": "gateway",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "payment_event_outcome",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gatewayStatus": {
+          "name": "gatewayStatus",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amountInPaisa": {
+          "name": "amountInPaisa",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "detail": {
+          "name": "detail",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "payment_events_purchase_id_idx": {
+          "name": "payment_events_purchase_id_idx",
+          "columns": [
+            {
+              "expression": "purchaseId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "payment_events_purchaseId_purchases_id_fk": {
+          "name": "payment_events_purchaseId_purchases_id_fk",
+          "tableFrom": "payment_events",
+          "tableTo": "purchases",
+          "columnsFrom": [
+            "purchaseId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.storage_deletions": {
+      "name": "storage_deletions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "asset_provider",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'r2'"
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "delete_after": {
+          "name": "delete_after",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "storage_deletions_delete_after_idx": {
+          "name": "storage_deletions_delete_after_idx",
+          "columns": [
+            {
+              "expression": "delete_after",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -3343,7 +3821,8 @@
       "schema": "public",
       "values": [
         "public",
-        "private"
+        "private",
+        "pending_review"
       ]
     },
     "public.purchase_gateway": {
@@ -3376,6 +3855,15 @@
         "admin"
       ]
     },
+    "public.payout_method": {
+      "name": "payout_method",
+      "schema": "public",
+      "values": [
+        "bank",
+        "esewa",
+        "khalti"
+      ]
+    },
     "public.payout_status": {
       "name": "payout_status",
       "schema": "public",
@@ -3406,6 +3894,7 @@
       "schema": "public",
       "values": [
         "youtube",
+        "vimeo",
         "r2",
         "bunny"
       ]
@@ -3418,11 +3907,21 @@
         "attachment"
       ]
     },
+    "public.asset_status": {
+      "name": "asset_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "ready",
+        "failed"
+      ]
+    },
     "public.asset_type": {
       "name": "asset_type",
       "schema": "public",
       "values": [
         "youtube",
+        "vimeo",
         "video_file",
         "pdf",
         "image",
@@ -3464,7 +3963,8 @@
       "values": [
         "course",
         "instructor",
-        "lesson"
+        "lesson",
+        "product"
       ]
     },
     "public.refund_request_status": {
@@ -3520,6 +4020,32 @@
         "in_progress",
         "resolved",
         "closed"
+      ]
+    },
+    "public.payment_event_outcome": {
+      "name": "payment_event_outcome",
+      "schema": "public",
+      "values": [
+        "initiated",
+        "completed",
+        "already_completed",
+        "pending",
+        "failed",
+        "disputed",
+        "expired",
+        "error"
+      ]
+    },
+    "public.payment_event_source": {
+      "name": "payment_event_source",
+      "schema": "public",
+      "values": [
+        "initiate",
+        "return",
+        "poll",
+        "success_page",
+        "cron",
+        "admin"
       ]
     }
   },
