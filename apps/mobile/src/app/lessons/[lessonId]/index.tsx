@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef } from 'react';
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -127,6 +128,7 @@ export default function LessonScreen() {
               ? { width: window.width, height: window.height, paddingLeft: insets.left, paddingRight: insets.right }
               : styles.playerWrap
           }>
+          {primary?.type === 'video_file' && Platform.OS !== 'web' ? <PreventScreenCapture /> : null}
           <LessonPlayer
             asset={primary}
             fullscreen={landscape}
@@ -249,3 +251,14 @@ const styles = StyleSheet.create({
   lockBadge: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
   center: { textAlign: 'center' },
 });
+
+/**
+ * While a paid (uploaded) video is on screen, screenshots and screen
+ * recordings capture nothing: Android's FLAG_SECURE, and iOS's capture
+ * protection (expo-screen-capture). Free YouTube/Vimeo lessons aren't
+ * protected. Released when the lesson screen closes.
+ */
+function PreventScreenCapture() {
+  usePreventScreenCapture('paid-lesson-video');
+  return null;
+}

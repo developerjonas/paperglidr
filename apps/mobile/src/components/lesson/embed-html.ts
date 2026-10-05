@@ -73,3 +73,48 @@ ${body}
 </body>
 </html>`;
 }
+
+const BUNNY_PLAYER_HOST = 'player.mediadelivery.net';
+
+/**
+ * A page that plays one paid lesson in Bunny Stream's player and reports
+ * when it ends (Bunny's player.js API, loaded before the iframe). The URL
+ * comes from the deliver route (signed, short-lived) and is checked to be
+ * Bunny's player. The iframe may not go fullscreen: the lesson screen goes
+ * full screen itself, so the watermark drawn over this view stays visible.
+ */
+export function bunnyPlayerHtml(url: string) {
+  let src = 'about:blank';
+  try {
+    if (new URL(url).hostname === BUNNY_PLAYER_HOST) src = url;
+  } catch {}
+  return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style>
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+#player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+</style>
+<script src="https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js"></script>
+</head>
+<body>
+<iframe id="player" src=${json(src)} allow="autoplay; encrypted-media" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+<script>
+function send(message) {
+  var data = JSON.stringify(Object.assign({ source: 'chiyali-embed' }, message));
+  if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(data);
+  else window.parent.postMessage(data, '*');
+}
+if (window.playerjs) {
+  var player = new playerjs.Player(document.getElementById('player'));
+  player.on('ready', function () {
+    player.on('ended', function () { send({ type: 'ended' }); });
+    player.on('error', function () { send({ type: 'error', code: 'bunny' }); });
+  });
+}
+</script>
+</body>
+</html>`;
+}

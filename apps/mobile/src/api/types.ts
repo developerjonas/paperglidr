@@ -227,7 +227,9 @@ export type Lesson = {
 };
 
 export type AssetDelivery =
-  | { type: 'inline' | 'download' | 'bunny_embed'; url: string }
+  | { type: 'inline' | 'download'; url: string }
+  /** A paid lesson's Bunny Stream player link, and the viewer label to show over it. */
+  | { type: 'bunny_embed'; url: string; expiresAt?: ISODate; watermark?: string }
   /** Free-tier lessons only (previews, free courses). */
   | { type: 'youtube' | 'vimeo'; externalId: string; startSeconds: number | null; embedUrl: string };
 

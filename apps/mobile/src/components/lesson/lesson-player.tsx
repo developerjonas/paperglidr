@@ -76,7 +76,9 @@ export function LessonPlayer({
     const embed = parseEmbedUrl(d.embedUrl);
     if (embed != null) return <VideoEmbed key={d.embedUrl} embed={embed} onFinished={onFinished} style={box} />;
   }
-  if (d.type === 'bunny_embed') return <Embed uri={d.url} style={box} />;
+  if (d.type === 'bunny_embed') {
+    return <Embed key={d.url} uri={d.url} watermark={d.watermark} onFinished={onFinished} style={box} />;
+  }
   if (asset.type === 'video_file' && d.type === 'inline') return <Video url={d.url} onFinished={onFinished} style={box} />;
   if (asset.type === 'pdf' && 'url' in d) {
     return (
