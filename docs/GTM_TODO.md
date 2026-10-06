@@ -2,13 +2,13 @@
 
 A plain checklist of what's left before go-to-market. The strategy is in [GTM_PLAN.md](./GTM_PLAN.md), ready-to-send messages in [GTM_OUTREACH_KIT.md](./GTM_OUTREACH_KIT.md); legal review status is in [LEGAL_REVIEW.md](./LEGAL_REVIEW.md).
 
-Last updated: 2026-10-05.
+Last updated: 2026-10-06.
 
 **Legend:** 🔴 blocks the launch · 🟠 blocks the Play Store launch · 🟡 needed for a good launch · ⏳ slow (takes weeks), start now · ✍️ Claude can draft or prepare it; you review and finish
 
 ---
 
-**The critical path now:** fix the **Misleading Claims rejection** (below) → testers keep running the 14 days (until about **19 Oct**) → apply for production → Google's review. Realistic Play launch: **late October**. Meanwhile: courses and creators (section 2).
+**The critical path now:** the closed test is live and passed review (6 Oct) → keep 12+ testers active for 14 days (until about **19–20 Oct**) → apply for production → Google's review. Realistic Play launch: **late October**. Use the 14 days for courses and creators (section 2); an empty catalogue won't keep anyone.
 
 **Done on 4 Oct:** the first course is live (PHP for Beginners, free, by @devjonas); the reviewer account (`reviewer@chiyali.com`) is created and its password is in Play's Sign in details; free courses can be added in the app ("Enroll for free"); new Browse pages with topic cards.
 
@@ -22,14 +22,19 @@ Last updated: 2026-10-05.
 - Safety nets: Neon point-in-time restore, test alerts to Discord and email, billing alerts on Bunny, Cloudflare, Vercel and Neon.
 - Docs and legal pages follow the move to Bunny: the privacy policy lists Bunny and YouTube/Vimeo, the watermark and the 2-device limit (also in the Terms); unit economics recalculated with Bunny's costs.
 
+**Done on 6 Oct:**
+- Play's **Misleading Claims** rejection (5 Oct) fixed: "not a government app" notice and official sources (psc.gov.np, ioe.tu.edu.np, epsnepal.gov.np) in the store listing, on the website and in the app.
+- The photo permission (`READ_MEDIA_IMAGES`) that `expo-screen-capture` added is blocked; no declaration needed.
+- App **1.0.2 (versionCode 5)** in closed testing, review passed; the opt-in link opens the Play Store page.
+- Play developer page: icon and header in `~/Desktop/Chiyali-Play-assets/developer-page/`, promotional text in [GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md).
+
 ## 1. This week
 
-- [ ] 🟠 **Play rejection, 5 Oct: Misleading Claims policy** ("Missing source link for government information", "Missing clear disclaimer of non-official status"). The description named government exams (Loksewa/PSC, IOE, CEE, EPS-TOPIK) with no disclaimer or official links. Fixed in code and text; to finish:
-  1. Push (the website footer, the exam topic pages and `/api/v1/config` carry the notice).
-  2. Play Console → Main store listing: paste the new short and full descriptions from [GTM_STORE_TEXTS.md](./GTM_STORE_TEXTS.md) §1.
-  3. Build app **1.0.2** (the notice on Home, Account, Terms and policies and the exam topics in Browse; plus the Bunny player, screen-capture block, Enroll for free, topic cards) and upload it to closed testing.
-  4. Send both for review together (Publishing overview → Send changes for review). Appeal only if it's rejected again after that.
-- [x] 🟠 **Testers:** 12+ opted in on 5 Oct. Keep them opted in until about 19 Oct; check whether the rejection paused the 14-day count (Play Console → Dashboard).
+- [ ] 🟠 **Keep testers active** (Google's production application asks how they used the app): ask all 12+ to open it every 2–3 days (watch a lesson, enroll in a free course, ask a question) and to send a line of feedback ("Send private feedback" on the Play page, or WhatsApp). **Keep a feedback log**: who, what, what you changed.
+- [ ] 🟠 **One small update mid-test (day 7–10):** fix 2–3 things testers reported, build and upload to closed testing. It shows Google the feedback was acted on. Claude can do the fixes and the build.
+- [ ] 🟠 **Apply for production (about 19–20 Oct):** Dashboard → Apply for production. Google asks how testers were recruited, how they used the app, what feedback came in, what changed, and why it's ready. Claude drafts the answers from the feedback log.
+- [ ] 🟡 **Developer page and name:** upload the developer icon and header, featured app Chiyali, website `https://www.chiyali.com`, the promotional text. Optional: change the developer name from "developerjonas" to **Paperglidr Technology** (Account details; Google may re-verify).
+- [ ] 🟡 **Content rating label "In-App Purchases":** the app has no buy button. Check the content rating questionnaire's question on buying digital goods; "No" fits what the app itself does.
 - [ ] 🟡 **Second admin:** no account with `jonasawasthi@icloud.com` exists in production yet (checked 5 Oct). Sign up once with exactly that email (or Google with that address), or tell Claude the address the account really uses.
 - [ ] 🔴 **Real-money run-through on production:**
   - a Rs 10–50 eSewa purchase, then refund it;
@@ -39,7 +44,8 @@ Last updated: 2026-10-05.
 ## 2. During the 14 days
 
 - [ ] 🔴 **10–15 approved courses across at least 3 topics** before the public launch, each with a free preview that plays on a mid-range Android over 4G.
-- [ ] 🟡✍️ **Shortlist 60 creators:** Loksewa, IOE/CEE entrance, EPS-TOPIK/IELTS, Nepali tech YouTubers, accounting/Excel. Ranked by audience size. Claude can do a first pass from public searches; check follower numbers yourself, since they go out of date.
+- [ ] 🟡✍️ **Shortlist 60 creators:** Loksewa, IOE/CEE entrance, EPS-TOPIK/IELTS, Nepali tech YouTubers, accounting/Excel. Ranked by audience size. Claude can do a first pass from public searches; check follower numbers yourself, since they go out of date. Then a personal message for each (Claude drafts); send 5–10 a day.
+- [ ] 🟡✍️ **Your own YouTube playlists as free courses:** send the playlist links; Claude imports each as a course (like PHP for Beginners). Counts toward the 10–15.
 - [ ] 🟡 **Creator launch kit:** their `?ref=` link and a launch promo code (both built). Messages, the call script, a Reel/Short script and the poster brief are drafted in [GTM_OUTREACH_KIT.md](./GTM_OUTREACH_KIT.md); Claude can make each creator's poster and thumbnail.
 
 ## 3. Business and money
@@ -49,7 +55,7 @@ Last updated: 2026-10-05.
 
 ## 4. Marketing and launch
 
-- [ ] 🟡 **Brand accounts:** Facebook page, Instagram, TikTok, YouTube channel, a WhatsApp/Viber support number.
+- [ ] 🟡✍️ **Brand accounts:** Facebook page, Instagram, TikTok, YouTube channel, a WhatsApp/Viber support number. Use the developer-page icon and header; Claude can write the bios and the first 10 posts.
 - [ ] 🟡 **Creators' own audiences first** (their `?ref=` links earn them 70%). This is the main channel.
 - [ ] 🟡 **Facebook groups** (Loksewa, entrance, EPS-TOPIK, IT jobs): post free preview lessons, not bare sales links. Course links show a share card with the title, teacher and price.
 - [ ] 🟡 **Short videos:** 30–60 second clips from preview lessons, in Nepali, posted by the creators.
